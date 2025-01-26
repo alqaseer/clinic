@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Workspaces</title>
+</head>
+<body>
+    <h1>Your Workspaces</h1>
+    <h2>Admin Workspaces</h2>
+    <ul>
+        {% for workspace in admin_workspaces %}
+            <li>{{ workspace.name }}</li>
+        {% empty %}
+            <li>No workspaces found.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Editor Workspaces</h2>
+    <ul>
+        {% for workspace in editor_workspaces %}
+            <li>{{ workspace.name }}</li>
+        {% empty %}
+            <li>No workspaces found.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

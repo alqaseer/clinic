@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Deleted Cases{% endblock %}
+
+{% block content %}
+<h2>Deleted Cases</h2>
+<ul>
+    {% for case in cases %}
+        <li>
+            {{ case.name }} - Created on: {{ case.created_at|date:"Y-m-d" }}
+        </li>
+    {% empty %}
+        <li>No deleted cases available.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

@@ -1,13 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <title>Sign Up</title>
 </head>
 <body>
     <h1>Sign Up</h1>
-    <form method="POST">
+    <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        <label for="id_username">Username:</label>
+        {{ form.username }}
+        <br>
+        
+        <label for="id_email">Email address:</label>
+        {{ form.email }}
+        <br>
+        
+        <label for="id_password">Password:</label>
+        {{ form.password }}
+        <br>
+        
+        <label for="id_workspace_name">Workspace Name:</label>
+        {{ form.workspace_name }}
+        <br>
+        
         <button type="submit">Sign Up</button>
     </form>
 </body>

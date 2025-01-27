@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Past Cases{% endblock %}
+
+{% block content %}
+<h2>Past Cases</h2>
+<ul>
+    {% for case in cases %}
+        <li>
+            {{ case.name }} - {{ case.date }} - {{ case.procedure }}
+        </li>
+    {% empty %}
+        <li>No past cases available.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

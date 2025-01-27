@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Appointments for {{ date }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Appointments for {{ date }}</h1>
+<a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+    Add Appointment
+</a>
+
+<div class="mt-6 bg-white shadow rounded-md p-4">
+    <table class="w-full table-auto border-collapse">
+        <thead>
+            <tr>
+                <th class="border-b py-2 text-left font-semibold text-gray-700">Time Slot</th>
+                <th class="border-b py-2 text-left font-semibold text-gray-700">Patients</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Morning Slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">08:00</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "08:00" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">08:15</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "08:15" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">08:30</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "08:30" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">08:30</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "08:30" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">08:45</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "08:45" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">09:00</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "09:00" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">09:15</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "09:15" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">09:30</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "09:30" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">09:45</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "09:45" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">10:00</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "10:00" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">10:15</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "10:15" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">10:30</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "10:30" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+             <!-- Repeat this pattern for the remaining time slots -->
+             <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">10:45</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "10:45" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+             <!-- Repeat this pattern for the remaining time slots -->
+             <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">11:00</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "11:00" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+             <!-- Repeat this pattern for the remaining time slots -->
+             <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">11:15</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "11:15" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+             <!-- Repeat this pattern for the remaining time slots -->
+             <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">11:30</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "11:30" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+             <!-- Repeat this pattern for the remaining time slots -->
+             <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">11:45</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "11:45" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for the remaining time slots -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">12:00</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "12:00" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <!-- Repeat this pattern for all slots until 12:15 -->
+            <tr class="hover:bg-gray-100">
+                <td class="border-t py-2 px-4 font-medium text-gray-700">12:15</td>
+                <td class="border-t py-2 px-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == "12:15" %}
+                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+
+            
+            
+        </tbody>
+    </table>
+</div>
+{% endblock %}

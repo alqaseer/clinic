@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar - {{ workspace.name }}{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-xl font-semibold">{{ month_name }} {{ current_year }}</h1>
+    <div class="flex space-x-2">
+        <a href="?month={{ prev_month }}&year={{ prev_year }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+            &lt; Previous
+        </a>
+        <a href="?month={{ next_month }}&year={{ next_year }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+            Next &gt;
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-7 gap-px border border-gray-300 bg-gray-200 text-center text-sm font-medium">
+    <!-- Days of the Week Header -->
+    {% for day in days_of_week %}
+    <div class="bg-gray-100 py-2">{{ day }}</div>
+    {% endfor %}
+
+    <!-- Blank Cells -->
+    {% for _ in blank_slots %}
+    <div class="bg-gray-200 py-4"></div>
+    {% endfor %}
+
+    <!-- Calendar Days -->
+    {% for day in days %}
+<div class="relative py-4 text-gray-900 
+            {% if not day.is_open %} bg-gray-200 text-gray-400 
+            {% elif day.is_fully_booked %} bg-red-100 
+            {% else %} bg-green-100 {% endif %}">
+    <a href="{% if day.is_open %}{% url 'day_appointments' workspace.name day.date|date:'Y-m-d' %}{% endif %}">
+        <time datetime="{{ day.date|date:'Y-m-d' }}" class="block font-medium">
+            {{ day.date.day }}
+        </time>
+    </a>
+    {% if day.is_open %}
+        <span class="text-xs text-gray-700">
+            {{ day.booked_cases_count }} Booked Cases
+        </span>
+    {% else %}
+        <span class="text-xs text-gray-500">Closed</span>
+    {% endif %}
+</div>
+{% endfor %}
+
+</div>
+{% endblock %}

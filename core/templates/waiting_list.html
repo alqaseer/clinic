@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Waiting List{% endblock %}
+
+{% block content %}
+<h2>Waiting List</h2>
+<ul>
+    {% for case in cases %}
+        <li>
+            {{ case.name }} - Created on: {{ case.created_at|date:"Y-m-d" }}
+        </li>
+    {% empty %}
+        <li>No cases in the waiting list.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

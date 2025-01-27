@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Surgical Booking{% endblock %}
+
+{% block content %}
+<h2>Add Surgical Booking</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Add Booking</button>
+</form>
+<a href="{% url 'booked_cases' workspace.name %}">Back to Booked Cases</a>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Booked Cases{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold text-gray-800">Booked Cases (Upcoming)</h2>
+        <a href="{% url 'add_surgical_booking' workspace.name %}" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg">
+            + New Case
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Patient Name</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Phone Number</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Diagnosis</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Side</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Procedure</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Date</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
+                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.name }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.phone }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.diagnosis }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.side }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.procedure }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.date|date:"M d, Y" }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.notes }}</td>
+                    <td class="px-4 py-2 text-center">
+                        {% comment %} <a href="{% url 'edit_surgical_booking' case.id %}" class="text-blue-500 hover:text-blue-600 font-medium"> {% endcomment %}
+                            Edit
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-4 py-2 text-center text-sm text-gray-500">No booked cases available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

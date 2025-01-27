@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - {{ workspace.name }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Settings for {{ workspace.name }}</h1>
+
+<form method="POST" class="space-y-4">
+    {% csrf_token %}
+
+    <!-- Select Open Days -->
+    <div>
+        <label for="days_open" class="block text-sm font-medium text-gray-700">Select Open Days:</label>
+        <select 
+            name="days_open" 
+            id="days_open" 
+            multiple 
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm">
+            {% for day, label in days_of_week %}
+            <option value="{{ day }}" {% if day in workspace.days_open %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <p class="text-sm text-gray-500">Hold down "Ctrl" (or "Cmd" on Mac) to select multiple days.</p>
+    </div>
+
+    <!-- Number of Rooms -->
+    <div>
+        <label for="rooms" class="block text-sm font-medium text-gray-700">Number of Rooms:</label>
+        <select 
+            name="rooms" 
+            id="rooms" 
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm">
+            {% for i in rooms_range %}
+            <option value="{{ i }}" {% if workspace.rooms == i %}selected{% endif %}>
+                {{ i }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Save Button -->
+    <button 
+        type="submit" 
+        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        Save Settings
+    </button>
+</form>
+{% endblock %}

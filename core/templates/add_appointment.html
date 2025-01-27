@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Add Appointment{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Add Appointment</h1>
+
+<form method="POST" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    <div>
+        <label for="patient_name" class="block text-sm font-medium text-gray-700">Patient Name:</label>
+        <input
+            type="text"
+            name="patient_name"
+            id="patient_name"
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
+            value="{{ form.patient_name.value|default_if_none:'' }}"
+        >
+    </div>
+
+    <div>
+        <label for="phone_number" class="block text-sm font-medium text-gray-700">Phone Number:</label>
+        <input
+            type="text"
+            name="phone_number"
+            id="phone_number"
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
+            value="{{ form.phone_number.value|default_if_none:'' }}"
+        >
+    </div>
+
+    <div>
+        <label for="appointment_type" class="block text-sm font-medium text-gray-700">Appointment Type:</label>
+        {{ form.appointment_type }}
+    </div>
+
+    <div>
+        <label for="date" class="block text-sm font-medium text-gray-700">Date:</label>
+        <input
+            type="date"
+            name="date"
+            id="date"
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
+            value="{{ selected_date|date:"Y-m-d" }}"
+        >
+    </div>
+
+    <div>
+        <label for="time" class="block text-sm font-medium text-gray-700">Time:</label>
+        <div class="grid grid-cols-4 gap-2 mt-2">
+            {% for time, count in time_slots %}
+            <label
+                class="block text-center py-2 px-4 rounded-md shadow-sm cursor-pointer 
+                       {% if count >= workspace.rooms %}bg-red-100 text-red-700{% else %}bg-gray-100 hover:bg-blue-100{% endif %}">
+                <input
+                    type="radio"
+                    name="time"
+                    value="{{ time }}"
+                    class="hidden peer"
+                >
+                <span
+                    class="peer-checked:bg-blue-500 peer-checked:text-white block w-full">
+                    {{ time }} - {{ count }} Patients
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div>
+        <label for="referral_letter" class="block text-sm font-medium text-gray-700">Referral Letter (Optional):</label>
+        <input
+            type="file"
+            name="referral_letter"
+            id="referral_letter"
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
+        >
+    </div>
+
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        Save Appointment
+    </button>
+</form>
+{% endblock %}

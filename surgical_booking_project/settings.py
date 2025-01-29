@@ -86,8 +86,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'clinicdb',
-        'USER': 'postgres',
-        'PASSWORD': 'your_postgres_password',
+        'USER': 'subclavian',
+        'PASSWORD': 'aa971109',
         'HOST': 'localhost',
         'PORT': '5432',
     }

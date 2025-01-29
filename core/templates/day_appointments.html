@@ -4,9 +4,18 @@
 
 {% block content %}
 <h1 class="text-xl font-semibold mb-4">Appointments for {{ date }}</h1>
-<a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-    Add Appointment
-</a>
+
+<!-- Print & Add Appointment Buttons -->
+<div class="flex items-center space-x-4">
+    <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        Add Appointment
+    </a>
+
+    <!-- Printer Icon -->
+    <button onclick="printAppointments()" class="px-3 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+        🖨 Print
+    </button>
+</div>
 
 <div class="mt-6 bg-white shadow rounded-md p-4">
     <table class="w-full table-auto border-collapse">
@@ -17,218 +26,158 @@
             </tr>
         </thead>
         <tbody>
-            <!-- Morning Slots -->
+            {% for time in timeslots %}
             <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">08:00</td>
+                <td class="border-t py-2 px-4 font-medium text-gray-700">{{ time }}</td>
                 <td class="border-t py-2 px-4">
                     {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "08:00" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">08:15</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "08:15" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">08:30</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "08:30" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">08:30</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "08:30" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">08:45</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "08:45" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">09:00</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "09:00" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">09:15</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "09:15" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">09:30</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "09:30" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">09:45</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "09:45" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">10:00</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "10:00" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">10:15</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "10:15" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">10:30</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "10:30" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-             <!-- Repeat this pattern for the remaining time slots -->
-             <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">10:45</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "10:45" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-             <!-- Repeat this pattern for the remaining time slots -->
-             <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">11:00</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "11:00" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-             <!-- Repeat this pattern for the remaining time slots -->
-             <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">11:15</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "11:15" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-             <!-- Repeat this pattern for the remaining time slots -->
-             <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">11:30</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "11:30" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-             <!-- Repeat this pattern for the remaining time slots -->
-             <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">11:45</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "11:45" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for the remaining time slots -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">12:00</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "12:00" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            <!-- Repeat this pattern for all slots until 12:15 -->
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">12:15</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == "12:15" %}
-                            <div>{{ appointment.patient_name }} ({{ appointment.phone_number }})</div>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
+                        {% if appointment.time|date:"H:i" == time %}
+                            <div class="flex items-center space-x-2">
+                                <span class="text-blue-500"><i class="fas fa-user"></i></span>
+                                <span>{{ appointment.patient_name }}</span>
+                                <span>|</span>
+                                <span class="text-green-500"><i class="fas fa-id-card"></i></span>
+                                <span>{{ appointment.civil_id }}</span>
+                                <span>|</span>
+                                <span class="text-yellow-500"><i class="fas fa-phone"></i></span>
+                                <span>{{ appointment.phone_number }}</span>
+                                <span>|</span>
 
-            
-            
+                                <!-- Confirmed Status -->
+                                <span id="confirmed-status-{{ appointment.id }}" class="cursor-pointer">
+                                    {% if appointment.confirmed == "Unknown" %}
+                                        <i class="fas fa-question-circle text-yellow-500" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
+                                    {% elif appointment.confirmed == "Confirmed" %}
+                                        <i class="fas fa-check-circle text-green-500" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')"></i>
+                                    {% elif appointment.confirmed == "Cancelled" %}
+                                        <i class="fas fa-times-circle text-red-500" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
+                                    {% endif %}
+                                </span>
+                                <span>|</span>
+                                <span>{{ appointment.appointment_type }}</span>
+                                <span>|</span>
+
+                                <!-- Referral Letter Link -->
+                                {% if appointment.referral_letter %}
+                                    <a href="javascript:void(0);" 
+                                        class="text-blue-600 underline hover:text-blue-800"
+                                        onclick="openReferral('{{ appointment.referral_letter.url }}')">
+                                        Referral
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'edit_appointment' workspace.name appointment.id %}" class="text-blue-600 underline hover:text-blue-800">Edit</a>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
 </div>
+
+<!-- JavaScript Section -->
+<script>
+    // Function to Open Referral Image in Popup
+    function openReferral(imageUrl) {
+        const popup = document.createElement('div');
+        popup.id = 'referralPopup';
+        popup.style.position = 'fixed';
+        popup.style.top = '0';
+        popup.style.left = '0';
+        popup.style.width = '100%';
+        popup.style.height = '100%';
+        popup.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        popup.style.display = 'flex';
+        popup.style.justifyContent = 'center';
+        popup.style.alignItems = 'center';
+        popup.style.zIndex = '1000';
+
+        const image = document.createElement('img');
+        image.src = imageUrl;
+        image.style.maxWidth = '90%';
+        image.style.maxHeight = '90%';
+        popup.appendChild(image);
+
+        const closeButton = document.createElement('span');
+        closeButton.textContent = 'X';
+        closeButton.style.position = 'absolute';
+        closeButton.style.top = '10px';
+        closeButton.style.right = '20px';
+        closeButton.style.fontSize = '24px';
+        closeButton.style.color = '#fff';
+        closeButton.style.cursor = 'pointer';
+        closeButton.onclick = () => document.body.removeChild(popup);
+        popup.appendChild(closeButton);
+
+        document.body.appendChild(popup);
+    }
+
+    // Function to Print Appointments
+    function printAppointments() {
+        let printWindow = window.open("", "", "width=800,height=600");
+        let printContent = "<html><head><title>Appointments for {{ date }}</title></head><body>";
+        printContent += "<h2>Appointments for {{ date }}</h2>";
+        printContent += "<table border='1' cellspacing='0' cellpadding='5' style='font-size:10px; width:100%;'>";
+        printContent += "<thead><tr><th>Time</th><th>Patient Name</th><th>Civil ID</th><th>Phone</th><th>Type</th><th>Confirmed</th></tr></thead><tbody>";
+
+        {% for time in timeslots %}
+            {% for appointment in appointments %}
+                {% if appointment.time|date:"H:i" == time %}
+                    printContent += "<tr>";
+                    printContent += "<td>{{ time }}</td>";
+                    printContent += "<td>{{ appointment.patient_name }}</td>";
+                    printContent += "<td>{{ appointment.civil_id }}</td>";
+                    printContent += "<td>{{ appointment.phone_number }}</td>";
+                    printContent += "<td>{{ appointment.appointment_type }}</td>";
+                    printContent += "<td>{{ appointment.confirmed }}</td>";
+                    printContent += "</tr>";
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+
+        printContent += "</tbody></table></body></html>";
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // Function to Toggle Confirmed Status
+    function toggleConfirmed(appointmentId, currentStatus) {
+        let newStatus;
+        if (currentStatus === "Unknown") {
+            newStatus = "Confirmed";
+        } else if (currentStatus === "Confirmed") {
+            newStatus = "Cancelled";
+        } else {
+            newStatus = "Unknown";
+        }
+
+        fetch(`/update-confirmed-status/${appointmentId}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ confirmed: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let iconElement = document.getElementById(`confirmed-status-${appointmentId}`);
+                iconElement.innerHTML = "";
+                if (newStatus === "Unknown") {
+                    iconElement.innerHTML = `<i class="fas fa-question-circle text-yellow-500" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"></i>`;
+                } else if (newStatus === "Confirmed") {
+                    iconElement.innerHTML = `<i class="fas fa-check-circle text-green-500" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"></i>`;
+                } else {
+                    iconElement.innerHTML = `<i class="fas fa-times-circle text-red-500" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"></i>`;
+                }
+            } else {
+                alert("Error updating status.");
+            }
+        });
+    }
+</script>
+
 {% endblock %}

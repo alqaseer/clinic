@@ -77,8 +77,11 @@ class SurgicalBooking(models.Model):
 class ClinicAppointment(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="appointments")
     patient_name = models.CharField(max_length=255)
+    civil_id = models.CharField(max_length=12)  # New field
     phone_number = models.CharField(max_length=15)
-    confirmed = models.BooleanField(default=False)
+    confirmed = models.CharField(
+    max_length=50, 
+    choices=[("Unknown", "Unknown"), ("Confirmed", "Confirmed"), ("Cancelled", "Cancelled")], default="Unknown")
     appointment_type = models.CharField(max_length=50, choices=[("New", "New"), ("Follow-Up", "Follow-Up")])
     date = models.DateField()
     time = models.TimeField()
@@ -86,4 +89,5 @@ class ClinicAppointment(models.Model):
 
     def __str__(self):
         return f"{self.patient_name} - {self.date} at {self.time}"
+
 

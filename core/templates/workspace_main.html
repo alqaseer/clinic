@@ -1,31 +1,46 @@
-{% extends 'base.html' %}
-
-{% block title %}Workspace: {{ workspace.name }}{% endblock %}
+{% extends "base.html" %}
 
 {% block content %}
-<h1>Welcome to {{ workspace.name }}</h1>
+<div class="max-w-6xl mx-auto mt-6">
+    <!-- Welcome Header -->
+    <h1 class="text-3xl font-bold text-gray-800">Welcome to {{ workspace.name }}</h1>
 
-{% if user == workspace.admin %}
-    <h2>Add User</h2>
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit">Add User</button>
-    </form>
-{% endif %}
+    <!-- Statistics Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        <!-- Booked Cases -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-700">Booked Cases</h2>
+            <p class="text-3xl font-bold text-blue-600 mt-2">{{ booked_cases_count }}</p>
+        </div>
 
-<h2>Users</h2>
-<ul>
-    {% for user in workspace.user_set.all %}
-        <li>{{ user.username }}</li>
-    {% empty %}
-        <li>No users in this workspace.</li>
-    {% endfor %}
-</ul>
+        <!-- Waiting List -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-700">Waiting List</h2>
+            <p class="text-3xl font-bold text-yellow-500 mt-2">{{ waiting_list_count }}</p>
+        </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="mt-6">
+        <a href="{% url 'add_surgical_booking' workspace.name %}" 
+           class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">
+            + Book a Surgery
+        </a>
+    </div>
+
+    <!-- Users List -->
+    <div class="mt-10 bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-700">Users in Workspace</h2>
+        <ul class="mt-4 divide-y divide-gray-200">
+            {% for user in users %}
+                <li class="py-3 flex justify-between">
+                    <span class="text-gray-800 font-medium">{{ user.username }}</span>
+                    <span class="text-gray-500">{{ user.get_role_display }}</span>
+                </li>
+            {% empty %}
+                <p class="text-gray-500">No users found.</p>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
 {% endblock %}

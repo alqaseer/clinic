@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-a_ev1u0z6^-=xdsz^46sx*xar6$wez_0invd(a*kph@x5+l&2f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["508e-2a02-c7c-afe7-9100-a015-be3-17b5-b077.ngrok-free.app", "127.0.0.1", "localhost"]
+
 
 
 # Application definition
@@ -74,12 +75,24 @@ WSGI_APPLICATION = 'surgical_booking_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'clinicdb',
+        'USER': 'subclavian',
+        'PASSWORD': 'aa971109',
+        'HOST': 'localhost',
+        'PORT': '',
     }
 }
+
 
 
 # Password validation
@@ -126,3 +139,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'core.User'
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://508e-2a02-c7c-afe7-9100-a015-be3-17b5-b077.ngrok-free.app"
+]
+
+CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.app",'http://144.91.105.175']

@@ -28,24 +28,33 @@
 
     <!-- Calendar Days -->
     {% for day in days %}
-<div class="relative py-4 text-gray-900 
-            {% if not day.is_open %} bg-gray-200 text-gray-400 
-            {% elif day.is_fully_booked %} bg-red-100 
-            {% else %} bg-green-100 {% endif %}">
-    <a href="{% if day.is_open %}{% url 'day_appointments' workspace.name day.date|date:'Y-m-d' %}{% endif %}">
-        <time datetime="{{ day.date|date:'Y-m-d' }}" class="block font-medium">
-            {{ day.date.day }}
-        </time>
-    </a>
-    {% if day.is_open %}
-        <span class="text-xs text-gray-700">
-            {{ day.booked_cases_count }} Booked Cases
-        </span>
-    {% else %}
-        <span class="text-xs text-gray-500">Closed</span>
-    {% endif %}
-</div>
-{% endfor %}
+    <a href="{% url 'day_appointments' workspace.name day.date|date:'Y-m-d' %}" class="block">
+        <div class="relative py-4 text-gray-900 
+                    {% if not day.is_open %} bg-gray-200 text-gray-400 
+                    {% elif day.is_fully_booked %} bg-red-100 
+                    {% else %} bg-green-100 {% endif %} hover:bg-gray-300 transition">
+            <time datetime="{{ day.date|date:'Y-m-d' }}" class="block font-medium">
+                {{ day.date.day }}
+            </time>
 
+            {% if day.is_open %}
+                {% if day.booked_cases_count > 0 %}
+                    <span class="text-xs text-gray-700">
+                        {{ day.booked_cases_count }} Booked Cases
+                    </span>
+                {% else %}
+                    <span class="text-xs text-gray-500">No Patients Booked</span>
+                {% endif %}
+            {% else %}
+                {% if day.booked_cases_count > 0 %}
+                    <span class="text-xs text-gray-700">{{ day.booked_cases_count }} Booked Cases</span>
+                {% else %}
+                    <span class="text-xs text-gray-500">Closed</span>
+                {% endif %}
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
 </div>
+
 {% endblock %}

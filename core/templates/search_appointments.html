@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="max-w-2xl mx-auto mt-6">
+        <h1 class="text-2xl font-semibold">Search Appointments in {{ workspace.name }}</h1>
+
+        <!-- Search Bar -->
+        <input type="text" id="search-box" placeholder="Search by name, civil ID, or phone"
+               class="w-full border border-gray-300 p-3 mt-4 rounded-md"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+        <!-- Results Container -->
+        <div id="results" class="mt-4">
+            <p class="text-gray-500">Start typing to search...</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("search-box").addEventListener("input", function () {
+            let query = this.value.trim();
+            let resultsDiv = document.getElementById("results");
+
+            if (query.length < 2) {
+                resultsDiv.innerHTML = "<p class='text-gray-500'>Start typing to search...</p>";
+                return;
+            }
+
+            fetch("{% url 'search_appointments_ajax' workspace.name %}?q=" + encodeURIComponent(query), {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = "<p class='text-red-500'>No results found.</p>";
+                        return;
+                    }
+
+                    let html = "<ul class='border border-gray-300 rounded-md p-2 bg-white'>";
+                    data.forEach(appt => {
+                        html += `<li class="p-2 border-b">
+                            <strong>${appt.patient_name}</strong> - Civil ID: ${appt.civil_id} - Phone: ${appt.phone_number} - 
+                            <span class="text-sm text-gray-600">${appt.date} at ${appt.time}</span>
+                        </li>`;
+                    });
+                    html += "</ul>";
+
+                    resultsDiv.innerHTML = html;
+                });
+        });
+    </script>
+{% endblock %}

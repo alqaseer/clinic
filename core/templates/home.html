@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Management & Surgical Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">Clinic Manager</a>
+            <div>
+                <a href="{% url 'login' %}" class="text-lg text-gray-700 hover:text-blue-600 px-4">Login</a>
+                <a href="{% url 'signup' %}" class="bg-blue-600 text-white px-5 py-2 rounded-md text-lg hover:bg-blue-700">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="text-center py-20 bg-gray-50">
+        <h1 class="text-5xl font-extrabold text-gray-800">Effortless Clinic & Surgical Case Management</h1>
+        <p class="text-lg text-gray-600 mt-4 max-w-3xl mx-auto">
+            A powerful solution to **manage clinic appointments** and **schedule surgical bookings** seamlessly. 
+            Optimize your workflow, reduce admin work, and provide the best patient care.
+        </p>
+        <a href="{% url 'signup' %}" class="mt-6 inline-block bg-blue-600 text-white px-6 py-3 rounded-md text-xl hover:bg-blue-700">
+            Get Started for Free
+        </a>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container mx-auto py-16 px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="p-6 bg-white shadow-lg rounded-lg text-center">
+            <i class="fas fa-calendar-alt text-blue-600 text-4xl"></i>
+            <h3 class="text-xl font-bold mt-4">Appointment Scheduling</h3>
+            <p class="text-gray-600 mt-2">Easily manage patient appointments with an intuitive calendar system.</p>
+        </div>
+        <div class="p-6 bg-white shadow-lg rounded-lg text-center">
+            <i class="fas fa-user-md text-blue-600 text-4xl"></i>
+            <h3 class="text-xl font-bold mt-4">Surgical Case Booking</h3>
+            <p class="text-gray-600 mt-2">Organize and track upcoming surgeries with a dedicated booking system.</p>
+        </div>
+        <div class="p-6 bg-white shadow-lg rounded-lg text-center">
+            <i class="fas fa-chart-line text-blue-600 text-4xl"></i>
+            <h3 class="text-xl font-bold mt-4">Performance Insights</h3>
+            <p class="text-gray-600 mt-2">Generate reports and track your clinic's efficiency in real-time.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-200 text-center py-6 text-gray-600">
+        &copy; 2025 Clinic Manager - All Rights Reserved
+    </footer>
+
+</body>
+</html>

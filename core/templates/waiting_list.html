@@ -3,14 +3,90 @@
 {% block title %}Waiting List{% endblock %}
 
 {% block content %}
-<h2>Waiting List</h2>
-<ul>
-    {% for case in cases %}
-        <li>
-            {{ case.name }} - Created on: {{ case.created_at|date:"Y-m-d" }}
-        </li>
-    {% empty %}
-        <li>No cases in the waiting list.</li>
-    {% endfor %}
-</ul>
+<div class="container mx-auto px-4">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold text-gray-800">Waiting List</h2>
+        <a href="{% url 'add_surgical_booking' workspace.name %}" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg">
+            + New Case
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Patient Name</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Phone Number</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Diagnosis</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Side</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Procedure</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Created On</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
+                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.name }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.phone }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.diagnosis }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.side }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.procedure }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.created_at|date:"M d, Y" }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.notes }}</td>
+                    <td class="px-4 py-2 text-center">
+                        <!-- Edit Button -->
+                        <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
+                           class="text-blue-500 hover:text-blue-600 font-medium px-2">
+                            ✏️ Edit
+                        </a>
+
+                        <!-- Delete Button -->
+                        <button onclick="deleteCase({{ case.id }})" 
+                                class="text-red-500 hover:text-red-600 font-medium px-2">
+                            🗑 Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-4 py-2 text-center text-sm text-gray-500">
+                        No cases in the waiting list.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- JavaScript for Delete Functionality -->
+<script>
+    function deleteCase(caseId) {
+        if (!confirm("Are you sure you want to delete this case?")) {
+            return;
+        }
+
+        fetch(`/delete_surgical_case/${caseId}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: "deleted" })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Case deleted successfully.");
+                location.reload();
+            } else {
+                alert("Error deleting case.");
+            }
+        })
+        .catch(error => {
+            alert("Network error. Please try again.");
+        });
+    }
+</script>
 {% endblock %}

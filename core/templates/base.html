@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Surgical Workspace{% endblock %}</title>
-    <!-- Tailwind CSS CDN -->
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 text-gray-800">
 
@@ -13,73 +15,71 @@
     <div class="flex h-screen">
 
         <!-- Sidebar (Desktop) -->
-        <aside class="bg-white border-r border-gray-200 w-64 hidden md:block">
-            <div class="h-full flex flex-col">
-                <!-- Branding -->
-                <div class="p-4 border-b border-gray-200">
-                    <a href="#" class="flex items-center space-x-3">
-                        <img src="https://flowbite.com/docs/images/logo.svg" class="h-8" alt="Logo">
-                        <span class="text-lg font-semibold text-gray-800">Surgical Workspace</span>
-                    </a>
+        <aside class="bg-white border-r border-gray-200 w-64 hidden md:flex flex-col">
+            <!-- Branding -->
+            <div class="p-4 border-b border-gray-200">
+                <a href="#" class="flex items-center space-x-3">
+                    <img src="https://flowbite.com/docs/images/logo.svg" class="h-8" alt="Logo">
+                    <span class="text-lg font-semibold text-gray-800">Surgical Workspace</span>
+                </a>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-4">
+            <!-- Dashboard -->
+             
+                <div>
+                    <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Navigation</span>
+                    <ul class="space-y-2 pl-4">
+                        <li>
+                            <a href="{% url 'workspace_main' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Dashboard</a>
+                        </li>
+                    </ul>
                 </div>
 
-                <!-- Navigation Links -->
-                <nav class="flex-1 p-4 space-y-4">
-                    <!-- Clinic Appointments -->
-                    <div>
-                        <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Clinic Appointments</span>
-                        <ul class="space-y-2 pl-4">
-                            <li>
-                                <a href="#" class="cursor-not-allowed text-gray-500">Add Appointment</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'calendar' workspace.name %}" class="block text-gray-800 hover:text-blue-600">View Calendar</a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Surgical List -->
-                    <div>
-                        <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Surgical List</span>
-                        <ul class="space-y-2 pl-4">
-                            <li>
-                                <a href="{% url 'booked_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Booked Cases</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'waiting_list' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Waiting List</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'past_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Past Cases</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'deleted_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Deleted Cases</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'add_surgical_booking' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Book Case</a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Settings -->
-                    <div>
-                        <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Workspace Settings</span>
-                        <ul class="space-y-2 pl-4">
-                            <li>
-                                <a href="{% url 'settings_page' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Settings</a>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
-
-                <!-- Logout -->
-                <div class="p-4 border-t border-gray-200">
-                    <a href="{% url 'logout' %}" class="w-full flex items-center space-x-3 px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-                        </svg>
-                        <span class="text-sm font-medium">Logout</span>
-                    </a>
+                <!-- Clinic Appointments -->
+                <div>
+                    <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Clinic Appointments</span>
+                    <ul class="space-y-2 pl-4">
+                        <li>
+                            <a href="{% url 'calendar' workspace.name %}" class="block text-gray-800 hover:text-blue-600">View Calendar</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'search_appointments_page' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Search Appointments</a>
+                        </li>
+                    </ul>
                 </div>
+
+                <!-- Surgical List -->
+                <div>
+                    <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Surgical List</span>
+                    <ul class="space-y-2 pl-4">
+                        <li><a href="{% url 'booked_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Booked Cases</a></li>
+                        <li><a href="{% url 'waiting_list' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Waiting List</a></li>
+                        <li><a href="{% url 'past_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Past Cases</a></li>
+                        <li><a href="{% url 'deleted_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Deleted Cases</a></li>
+                        <li><a href="{% url 'add_surgical_booking' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Book Case</a></li>
+                    </ul>
+                </div>
+
+                <!-- Settings (Only if user is the admin) -->
+                {% if request.user == workspace.admin %}
+                <div>
+                    <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Workspace Settings</span>
+                    <ul class="space-y-2 pl-4">
+                        <li><a href="{% url 'settings_page' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Settings</a></li>
+                        <li><a href="{% url 'users_management' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Users Management</a></li>
+                    </ul>
+                </div>
+                {% endif %}
+            </nav>
+
+            <!-- Logout -->
+            <div class="p-4 border-t border-gray-200">
+                <a href="{% url 'logout' %}" class="flex items-center space-x-3 px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-lg">
+                    <i class="fas fa-sign-out-alt text-gray-500"></i>
+                    <span class="text-sm font-medium">Logout</span>
+                </a>
             </div>
         </aside>
 
@@ -99,52 +99,37 @@
                     <div>
                         <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Clinic Appointments</span>
                         <ul class="space-y-2 pl-4">
-                            <li>
-                                <a href="#" class="cursor-not-allowed text-gray-500">Add Appointment</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'calendar' workspace.name %}" class="block text-gray-800 hover:text-blue-600">View Calendar</a>
-                            </li>
+                            <li><a href="#" class="cursor-not-allowed text-gray-500">Add Appointment</a></li>
+                            <li><a href="{% url 'calendar' workspace.name %}" class="block text-gray-800 hover:text-blue-600">View Calendar</a></li>
                         </ul>
                     </div>
 
                     <div>
                         <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Surgical List</span>
                         <ul class="space-y-2 pl-4">
-                            <li>
-                                <a href="{% url 'booked_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Booked Cases</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'waiting_list' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Waiting List</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'past_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Past Cases</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'deleted_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Deleted Cases</a>
-                            </li>
-                            <li>
-                                <a href="{% url 'add_surgical_booking' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Book Case</a>
-                            </li>
+                            <li><a href="{% url 'booked_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Booked Cases</a></li>
+                            <li><a href="{% url 'waiting_list' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Waiting List</a></li>
+                            <li><a href="{% url 'past_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Past Cases</a></li>
+                            <li><a href="{% url 'deleted_cases' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Deleted Cases</a></li>
+                            <li><a href="{% url 'add_surgical_booking' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Book Case</a></li>
                         </ul>
                     </div>
 
+                    {% if request.user == workspace.admin %}
                     <div>
                         <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Workspace Settings</span>
                         <ul class="space-y-2 pl-4">
-                            <li>
-                                <a href="{% url 'settings_page' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Settings</a>
-                            </li>
+                            <li><a href="{% url 'settings_page' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Settings</a></li>
+                            <li><a href="{% url 'users_management' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Users Management</a></li>
                         </ul>
                     </div>
+                    {% endif %}
                 </nav>
 
                 <!-- Logout -->
                 <div class="p-4 border-t border-gray-200">
-                    <a href="{% url 'logout' %}" class="w-full flex items-center space-x-3 px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-                        </svg>
+                    <a href="{% url 'logout' %}" class="flex items-center space-x-3 px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-sign-out-alt text-gray-500"></i>
                         <span class="text-sm font-medium">Logout</span>
                     </a>
                 </div>
@@ -152,14 +137,14 @@
         </div>
 
         <!-- Mobile Menu Toggle -->
-        <button id="burger-menu-toggle" class="p-4 fixed top-0 left-0 z-50 text-gray-800 md:hidden">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+        <button id="burger-menu-toggle" class="p-2 fixed top-3 left-3 z-50 bg-white text-gray-800 rounded-full shadow-md border border-gray-300 md:hidden">
+            <i class="fas fa-bars w-6 h-6"></i>
         </button>
+        
 
         <!-- Main Content -->
-        <main class="flex-1 bg-gray-50 p-4 overflow-y-auto">
+        <main class="flex-1 bg-gray-50 p-4 overflow-y-auto pt-16 md:pt-4">
+
             {% block content %}
             {% endblock %}
         </main>
@@ -167,11 +152,8 @@
 
     <!-- JavaScript for Mobile Sidebar -->
     <script>
-        const burgerMenuToggle = document.getElementById("burger-menu-toggle");
-        const mobileMenu = document.getElementById("mobile-menu");
-
-        burgerMenuToggle.addEventListener("click", () => {
-            mobileMenu.classList.toggle("-translate-x-full");
+        document.getElementById("burger-menu-toggle").addEventListener("click", () => {
+            document.getElementById("mobile-menu").classList.toggle("-translate-x-full");
         });
     </script>
 </body>

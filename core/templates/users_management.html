@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold text-gray-800">Manage Users</h2>
+    </div>
+
+    <!-- Success/Error Messages -->
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="px-4 py-2 text-white {% if message.tags == 'success' %} bg-green-500 {% else %} bg-red-500 {% endif %} rounded">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- User List -->
+    <div class="overflow-x-auto bg-white border border-gray-200 shadow-md rounded-lg p-4">
+        <table class="min-w-full">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Username</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Email</th>
+                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ user.username }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ user.email }}</td>
+                    <td class="px-4 py-2 text-center">
+                        <button onclick="deleteUser({{ user.id }})" class="text-red-500 hover:text-red-600 font-medium px-2">
+                            🗑 Remove
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-4 py-2 text-center text-sm text-gray-500">
+                        No users in this workspace.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add New User -->
+    <div class="mt-6 bg-white shadow-md rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Add New User</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label for="id_username" class="block text-sm font-medium text-gray-700">Username</label>
+                {{ form.username }}
+            </div>
+            <div>
+                <label for="id_email" class="block text-sm font-medium text-gray-700">Email</label>
+                {{ form.email }}
+            </div>
+            <div>
+                <label for="id_password1" class="block text-sm font-medium text-gray-700">Password</label>
+                {{ form.password1 }}
+            </div>
+            <div>
+                <label for="id_password2" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                {{ form.password2 }}
+            </div>
+        
+            <button type="submit"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center">
+                Add User
+            </button>
+        </form>
+        
+    </div>
+</div>
+
+<!-- JavaScript for Deleting Users -->
+<script>
+    function deleteUser(userId) {
+        if (!confirm("Are you sure you want to remove this user?")) {
+            return;
+        }
+
+        fetch(`/workspace/{{ workspace.name }}/users/delete/${userId}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("User removed successfully.");
+                location.reload();
+            } else {
+                alert("Error removing user.");
+            }
+        })
+        .catch(error => {
+            alert("Network error. Please try again.");
+        });
+    }
+</script>
+
+{% endblock %}

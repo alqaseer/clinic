@@ -1,20 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Surgical Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Login to {{ workspace.name }}</h1>
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit">Login</button>
-    </form>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <!-- Background -->
+    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://source.unsplash.com/1600x900/?hospital,clinic'); filter: blur(8px);"></div>
+
+    <!-- Login Card -->
+    <div class="relative bg-white bg-opacity-80 backdrop-blur-lg shadow-xl rounded-lg px-8 py-6 w-96">
+        <h2 class="text-2xl font-bold text-center text-gray-800">Login</h2>
+
+        <!-- Display Messages -->
+        {% if messages %}
+        <div class="mt-4">
+            {% for message in messages %}
+            <div class="text-sm p-2 rounded-md text-center {% if message.tags == 'error' %}bg-red-200 text-red-800{% else %}bg-green-200 text-green-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <form method="POST" class="mt-6">
+            {% csrf_token %}
+
+            <!-- Workspace Name -->
+            <div class="mb-4">
+                <label for="workspace_name" class="block text-sm font-semibold text-gray-700">Workspace Name</label>
+                <input type="text" name="workspace_name" id="workspace_name" required
+                    class="w-full border border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+            </div>
+
+            <!-- Username -->
+            <div class="mb-4">
+                <label for="username" class="block text-sm font-semibold text-gray-700">Username</label>
+                <input type="text" name="username" id="username" required
+                    class="w-full border border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+            </div>
+
+            <!-- Password -->
+            <div class="mb-4">
+                <label for="password" class="block text-sm font-semibold text-gray-700">Password</label>
+                <input type="password" name="password" id="password" required
+                    class="w-full border border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+            </div>
+
+            <!-- Remember Me -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <input type="checkbox" name="remember_me" id="remember_me" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="remember_me" class="ml-2 text-sm text-gray-700">Remember Me</label>
+                </div>
+                <a href="#" class="text-sm text-blue-600 hover:underline">Forgot Password?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit"
+                class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 text-center transition">
+                Login
+            </button>
+        </form>
+    </div>
+
 </body>
 </html>

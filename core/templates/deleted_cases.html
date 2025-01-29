@@ -3,14 +3,81 @@
 {% block title %}Deleted Cases{% endblock %}
 
 {% block content %}
-<h2>Deleted Cases</h2>
-<ul>
-    {% for case in cases %}
-        <li>
-            {{ case.name }} - Created on: {{ case.created_at|date:"Y-m-d" }}
-        </li>
-    {% empty %}
-        <li>No deleted cases available.</li>
-    {% endfor %}
-</ul>
+<div class="container mx-auto px-4">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold text-gray-800">Deleted Cases</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Patient Name</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Phone Number</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Diagnosis</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Side</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Procedure</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Date</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
+                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.name }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.phone }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.diagnosis }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.side }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.procedure }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.date|date:"M d, Y" }}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.notes }}</td>
+                    <td class="px-4 py-2 text-center">
+                        <!-- Restore Button -->
+                        <button onclick="restoreCase({{ case.id }})" 
+                                class="bg-green-500 hover:bg-green-600 text-white font-medium py-1 px-3 rounded">
+                            ♻️ Restore
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-4 py-2 text-center text-sm text-gray-500">
+                        No deleted cases available.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- JavaScript for Restore Functionality -->
+<script>
+    function restoreCase(caseId) {
+        if (!confirm("Are you sure you want to restore this case?")) {
+            return;
+        }
+
+        fetch(`/restore_surgical_case/${caseId}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: "waiting" })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Case restored successfully.");
+                location.reload();
+            } else {
+                alert("Error restoring case.");
+            }
+        })
+        .catch(error => {
+            alert("Network error. Please try again.");
+        });
+    }
+</script>
 {% endblock %}

@@ -1,11 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Add Appointment{% endblock %}
+{% block title %}Edit Appointment{% endblock %}
 
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">
-    Add Appointment for {{ selected_date|date:"l, j F Y" }} <!-- Example: Monday, 6 January 2025 -->
-</h1>
+<h1 class="text-xl font-semibold mb-4">Edit Appointment</h1>
 
 <form method="POST" enctype="multipart/form-data" class="space-y-4">
     {% csrf_token %}
@@ -63,19 +61,30 @@
         {{ form.appointment_type }}
     </div>
 
-    <!-- Read-only Date Field -->
+    <!-- ✅ Confirmed Field Added -->
+    <div>
+        <label for="confirmed" class="block text-sm font-medium text-gray-700">Status:</label>
+        <select
+            name="confirmed"
+            id="confirmed"
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
+        >
+            <option value="Unknown" {% if form.confirmed.value == "Unknown" %}selected{% endif %}>Unknown</option>
+            <option value="Confirmed" {% if form.confirmed.value == "Confirmed" %}selected{% endif %}>Confirmed</option>
+            <option value="Cancelled" {% if form.confirmed.value == "Cancelled" %}selected{% endif %}>Cancelled</option>
+        </select>
+    </div>
+
     <div>
         <label for="date" class="block text-sm font-medium text-gray-700">Date:</label>
         <input
             type="date"
             name="date"
             id="date"
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm bg-gray-100"
-            value="{{ selected_date|date:'Y-m-d' }}"
-            readonly
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
+            value="{{ form.date.value|date:"Y-m-d" }}"
+            required
         >
-        <!-- Hidden Field to Ensure Date is Submitted -->
-        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
     </div>
 
     <div>
@@ -84,13 +93,13 @@
             {% for time, count in time_slots %}
             <label
                 class="block text-center py-2 px-4 rounded-md shadow-sm cursor-pointer
-                       {% if count >= workspace.rooms %}bg-red-100 text-red-700{% else %}bg-gray-100 hover:bg-blue-100{% endif %}">
+                       {% if time == form.time.value|time:"H:i" %}bg-blue-500 text-white{% elif count >= workspace.rooms %}bg-red-100{% else %}bg-gray-100 hover:bg-blue-100{% endif %}">
                 <input
                     type="radio"
                     name="time"
                     value="{{ time }}"
                     class="hidden peer"
-                    required
+                    {% if time == form.time.value|time:"H:i" %}checked{% endif %}
                 >
                 <span
                     class="peer-checked:bg-blue-500 peer-checked:text-white block w-full">
@@ -112,7 +121,7 @@
     </div>
 
     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-        Save Appointment
+        Save Changes
     </button>
 </form>
 {% endblock %}

@@ -113,24 +113,18 @@ def login_view(request):
 
 def logout_view(request):
     # If the user is authenticated, get their workspace name
-    workspace_name = None
-    if request.user.is_authenticated:
-        workspace = request.user.workspace
-        if workspace:
-            workspace_name = workspace.name
+    
 
     # Log out the user
     logout(request)
 
     # Redirect to the login page for the specific workspace
-    if workspace_name:
-        return redirect('login')
-    else:
-        return redirect('signup')  # Redirect to signup if no workspace is found
+    
+    return redirect('home')
+    
 
 
 # Workspace Main Page
-@login_required
 @login_required
 def workspace_main(request, workspace_name):
     workspace = get_object_or_404(Workspace, name=workspace_name)

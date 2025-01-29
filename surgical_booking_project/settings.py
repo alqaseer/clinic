@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from django.urls import reverse_lazy
 
 import os
 
@@ -149,3 +150,6 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.app",'http://144.91.105.175']
+
+
+LOGIN_URL = reverse_lazy('login')

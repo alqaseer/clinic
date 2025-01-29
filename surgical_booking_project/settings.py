@@ -84,12 +84,12 @@ WSGI_APPLICATION = 'surgical_booking_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'clinicdb',
-        'USER': 'subclavian',
-        'PASSWORD': 'aa971109',
+        'USER': 'postgres',
+        'PASSWORD': 'your_postgres_password',
         'HOST': 'localhost',
-        'PORT': '',
+        'PORT': '5432',
     }
 }
 

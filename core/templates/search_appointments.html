@@ -19,33 +19,40 @@
         document.getElementById("search-box").addEventListener("input", function () {
             let query = this.value.trim();
             let resultsDiv = document.getElementById("results");
-
+    
             if (query.length < 2) {
                 resultsDiv.innerHTML = "<p class='text-gray-500'>Start typing to search...</p>";
                 return;
             }
-
+    
             fetch("{% url 'search_appointments_ajax' workspace.name %}?q=" + encodeURIComponent(query), {
                 headers: { "X-Requested-With": "XMLHttpRequest" }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        resultsDiv.innerHTML = "<p class='text-red-500'>No results found.</p>";
-                        return;
-                    }
-
-                    let html = "<ul class='border border-gray-300 rounded-md p-2 bg-white'>";
-                    data.forEach(appt => {
-                        html += `<li class="p-2 border-b">
+            .then(response => response.json())
+            .then(data => {
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = "<p class='text-red-500'>No results found.</p>";
+                    return;
+                }
+    
+                let html = "<ul class='border border-gray-300 rounded-md p-2 bg-white'>";
+                data.forEach(appt => {
+                    let editUrl = `/editappointments/edit/{{ workspace.name }}/${appt.id}/`; // Corrected URL format
+                    html += `<li class="p-2 border-b flex justify-between items-center">
+                        <div>
                             <strong>${appt.patient_name}</strong> - Civil ID: ${appt.civil_id} - Phone: ${appt.phone_number} - 
                             <span class="text-sm text-gray-600">${appt.date} at ${appt.time}</span>
-                        </li>`;
-                    });
-                    html += "</ul>";
-
-                    resultsDiv.innerHTML = html;
+                        </div>
+                        <a href="${editUrl}" class="text-blue-600 hover:underline">Edit</a>
+                    </li>`;
                 });
+                html += "</ul>";
+    
+                resultsDiv.innerHTML = html;
+            });
         });
     </script>
+    
+     
+    
 {% endblock %}

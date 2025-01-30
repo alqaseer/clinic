@@ -25,7 +25,7 @@ urlpatterns = [
     path("workspace/<str:workspace_name>/users/", views.users_management, name="users_management"),
     path("workspace/<str:workspace_name>/users/delete/<int:user_id>/", views.delete_user, name="delete_user"),
     path("workspace/<str:workspace_name>/appointments/search/", views.search_appointments_page, name="search_appointments_page"),
-
+    path('check-availability/', views.check_availability, name='check_availability'),
     # 2️⃣ API endpoint for AJAX search
     path("workspace/<str:workspace_name>/appointments/search/ajax/", views.search_appointments_ajax, name="search_appointments_ajax"),
 

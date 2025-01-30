@@ -122,6 +122,23 @@ def logout_view(request):
     
     return redirect('home')
     
+def check_availability(request):
+    username = request.GET.get('username', None)
+    email = request.GET.get('email', None)
+    workspace_name = request.GET.get('workspace_name', None)
+
+    response = {'available': True}  # Default response
+
+    if username and User.objects.filter(username=username).exists():
+        response = {'available': False, 'message': 'Username is already taken.'}
+
+    if email and User.objects.filter(email=email).exists():
+        response = {'available': False, 'message': 'Email is already in use.'}
+
+    if workspace_name and Workspace.objects.filter(name=workspace_name).exists():
+        response = {'available': False, 'message': 'Workspace name is already taken.'}
+
+    return JsonResponse(response)
 
 
 # Workspace Main Page

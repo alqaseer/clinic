@@ -63,7 +63,8 @@
         <div>
             <label for="id_date" class="block text-sm font-medium text-gray-700">Date</label>
             <input type="date" name="date" id="id_date" value="{{ form.date.value|date:'Y-m-d' }}" 
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                min="{% now 'Y-m-d' %}">
         </div>
 
         <!-- Notes -->

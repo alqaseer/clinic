@@ -27,7 +27,7 @@
         {% endif %}
 
         <!-- Login Form -->
-        <form method="POST" class="mt-6">
+        <form method="POST" class="mt-6" onsubmit="lowercaseInputs()">
             {% csrf_token %}
 
             <!-- Workspace Name -->
@@ -67,6 +67,16 @@
             </button>
         </form>
     </div>
+
+    <script>
+        function lowercaseInputs() {
+            let usernameField = document.getElementById("username");
+            let workspaceField = document.getElementById("workspace_name");
+
+            usernameField.value = usernameField.value.toLowerCase();
+            workspaceField.value = workspaceField.value.toLowerCase();
+        }
+    </script>
 
 </body>
 </html>

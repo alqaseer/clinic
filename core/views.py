@@ -19,7 +19,7 @@ from django.utils.timezone import now
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-
+from django.utils import timezone
 
 
 
@@ -329,7 +329,7 @@ def calendar_view(request, workspace_name):
 
     # Create blank slots for calendar alignment
     blank_slots = list(range(first_day))
-
+    today = timezone.now().date()  
     context = {
         "workspace": workspace,
         "days": days,
@@ -342,6 +342,8 @@ def calendar_view(request, workspace_name):
         "next_year": next_year,
         "days_of_week": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         "blank_slots": blank_slots,
+        "today": today,  # Pass today's date to the template
+
     }
     return render(request, "calendar.html", context)
 

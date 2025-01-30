@@ -57,14 +57,17 @@
         <form method="POST" class="space-y-6" onsubmit="return validateForm()">
             {% csrf_token %}
 
+            <!-- Username -->
             <div>
                 <label for="id_username" class="block text-sm font-medium text-gray-700">Username</label>
                 <input type="text" id="id_username" name="username" required 
                        class="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                       oninput="checkAvailability('username')">
+                       oninput="validateUsername(); checkAvailability('username');">
+                <p class="text-xs text-gray-500 mt-1">* Only lowercase letters allowed.</p>
                 <p id="username-error" class="text-red-500 text-sm mt-1"></p>
             </div>
 
+            <!-- Email -->
             <div>
                 <label for="id_email" class="block text-sm font-medium text-gray-700">Email</label>
                 <input type="email" id="id_email" name="email" required 
@@ -73,6 +76,7 @@
                 <p id="email-error" class="text-red-500 text-sm mt-1"></p>
             </div>
 
+            <!-- Password -->
             <div>
                 <label for="id_password1" class="block text-sm font-medium text-gray-700">Password</label>
                 <input type="password" id="id_password1" name="password1" required 
@@ -135,6 +139,11 @@
 
     function allValid() {
         return validationStatus.username && validationStatus.email;
+    }
+
+    function validateUsername() {
+        let usernameField = document.getElementById("id_username");
+        usernameField.value = usernameField.value.toLowerCase();
     }
 </script>
 

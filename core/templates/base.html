@@ -99,8 +99,9 @@
                     <div>
                         <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Clinic Appointments</span>
                         <ul class="space-y-2 pl-4">
-                            <li><a href="#" class="cursor-not-allowed text-gray-500">Add Appointment</a></li>
+                            
                             <li><a href="{% url 'calendar' workspace.name %}" class="block text-gray-800 hover:text-blue-600">View Calendar</a></li>
+                            <li><a href="{% url 'search_appointments_page' workspace.name %}">Search appointnemts </a></li>
                         </ul>
                     </div>
 

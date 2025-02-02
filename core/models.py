@@ -91,3 +91,11 @@ class ClinicAppointment(models.Model):
         return f"{self.patient_name} - {self.date} at {self.time}"
 
 
+class ActionLog(models.Model):
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="action_logs")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    action_description = models.TextField()  # Describes what action was performed
+    timestamp = models.DateTimeField(auto_now_add=True)  # Auto logs the date and time
+
+    def __str__(self):
+        return f"{self.timestamp} - {self.workspace.name} - {self.user.username if self.user else 'Unknown'} - {self.action_description}"

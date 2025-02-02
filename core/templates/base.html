@@ -29,7 +29,7 @@
             <!-- Dashboard -->
              
                 <div>
-                    <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Navigation</span>
+                    <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Menu</span>
                     <ul class="space-y-2 pl-4">
                         <li>
                             <a href="{% url 'workspace_main' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Dashboard</a>
@@ -69,6 +69,8 @@
                     <ul class="space-y-2 pl-4">
                         <li><a href="{% url 'settings_page' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Settings</a></li>
                         <li><a href="{% url 'users_management' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Users Management</a></li>
+                        <li><a href="{% url 'action_log' %}" class="block text-gray-800 hover:text-blue-600">History</a></li>
+                        
                     </ul>
                 </div>
                 {% endif %}
@@ -90,12 +92,20 @@
                 <div class="p-4 border-b border-gray-200">
                     <a href="#" class="flex items-center space-x-3">
                         <img src="https://flowbite.com/docs/images/logo.svg" class="h-8" alt="Logo">
-                        <span class="text-lg font-semibold text-gray-800">Surgical Workspace</span>
+                        <span class="text-lg font-semibold text-gray-800">{{ workspace.name }}</span>
                     </a>
                 </div>
 
                 <!-- Navigation Links (Same as Desktop) -->
                 <nav class="flex-1 p-4 space-y-4">
+                    <div>
+                        <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Menu</span>
+                        <ul class="space-y-2 pl-4">
+                            
+                            <li><a href="{% url 'workspace_main' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Dashboard</a></li>
+                            
+                        </ul>
+                    </div>
                     <div>
                         <span class="block text-sm font-medium text-gray-500 uppercase mb-2">Clinic Appointments</span>
                         <ul class="space-y-2 pl-4">
@@ -122,6 +132,7 @@
                         <ul class="space-y-2 pl-4">
                             <li><a href="{% url 'settings_page' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Settings</a></li>
                             <li><a href="{% url 'users_management' workspace.name %}" class="block text-gray-800 hover:text-blue-600">Users Management</a></li>
+                            <li><a href="{% url 'action_log' %}" class="block text-gray-800 hover:text-blue-600">History</a></li>
                         </ul>
                     </div>
                     {% endif %}

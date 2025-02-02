@@ -20,6 +20,7 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
+from django.core.paginator import Paginator
 
 
 
@@ -288,6 +289,15 @@ def add_surgical_booking(request, workspace_name):
             else:
                 booking.status = 'waiting'
             booking.save()
+
+            # ✅ Add new ActionLog entry
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Added surgical booking for {booking.name} (Civil ID: {booking.civil_id}) (Procedure: {booking.procedure})."
+            )
+
+
             return redirect('booked_cases', workspace_name=workspace_name)  # Redirect to booked cases
     else:
         form = SurgicalBookingForm()
@@ -475,6 +485,14 @@ def add_appointment(request, workspace_name):
             appointment.workspace = workspace
             appointment.date = selected_date  # Assign the date manually before saving
             appointment.save()
+
+            # ✅ Add new ActionLog entry
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Added clinic appointment for {appointment.patient_name} (Civil ID: {appointment.civil_id}) on {appointment.date} at {appointment.time}."
+            )
+
             return redirect("day_appointments", workspace_name=workspace_name, date=appointment.date)
     else:
         form = ClinicAppointmentForm()
@@ -525,6 +543,15 @@ def edit_appointment(request, workspace_name, appointment_id):
             appointment = form.save(commit=False)
             appointment.workspace = workspace
             appointment.save()
+
+            # ✅ Add new ActionLog entry
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Updated appointment for {appointment.patient_name} (Civil ID: {appointment.civil_id})"
+            )
+
+
             return redirect("day_appointments", workspace_name=workspace_name, date=appointment.date)
     else:
         form = ClinicAppointmentForm(instance=appointment)
@@ -566,6 +593,11 @@ def delete_surgical_case(request, case_id):
             case = SurgicalBooking.objects.get(id=case_id)
             case.status = "deleted"
             case.save()
+            ActionLog.objects.create(
+                workspace=request.user.workspace,
+                user=request.user,
+                action_description=f"deleted booked case {case.name} (Civil ID: {case.civil_id}) "
+            )
             return JsonResponse({"success": True})
         except SurgicalBooking.DoesNotExist:
             return JsonResponse({"success": False, "error": "Case not found."}, status=404)
@@ -584,8 +616,15 @@ def edit_surgical_booking(request, workspace_name, case_id):
         form = SurgicalBookingForm(request.POST, instance=case)
         if form.is_valid():
             form.save()
-            return redirect(next_url) if next_url else redirect("booked_cases", workspace_name=workspace_name)  # Redirect to previous page or booked cases
+            # ✅ Add new ActionLog entry
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Updated surgical booking for {case.name} (Civil ID: {case.civil_id})."
+            )
 
+            return redirect(next_url) if next_url else redirect("booked_cases", workspace_name=workspace_name)  # Redirect to previous page or booked cases
+            
     else:
         form = SurgicalBookingForm(instance=case)
 
@@ -601,6 +640,13 @@ def restore_surgical_case(request, case_id):
 
     case.status = 'waiting'
     case.save()
+    # ✅ Add new ActionLog entry
+    ActionLog.objects.create(
+        workspace=request.user.workspace,
+        user=request.user,
+        action_description=f"undeleted surgical booking for {case.name} (Civil ID: {case.civil_id})."
+    )
+
 
     return JsonResponse({"success": True})
 
@@ -699,3 +745,20 @@ def search_appointments_ajax(request, workspace_name):
 
     return JsonResponse(results, safe=False)
 
+@login_required
+def action_log_view(request):
+    workspace = request.user.workspace  # Get the user's workspace
+
+    if not workspace:
+        return redirect("home")  # Redirect if no workspace is assigned
+
+    actions = ActionLog.objects.filter(workspace=workspace).order_by("-timestamp")  # Order by newest first
+    paginator = Paginator(actions, 100)  # 100 actions per page
+
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "action_log.html", {
+        "page_obj": page_obj,
+        "workspace": workspace  # Pass workspace to template
+    })

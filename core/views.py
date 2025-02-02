@@ -28,6 +28,13 @@ from django.utils import timezone
 
 
 def home(request):
+    # If the user is logged in, check for a workspace
+    if request.user.is_authenticated:
+        user_workspace = Workspace.objects.filter(user=request.user).first()
+        if user_workspace:
+            return redirect("workspace_main", workspace_name=user_workspace.name)
+
+    # If user is not logged in or has no workspace, show home page
     return render(request, "home.html")
 
 
@@ -78,23 +85,23 @@ def signup(request):
 
 
 def login_view(request):
-    if request.method == "POST":
-        workspace_name = request.POST.get("workspace_name").strip()
-        username = request.POST.get("username").strip()
-        password = request.POST.get("password").strip()
-        remember_me = request.POST.get("remember_me") == "on"
+    # If the user is already authenticated, redirect them to their workspace or home
+    if request.user.is_authenticated:
+        user_workspace = Workspace.objects.filter(user=request.user).first()
+        if user_workspace:
+            return redirect("workspace_main", workspace_name=user_workspace.name)
+        else:
+            return redirect("home")
 
-        # Validate workspace
-        try:
-            workspace = Workspace.objects.get(name=workspace_name)
-        except Workspace.DoesNotExist:
-            messages.error(request, "Workspace does not exist. Please check the name.")
-            return redirect("login")
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+        remember_me = request.POST.get("remember_me") == "on"
 
         # Authenticate user
         user = authenticate(request, username=username, password=password)
 
-        if user is not None and user.workspace == workspace:
+        if user is not None:
             login(request, user)
 
             # Set session expiry based on "Remember Me"
@@ -103,9 +110,15 @@ def login_view(request):
             else:
                 request.session.set_expiry(0)  # Expires when browser closes
 
-            return redirect("workspace_main", workspace_name=workspace_name)
+            # Check if the user has a workspace
+            user_workspace = Workspace.objects.filter(user=user).first()
+
+            if user_workspace:
+                return redirect("workspace_main", workspace_name=user_workspace.name)
+            else:
+                return redirect("home")
         else:
-            messages.error(request, "Invalid username or password for this workspace.")
+            messages.error(request, "Invalid username or password.")
             return redirect("login")
 
     return render(request, "login.html")

@@ -62,7 +62,8 @@
                 <label for="id_workspace_name" class="block text-md font-semibold text-gray-700 mb-1">Workspace Name</label>
                 <input type="text" id="id_workspace_name" name="workspace_name" required 
                        class="w-full p-3 border border-gray-300 rounded-md" 
-                       oninput="checkAvailability('workspace_name')">
+                       placeholder="Only letters and numbers, no spaces"
+                       oninput="validateWorkspaceName()">
                 <p id="workspace_name-error" class="text-red-500 text-sm mt-1"></p>
             </div>
         
@@ -86,41 +87,47 @@
                 email: true,
                 workspace_name: true
             };
-        
+
             function validateForm(event) {
                 event.preventDefault(); // Stop form submission until checks are done
-        
+
                 // Convert relevant fields to lowercase
                 document.getElementById("id_username").value = document.getElementById("id_username").value.toLowerCase();
                 document.getElementById("id_email").value = document.getElementById("id_email").value.toLowerCase();
                 document.getElementById("id_workspace_name").value = document.getElementById("id_workspace_name").value.toLowerCase();
-        
+
                 // Check sign-up code before submitting
                 let signupCodeInput = document.getElementById("id_signup_code").value.trim();
                 if (signupCodeInput !== "lgi2025") {
                     alert("Invalid sign-up code. Please enter the correct code.");
                     return false; // Stop form submission
                 }
-        
+
+                // Validate workspace name before submission
+                if (!validateWorkspaceName()) {
+                    alert("Workspace name must contain only letters and numbers with no spaces.");
+                    return false;
+                }
+
                 // If any validation failed, stop submission
                 if (!validationStatus.username || !validationStatus.email || !validationStatus.workspace_name) {
                     alert("Fix the errors before submitting.");
                     return false;
                 }
-        
+
                 event.target.submit(); // Submit the form only if everything is valid
             }
-        
+
             function checkAvailability(field) {
                 let value = document.getElementById(`id_${field}`).value.trim();
                 let errorElement = document.getElementById(`${field}-error`);
-        
+
                 if (value.length < 3) {
                     errorElement.textContent = ""; // Clear error if input is too short
                     validationStatus[field] = true;
                     return;
                 }
-        
+
                 fetch(`/check-availability/?${field}=${encodeURIComponent(value)}`)
                     .then(response => response.json())
                     .then(data => {
@@ -135,13 +142,32 @@
                         }
                     });
             }
-        
+
+            function validateWorkspaceName() {
+                let workspaceField = document.getElementById("id_workspace_name");
+                let errorElement = document.getElementById("workspace_name-error");
+                let value = workspaceField.value.trim();
+                
+                // Regular expression: Only letters and numbers, no spaces
+                let regex = /^[a-zA-Z0-9]+$/;
+                
+                if (!regex.test(value)) {
+                    errorElement.textContent = "Workspace name can only contain letters and numbers, no spaces.";
+                    validationStatus.workspace_name = false;
+                    document.getElementById("submit-button").disabled = true;
+                    return false;
+                }
+
+                errorElement.textContent = "";
+                validationStatus.workspace_name = true;
+                document.getElementById("submit-button").disabled = !allValid();
+                return true;
+            }
+
             function allValid() {
                 return validationStatus.username && validationStatus.email && validationStatus.workspace_name;
             }
         </script>
-        
-        
 
 </body>
 </html>

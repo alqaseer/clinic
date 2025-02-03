@@ -10,7 +10,7 @@ from calendar import monthrange
 from django.contrib import messages
 import calendar
 from django.urls import reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -21,7 +21,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from django.core.paginator import Paginator
-
+import pandas as pd
+import io
+from django.utils.timezone import make_naive
+from django.utils.timezone import is_aware
 
 
 
@@ -762,3 +765,62 @@ def action_log_view(request):
         "page_obj": page_obj,
         "workspace": workspace  # Pass workspace to template
     })
+
+
+
+@login_required
+def download_workspace_data(request):
+    """Generates an Excel file with the user's workspace data and sends it as a download."""
+
+    # Ensure the user belongs to a workspace
+    workspace = request.user.workspace
+    if not workspace:
+        raise Http404("You are not assigned to any workspace.")
+
+    # Fetch Appointments
+    appointments = ClinicAppointment.objects.filter(workspace=workspace).values(
+        "patient_name", "civil_id", "phone_number", "confirmed", "appointment_type",
+        "date", "time", "referral_letter"
+    )
+
+    # Fetch Surgical Bookings
+    bookings = SurgicalBooking.objects.filter(workspace=workspace).values(
+        "name", "civil_id", "phone", "diagnosis", "procedure", "side",
+        "date", "notes", "status", "created_at"
+    )
+
+    # Convert QuerySets to DataFrames
+    df_appointments = pd.DataFrame(list(appointments))
+    df_bookings = pd.DataFrame(list(bookings))
+
+    # Function to convert only timezone-aware datetimes
+    def make_datetime_naive(df, columns):
+        for col in columns:
+            if col in df.columns:
+                df[col] = df[col].apply(lambda x: make_naive(x) if isinstance(x, pd.Timestamp) and is_aware(x) else x)
+
+    # Convert only datetime fields (ignore date fields)
+    make_datetime_naive(df_bookings, ["created_at"])
+
+    # Create an in-memory Excel file
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        workbook = writer.book  # Get the workbook object
+        
+        if not df_appointments.empty:
+            df_appointments.to_excel(writer, sheet_name="Appointments", index=False)
+            worksheet = writer.sheets["Appointments"]  # Get the sheet
+            worksheet.set_column("F:F", 20)  # Widen "date" column (column F)
+        
+        if not df_bookings.empty:
+            df_bookings.to_excel(writer, sheet_name="Surgical Bookings", index=False)
+            worksheet = writer.sheets["Surgical Bookings"]
+            worksheet.set_column("G:G", 20)  # Widen "date" column (column G)
+            worksheet.set_column("I:I", 20)  # Widen "created_at" column (column I)
+
+    output.seek(0)
+
+    # Send the file as an HTTP response for download
+    response = HttpResponse(output.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="{workspace.name}.xlsx"'
+    return response

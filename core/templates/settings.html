@@ -10,12 +10,12 @@
 
     <!-- Select Open Days -->
     <div>
-        <label for="days_open" class="block text-sm font-medium text-gray-700">Select Open Days:</label>
+        <label for="days_open" class="block text-sm font-medium text-gray-700">Select yor clinic Open Days:</label>
         <select 
             name="days_open" 
             id="days_open" 
             multiple 
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm">
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm h-40"> <!-- Increased height -->
             {% for day, label in days_of_week %}
             <option value="{{ day }}" {% if day in workspace.days_open %}selected{% endif %}>
                 {{ label }}
@@ -47,4 +47,27 @@
         Save Settings
     </button>
 </form>
+
+<!-- Backup Notice -->
+<div class="mt-6 p-4 bg-gray-100 rounded-lg border border-gray-300">
+    <p class="text-gray-800 text-sm">
+        I securely back up your data daily using two different methods. However, I highly recommend that you periodically download a personal copy of your data. The file is Excel-based and contains all of your surgical bookings and appointments.<br>
+        <strong>Yours, Abdullah Alqaseer</strong>
+    </p>
+</div>
+
+<!-- Download My Data Button -->
+<form method="get" action="{% url 'download_my_data' %}" class="mt-3">
+    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16v16H4z"/>
+            <path d="M8 4v16"/>
+            <path d="M16 4v16"/>
+            <path d="M4 8h16"/>
+            <path d="M4 16h16"/>
+        </svg>
+        Download My Data
+    </button>
+</form>
+
 {% endblock %}

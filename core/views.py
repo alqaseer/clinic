@@ -676,7 +676,8 @@ def users_management(request, workspace_name):
             messages.success(request, f"User {user.username} added successfully.")
             return redirect("users_management", workspace_name=workspace.name)
         else:
-            messages.error(request, "Error adding user. Please check the details.")
+            # messages.error(request, "Error adding user. Please check the details.")
+            messages.error(request, "Error :{form.errors}")
     else:
         form = UserCreationForm2()
 

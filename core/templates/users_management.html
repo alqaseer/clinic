@@ -35,9 +35,10 @@
                     <td class="px-4 py-3 text-sm text-gray-700">{{ user.username }}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">{{ user.email }}</td>
                     <td class="px-4 py-3 text-center">
-                        <button onclick="deleteUser({{ user.id }})" class="text-red-500 hover:text-red-600 font-medium px-2">
-                            🗑 Remove
-                        </button>
+                        <form method="POST" action="{% url 'delete_user' workspace_name=workspace.name user_id=user.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-500 hover:text-red-600 font-medium px-2">🗑 Remove</button>
+                        </form>
                     </td>
                 </tr>
                 {% empty %}
@@ -54,42 +55,54 @@
     <!-- Add New User -->
     <div class="mt-6 bg-white shadow-md rounded-lg p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Add New User</h3>
-        <form method="POST" class="space-y-6" onsubmit="return validateForm()">
+        
+        <form method="POST" onsubmit="return validateForm()">
             {% csrf_token %}
 
+            <!-- Display Form Errors -->
+            {% if form.errors %}
+            <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                <ul class="text-sm">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
             <!-- Username -->
-            <div>
+            <div class="mb-4">
                 <label for="id_username" class="block text-sm font-medium text-gray-700">Username</label>
                 <input type="text" id="id_username" name="username" required 
-                       class="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                       oninput="validateUsername(); checkAvailability('username');">
-                <p class="text-xs text-gray-500 mt-1">* Only lowercase letters allowed.</p>
-                <p id="username-error" class="text-red-500 text-sm mt-1"></p>
+                       pattern="[a-z0-9]+" title="Only lowercase letters and numbers allowed."
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                <p class="text-xs text-gray-500 mt-1">* Only lowercase letters and numbers. No spaces.</p>
             </div>
 
             <!-- Email -->
-            <div>
+            <div class="mb-4">
                 <label for="id_email" class="block text-sm font-medium text-gray-700">Email</label>
                 <input type="email" id="id_email" name="email" required 
-                       class="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                       oninput="checkAvailability('email')">
-                <p id="email-error" class="text-red-500 text-sm mt-1"></p>
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
             </div>
 
             <!-- Password -->
-            <div>
+            <div class="mb-4">
                 <label for="id_password1" class="block text-sm font-medium text-gray-700">Password</label>
                 <input type="password" id="id_password1" name="password1" required 
-                       class="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
             </div>
 
-            <div>
+            <!-- Confirm Password -->
+            <div class="mb-4">
                 <label for="id_password2" class="block text-sm font-medium text-gray-700">Confirm Password</label>
                 <input type="password" id="id_password2" name="password2" required 
-                       class="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
             </div>
 
-            <button type="submit" id="submit-button"
+            <button type="submit"
                 class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center transition font-semibold">
                 Add User
             </button>
@@ -97,82 +110,26 @@
     </div>
 </div>
 
-<!-- JavaScript for Username & Email Validation -->
+<!-- JavaScript Validation -->
 <script>
-    let validationStatus = {
-        username: true,
-        email: true
-    };
-
     function validateForm() {
-        if (!validationStatus.username || !validationStatus.email) {
-            alert("Fix the errors before submitting.");
+        let password1 = document.getElementById("id_password1").value;
+        let password2 = document.getElementById("id_password2").value;
+        let username = document.getElementById("id_username").value;
+
+        // Validate Username (only lowercase letters and numbers)
+        let usernamePattern = /^[a-z0-9]+$/;
+        if (!usernamePattern.test(username)) {
+            alert("Username can only contain lowercase letters and numbers.");
+            return false;
+        }
+
+        // Validate Password Match
+        if (password1 !== password2) {
+            alert("Passwords do not match!");
             return false;
         }
         return true;
-    }
-
-    function checkAvailability(field) {
-        let value = document.getElementById(`id_${field}`).value.trim();
-        let errorElement = document.getElementById(`${field}-error`);
-
-        if (value.length < 3) {
-            errorElement.textContent = ""; // Clear error if input is too short
-            validationStatus[field] = true;
-            return;
-        }
-
-        fetch(`/check-availability/?${field}=${encodeURIComponent(value)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (!data.available) {
-                    errorElement.textContent = data.message;
-                    validationStatus[field] = false;
-                    document.getElementById("submit-button").disabled = true;
-                } else {
-                    errorElement.textContent = "";
-                    validationStatus[field] = true;
-                    document.getElementById("submit-button").disabled = !allValid();
-                }
-            });
-    }
-
-    function allValid() {
-        return validationStatus.username && validationStatus.email;
-    }
-
-    function validateUsername() {
-        let usernameField = document.getElementById("id_username");
-        usernameField.value = usernameField.value.toLowerCase();
-    }
-</script>
-
-<!-- JavaScript for Deleting Users -->
-<script>
-    function deleteUser(userId) {
-        if (!confirm("Are you sure you want to remove this user?")) {
-            return;
-        }
-
-        fetch(`/workspace/{{ workspace.name }}/users/delete/${userId}/`, {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": "{{ csrf_token }}",
-                "Content-Type": "application/json"
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert("User removed successfully.");
-                location.reload();
-            } else {
-                alert("Error removing user.");
-            }
-        })
-        .catch(error => {
-            alert("Network error. Please try again.");
-        });
     }
 </script>
 

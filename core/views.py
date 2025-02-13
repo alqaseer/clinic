@@ -429,6 +429,7 @@ def settings_page(request, workspace_name):
 def day_appointments(request, workspace_name, date):
     workspace = get_object_or_404(Workspace, name=workspace_name)
     date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    
 
     # Get appointments for the selected day
     appointments = ClinicAppointment.objects.filter(workspace=workspace, date=date_obj)
@@ -445,17 +446,29 @@ def day_appointments(request, workspace_name, date):
 @login_required
 def add_appointment(request, workspace_name):
     workspace = get_object_or_404(Workspace, name=workspace_name)
-    selected_date = request.GET.get("date")  # Date from URL
+    selected_date_str = request.GET.get("date")  # Date from URL
+    selected_date = None
+    
+    print("Raw selected_date_str from URL:", selected_date_str)  # Debugging output
 
     # Parse date correctly
-    try:
-        if isinstance(selected_date, str):
+    if selected_date_str:
+        try:
+            selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
+        except ValueError:
             try:
-                selected_date = datetime.strptime(selected_date, "%Y-%m-%d").date()
+                selected_date = datetime.strptime(selected_date_str, "%b. %d, %Y").date()  # Handles "Feb. 18, 2025"
             except ValueError:
-                selected_date = datetime.strptime(selected_date, "%b. %d, %Y").date()
-    except ValueError:
+                try:
+                    selected_date = datetime.strptime(selected_date_str, "%B %d, %Y").date()  # Handles "March 25, 2025"
+                except ValueError:
+                    selected_date = None  # If parsing fails, set to None
+    
+    # Default to today if the date is missing or invalid
+    if not selected_date:
         selected_date = datetime.today().date()
+    
+    print("Final selected_date:", selected_date)  # Debugging output
 
     # Generate time slots
     morning_start = datetime.strptime("08:00", "%H:%M")
@@ -471,7 +484,7 @@ def add_appointment(request, workspace_name):
     time_slots = generate_time_slots(morning_start, morning_end)
 
     # Count booked patients for each time slot
-    time_slot_counts = {}
+    time_slot_counts = {slot: 0 for slot in time_slots}
     for slot in time_slots:
         time_slot_counts[slot] = ClinicAppointment.objects.filter(
             workspace=workspace,
@@ -479,14 +492,14 @@ def add_appointment(request, workspace_name):
             time=slot
         ).count()
 
-    time_slots = [(slot, time_slot_counts.get(slot, 0)) for slot in time_slots]
+    time_slots = [(slot, time_slot_counts[slot]) for slot in time_slots]
 
     if request.method == "POST":
         form = ClinicAppointmentForm(request.POST, request.FILES)
         if form.is_valid():
             appointment = form.save(commit=False)
             appointment.workspace = workspace
-            appointment.date = selected_date  # Assign the date manually before saving
+            appointment.date = selected_date  # Assign the selected date before saving
             appointment.save()
 
             # ✅ Add new ActionLog entry
@@ -506,7 +519,6 @@ def add_appointment(request, workspace_name):
         "time_slots": time_slots,
         "selected_date": selected_date,
     })
-
 
 @login_required
 def edit_appointment(request, workspace_name, appointment_id):

@@ -453,6 +453,8 @@ def add_appointment(request, workspace_name):
 
     # Parse date correctly
     if selected_date_str:
+        selected_date_str = selected_date_str.replace("Sept.", "Sep.")
+
         try:
             selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
         except ValueError:
@@ -466,7 +468,7 @@ def add_appointment(request, workspace_name):
     
     # Default to today if the date is missing or invalid
     if not selected_date:
-        selected_date = datetime.today().date()
+        selected_date = None
     
     print("Final selected_date:", selected_date)  # Debugging output
 

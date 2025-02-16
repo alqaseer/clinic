@@ -1,21 +1,29 @@
 from django.contrib import admin
-from .models import Workspace, User, ClinicAppointment
+from .models import *
+# Custom Admin for Workspace
+# Inline for booked surgical cases
+class SurgicalBookingInline(admin.TabularInline):  # Display cases in a tabular format
+    model = SurgicalBooking
+    extra = 0  # No extra blank fields
+    fields = ('name', 'civil_id', 'phone', 'procedure', 'date', 'status')  # Fields to show
+    readonly_fields = ('name', 'civil_id', 'phone', 'procedure', 'date', 'status')  # Make them non-editable
+    ordering = ('date',)  # Order cases by date
+
+    def get_queryset(self, request):
+        """Filter to show only booked cases"""
+        return super().get_queryset(request).filter(status="booked")
+
 
 # Custom Admin for Workspace
 class WorkspaceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'admin_username', 'get_users')  # Display workspace name, admin, and users
-    search_fields = ('name',)  # Allow searching by workspace name
+    list_display = ('name', 'admin_username')  # Show workspace name & admin name
+    search_fields = ('name', 'admin__username')  # Allow searching by workspace or admin username
+    inlines = [SurgicalBookingInline]  # Show booked cases when viewing workspace
 
     def admin_username(self, obj):
-        """Display the username of the workspace's admin."""
+        """Display the admin of the workspace"""
         return obj.admin.username
-    admin_username.short_description = "Admin Username"
-
-    def get_users(self, obj):
-        """Display all users associated with the workspace."""
-        users = User.objects.filter(workspace=obj)
-        return ", ".join([user.username for user in users])
-    get_users.short_description = "Users"
+    admin_username.short_description = "Owner"
 
 # Custom Admin for User
 class UserAdmin(admin.ModelAdmin):

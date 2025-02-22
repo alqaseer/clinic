@@ -21,13 +21,17 @@
 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
     <div class="block sm:hidden">
         {% for time in timeslots %}
-            {% for appointment in appointments %}
-                {% if appointment.time|date:"H:i" == time %}
-                    <div class="p-4 border-b border-gray-200">
-                        <div class="font-medium text-gray-900 mb-2">{{ time }}</div>
-                        <div class="space-y-2">
+            <div class="p-4 border-b border-gray-200">
+                <div class="font-medium text-gray-900 mb-2">{{ time }}</div>
+                <div class="space-y-2">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == time %}
+                            {% if not forloop.first and previous_time == time %}
+                                <div class="border-t-2 border-gray-300 my-4 w-full"></div>
+                            {% endif %}
                             <div class="text-gray-900 font-medium">{{ appointment.patient_name }}</div>
                             <div class="text-gray-600">ID: {{ appointment.civil_id }}</div>
+                            {% with time as previous_time %}
                             <div class="text-gray-600">Phone: {{ appointment.phone_number }}</div>
                             <div class="text-gray-600">Type: {{ appointment.appointment_type }}</div>
                             <div class="flex items-center space-x-4 mt-2">
@@ -52,10 +56,11 @@
                                    <i class="fas fa-edit mr-1"></i>Edit
                                 </a>
                             </div>
-                        </div>
-                    </div>
-                {% endif %}
-            {% endfor %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
         {% endfor %}
     </div>
     <table class="hidden sm:table w-full table-auto border-collapse">
@@ -72,10 +77,14 @@
                 <td class="px-6 py-4">
                     {% for appointment in appointments %}
                         {% if appointment.time|date:"H:i" == time %}
+                            {% if not forloop.first and previous_time == time %}
+                                <div class="border-t-2 border-gray-300 my-6 w-full opacity-100"></div>
+                            {% endif %}
                             <div class="flex items-center space-x-3 text-sm">
                                 <span class="text-gray-900 font-medium">{{ appointment.patient_name }}</span>
                                 <span class="text-gray-400">|</span>
                                 <span class="text-gray-600">{{ appointment.civil_id }}</span>
+                            {% with time as previous_time %}
                                 <span class="text-gray-400">|</span>
                                 <span class="text-gray-600">{{ appointment.phone_number }}</span>
                                 <span class="text-gray-400">|</span>
@@ -104,6 +113,10 @@
                                    <i class="fas fa-edit mr-1"></i>Edit
                                 </a>
                             </div>
+                            {% if not forloop.last and appointment.time|date:"H:i" == next_appointment.time|date:"H:i" %}
+                                <div class="border-t-2 border-gray-300 my-4 w-full opacity-75"></div>
+                            {% endif %}
+                            {% endwith %}
                         {% endif %}
                     {% endfor %}
                 </td>

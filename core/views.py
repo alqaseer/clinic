@@ -27,10 +27,6 @@ from django.utils.timezone import make_naive
 from django.utils.timezone import is_aware
 
 
-
-
-
-
 def home(request):
     # If the user is logged in, check for a workspace
     if request.user.is_authenticated:
@@ -40,7 +36,6 @@ def home(request):
 
     # If user is not logged in or has no workspace, show home page
     return render(request, "home.html")
-
 
 
 # Sign-up view for Admin
@@ -71,7 +66,6 @@ def signup(request):
     return render(request, "signup.html", {"form": form})
 
 
-
 # Login view
 # def login_view(request, workspace_name):
 #     workspace = get_object_or_404(Workspace, name=workspace_name)
@@ -86,7 +80,6 @@ def signup(request):
 #         else:
 #             return render(request, 'login.html', {'error': 'Invalid credentials or workspace mismatch', 'workspace': workspace})
 #     return render(request, 'login.html', {'workspace': workspace})
-
 
 def login_view(request):
     # If the user is already authenticated, redirect them to their workspace or home
@@ -127,11 +120,9 @@ def login_view(request):
 
     return render(request, "login.html")
 
-
 def logout_view(request):
     # If the user is authenticated, get their workspace name
     
-
     # Log out the user
     logout(request)
 
@@ -156,7 +147,6 @@ def check_availability(request):
         response = {'available': False, 'message': 'Workspace name is already taken.'}
 
     return JsonResponse(response)
-
 
 # Workspace Main Page
 @login_required
@@ -191,7 +181,6 @@ def workspace_main(request, workspace_name):
     })
 
 
-
 @login_required
 def booked_cases(request, workspace_name):
     """View for cases with dates from today onward and status is not deleted, arranged chronologically."""
@@ -212,9 +201,6 @@ def booked_cases(request, workspace_name):
     return render(request, 'booked_cases.html', {'cases': cases, 'workspace': workspace})
 
 
-
-
-
 @login_required
 def waiting_list(request, workspace_name):
     """View for cases where date is empty and status is NOT deleted, arranged by creation date."""
@@ -231,8 +217,6 @@ def waiting_list(request, workspace_name):
     ).order_by('-created_at')  # Arrange by creation date, newest first
 
     return render(request, 'waiting_list.html', {'cases': cases, 'workspace': workspace})
-
-
 
 
 @login_required
@@ -255,7 +239,6 @@ def past_cases(request, workspace_name):
     return render(request, 'past_cases.html', {'cases': cases, 'workspace': workspace})
 
 
-
 @login_required
 def deleted_cases(request, workspace_name):
     """View for cases that are deleted, arranged by creation date."""
@@ -270,7 +253,6 @@ def deleted_cases(request, workspace_name):
     ).order_by('-created_at')  # Arrange by creation date, newest first
 
     return render(request, 'deleted_cases.html', {'cases': cases, 'workspace': workspace})
-
 
 
 @login_required
@@ -316,7 +298,10 @@ def calendar_view(request, workspace_name):
 
     # Get first day of month and number of days
     first_day, days_in_month = calendar.monthrange(current_year, current_month)
-
+    print(first_day)
+    # Adjust first_day to make Sunday 0 instead of Monday 0
+    first_day = (first_day + 1) % 7  # Convert from Monday=0 to Sunday=0
+    print(first_day)
     # Total slots per day (rooms * 16 slots per room)
     total_slots_per_day = workspace.rooms * 16
 
@@ -334,9 +319,9 @@ def calendar_view(request, workspace_name):
     days = []
     for day in range(1, days_in_month + 1):
         date = datetime(current_year, current_month, day).date()
-        day_name = date.strftime("%A")
-        is_open = day_name in workspace.days_open
-
+        day_name = date.strftime("%A")  # Gets the full day name (e.g., "Sunday")
+        is_open = workspace.is_day_open(day_name)  # Compare with exact day name from settings
+        print(f"{day_name} {date} {is_open}")
         # Get booked cases from dictionary (default to 0 if not found)
         booked_cases_count = booked_cases_dict.get(date, 0)
 
@@ -366,19 +351,12 @@ def calendar_view(request, workspace_name):
         "prev_year": prev_year,
         "next_month": next_month,
         "next_year": next_year,
-        "days_of_week": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        "days_of_week": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
         "blank_slots": blank_slots,
         "today": today,  # Pass today's date to the template
 
     }
     return render(request, "calendar.html", context)
-
-
-
-
-
-
-
 
 @login_required
 def settings_page(request, workspace_name):
@@ -394,6 +372,8 @@ def settings_page(request, workspace_name):
         else:
             rooms = int(rooms)
 
+        # Ensure days are stored in the correct format
+        days_open = [day for day in days_open]  # This ensures we store the full day names
         workspace.days_open = days_open
         workspace.rooms = rooms
         workspace.save()
@@ -422,8 +402,6 @@ def settings_page(request, workspace_name):
             "rooms_range": rooms_range,  # Pass the range to the template
         },
     )
-
-
 
 @login_required
 def day_appointments(request, workspace_name, date):

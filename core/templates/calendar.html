@@ -16,17 +16,16 @@
 </div>
 
 <div class="grid grid-cols-7 gap-px border border-gray-300 bg-gray-200 text-center text-sm font-medium">
-    <!-- Days of the Week Header -->
+    <!-- Days of the Week Header starting from Sunday -->
     {% for day in days_of_week %}
     <div class="bg-gray-100 py-2">{{ day }}</div>
     {% endfor %}
 
-    <!-- Blank Cells -->
+    <!-- Calendar Days -->
     {% for _ in blank_slots %}
     <div class="bg-gray-200 py-4"></div>
     {% endfor %}
 
-    <!-- Calendar Days -->
     {% for day in days %}
     <a href="{% url 'day_appointments' workspace.name day.date|date:'Y-m-d' %}" class="block">
         <div class="relative py-4 text-gray-900 
@@ -41,14 +40,14 @@
             {% if day.is_open %}
                 {% if day.booked_cases_count > 0 %}
                     <span class="text-xs text-gray-700">
-                        {{ day.booked_cases_count }} Booked Cases
+                        {{ day.booked_cases_count }} Booked
                     </span>
                 {% else %}
-                    <span class="text-xs text-gray-500">No Patients Booked</span>
+                    <span class="text-xs text-gray-500">No Patients</span>
                 {% endif %}
             {% else %}
                 {% if day.booked_cases_count > 0 %}
-                    <span class="text-xs text-gray-700">{{ day.booked_cases_count }} Booked Cases</span>
+                    <span class="text-xs text-gray-700">{{ day.booked_cases_count }} Booked</span>
                 {% else %}
                     <span class="text-xs text-gray-500">Closed</span>
                 {% endif %}

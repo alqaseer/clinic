@@ -6,66 +6,103 @@
 <h1 class="text-xl font-semibold mb-4">Appointments for {{ date }}</h1>
 
 <!-- Print & Add Appointment Buttons -->
-<div class="flex items-center space-x-4">
-    <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+<div class="flex items-center space-x-4 mb-6">
+    <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
+        <i class="fas fa-plus mr-2"></i>
         Add Appointment
     </a>
 
-    <!-- Printer Icon -->
-    <button onclick="printAppointments()" class="px-3 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
-        🖨 Print
+    <button onclick="printAppointments()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center">
+        <i class="fas fa-print mr-2"></i>
+        Print
     </button>
 </div>
 
-<div class="mt-6 bg-white shadow rounded-md p-4">
-    <table class="w-full table-auto border-collapse">
-        <thead>
-            <tr>
-                <th class="border-b py-2 text-left font-semibold text-gray-700">Time Slot</th>
-                <th class="border-b py-2 text-left font-semibold text-gray-700">Patients</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for time in timeslots %}
-            <tr class="hover:bg-gray-100">
-                <td class="border-t py-2 px-4 font-medium text-gray-700">{{ time }}</td>
-                <td class="border-t py-2 px-4">
-                    {% for appointment in appointments %}
-                        {% if appointment.time|date:"H:i" == time %}
-                            <div class="flex items-center space-x-2">
-                                <span class="text-blue-500"><i class="fas fa-user"></i></span>
-                                <span>{{ appointment.patient_name }}</span>
-                                <span>|</span>
-                                <span class="text-green-500"><i class="fas fa-id-card"></i></span>
-                                <span>{{ appointment.civil_id }}</span>
-                                <span>|</span>
-                                <span class="text-yellow-500"><i class="fas fa-phone"></i></span>
-                                <span>{{ appointment.phone_number }}</span>
-                                <span>|</span>
-
-                                <!-- Confirmed Status -->
+<div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <div class="block sm:hidden">
+        {% for time in timeslots %}
+            {% for appointment in appointments %}
+                {% if appointment.time|date:"H:i" == time %}
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="font-medium text-gray-900 mb-2">{{ time }}</div>
+                        <div class="space-y-2">
+                            <div class="text-gray-900 font-medium">{{ appointment.patient_name }}</div>
+                            <div class="text-gray-600">ID: {{ appointment.civil_id }}</div>
+                            <div class="text-gray-600">Phone: {{ appointment.phone_number }}</div>
+                            <div class="text-gray-600">Type: {{ appointment.appointment_type }}</div>
+                            <div class="flex items-center space-x-4 mt-2">
                                 <span id="confirmed-status-{{ appointment.id }}" class="cursor-pointer">
                                     {% if appointment.confirmed == "Unknown" %}
-                                        <i class="fas fa-question-circle text-yellow-500" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
+                                        <i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
                                     {% elif appointment.confirmed == "Confirmed" %}
-                                        <i class="fas fa-check-circle text-green-500" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')"></i>
+                                        <i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')"></i>
                                     {% elif appointment.confirmed == "Cancelled" %}
-                                        <i class="fas fa-times-circle text-red-500" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
+                                        <i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
                                     {% endif %}
                                 </span>
-                                <span>|</span>
-                                <span>{{ appointment.appointment_type }}</span>
-                                <span>|</span>
-
-                                <!-- Referral Letter Link -->
                                 {% if appointment.referral_letter %}
                                     <a href="javascript:void(0);" 
-                                        class="text-blue-600 underline hover:text-blue-800"
-                                        onclick="openReferral('{{ appointment.referral_letter.url }}')">
-                                        Referral
+                                       class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                                       onclick="openReferral('{{ appointment.referral_letter.url }}')">
+                                       <i class="fas fa-file-medical mr-1"></i>Referral
                                     </a>
                                 {% endif %}
-                                <a href="{% url 'edit_appointment' workspace.name appointment.id %}" class="text-blue-600 underline hover:text-blue-800">Edit</a>
+                                <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
+                                   class="text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                                   <i class="fas fa-edit mr-1"></i>Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    </div>
+    <table class="hidden sm:table w-full table-auto border-collapse">
+        <thead>
+            <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Slot</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patients</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+            {% for time in timeslots %}
+            <tr class="hover:bg-gray-50 transition-colors duration-150">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ time }}</td>
+                <td class="px-6 py-4">
+                    {% for appointment in appointments %}
+                        {% if appointment.time|date:"H:i" == time %}
+                            <div class="flex items-center space-x-3 text-sm">
+                                <span class="text-gray-900 font-medium">{{ appointment.patient_name }}</span>
+                                <span class="text-gray-400">|</span>
+                                <span class="text-gray-600">{{ appointment.civil_id }}</span>
+                                <span class="text-gray-400">|</span>
+                                <span class="text-gray-600">{{ appointment.phone_number }}</span>
+                                <span class="text-gray-400">|</span>
+                                <span id="confirmed-status-{{ appointment.id }}" class="cursor-pointer">
+                                    {% if appointment.confirmed == "Unknown" %}
+                                        <i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
+                                    {% elif appointment.confirmed == "Confirmed" %}
+                                        <i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')"></i>
+                                    {% elif appointment.confirmed == "Cancelled" %}
+                                        <i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
+                                    {% endif %}
+                                </span>
+                                <span class="text-gray-400">|</span>
+                                <span class="text-gray-600">{{ appointment.appointment_type }}</span>
+                                {% if appointment.referral_letter %}
+                                    <span class="text-gray-400">|</span>
+                                    <a href="javascript:void(0);" 
+                                       class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                                       onclick="openReferral('{{ appointment.referral_letter.url }}')">
+                                       <i class="fas fa-file-medical mr-1"></i>Referral
+                                    </a>
+                                {% endif %}
+                                <span class="text-gray-400">|</span>
+                                <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
+                                   class="text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                                   <i class="fas fa-edit mr-1"></i>Edit
+                                </a>
                             </div>
                         {% endif %}
                     {% endfor %}
@@ -167,11 +204,11 @@
                 let iconElement = document.getElementById(`confirmed-status-${appointmentId}`);
                 iconElement.innerHTML = "";
                 if (newStatus === "Unknown") {
-                    iconElement.innerHTML = `<i class="fas fa-question-circle text-yellow-500" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"></i>`;
+                    iconElement.innerHTML = `<i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"></i>`;
                 } else if (newStatus === "Confirmed") {
-                    iconElement.innerHTML = `<i class="fas fa-check-circle text-green-500" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"></i>`;
+                    iconElement.innerHTML = `<i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"></i>`;
                 } else {
-                    iconElement.innerHTML = `<i class="fas fa-times-circle text-red-500" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"></i>`;
+                    iconElement.innerHTML = `<i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"></i>`;
                 }
             } else {
                 alert("Error updating status.");

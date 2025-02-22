@@ -28,6 +28,11 @@ class Workspace(models.Model):
     rooms = models.PositiveIntegerField(default=1)  # Default to 1 room
     days_open = models.JSONField(default=list)  # List of days when the clinic is open
 
+    def is_day_open(self, day_name):
+        """
+        Checks if a specific day is open for booking.
+        """
+        return day_name in self.days_open
 
     def __str__(self):
         return self.name
@@ -41,12 +46,6 @@ class SurgicalBooking(models.Model):
         (LEFT, 'Left'),
         (NA, 'Not Applicable'),
     ]
-    def is_day_open(self, day):
-        """
-        Checks if a specific day is open for booking.
-        """
-        return day in self.days_open
-
 
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='surgical_bookings')
     name = models.CharField(max_length=255)

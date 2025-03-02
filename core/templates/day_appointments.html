@@ -7,18 +7,21 @@
 
 <!-- Print & Add Appointment Buttons -->
 <div class="flex items-center space-x-4 mb-6">
-    <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
+    <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" 
+       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
         <i class="fas fa-plus mr-2"></i>
         Add Appointment
     </a>
 
-    <button onclick="printAppointments()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center">
+    <button onclick="printAppointments()" 
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center">
         <i class="fas fa-print mr-2"></i>
         Print
     </button>
 </div>
 
 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <!-- MOBILE VIEW -->
     <div class="block sm:hidden">
         {% for time in timeslots %}
             <div class="p-4 border-b border-gray-200">
@@ -35,7 +38,8 @@
                             <div class="text-gray-600">Phone: {{ appointment.phone_number }}</div>
                             <div class="text-gray-600">Type: {{ appointment.appointment_type }}</div>
                             <div class="flex items-center space-x-4 mt-2">
-                                <span id="confirmed-status-{{ appointment.id }}" class="cursor-pointer">
+                                <!-- MOBILE ICON ID -->
+                                <span id="confirmed-status-mobile-{{ appointment.id }}" class="cursor-pointer">
                                     {% if appointment.confirmed == "Unknown" %}
                                         <i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
                                     {% elif appointment.confirmed == "Confirmed" %}
@@ -63,6 +67,8 @@
             </div>
         {% endfor %}
     </div>
+
+    <!-- DESKTOP VIEW -->
     <table class="hidden sm:table w-full table-auto border-collapse">
         <thead>
             <tr class="bg-gray-50">
@@ -88,7 +94,9 @@
                                 <span class="text-gray-400">|</span>
                                 <span class="text-gray-600">{{ appointment.phone_number }}</span>
                                 <span class="text-gray-400">|</span>
-                                <span id="confirmed-status-{{ appointment.id }}" class="cursor-pointer">
+
+                                <!-- DESKTOP ICON ID -->
+                                <span id="confirmed-status-desktop-{{ appointment.id }}" class="cursor-pointer">
                                     {% if appointment.confirmed == "Unknown" %}
                                         <i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
                                     {% elif appointment.confirmed == "Confirmed" %}
@@ -97,6 +105,7 @@
                                         <i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
                                     {% endif %}
                                 </span>
+
                                 <span class="text-gray-400">|</span>
                                 <span class="text-gray-600">{{ appointment.appointment_type }}</span>
                                 {% if appointment.referral_letter %}
@@ -192,7 +201,7 @@
         printWindow.print();
     }
 
-    // Function to Toggle Confirmed Status
+    // Function to Toggle Confirmed Status (AJAX)
     function toggleConfirmed(appointmentId, currentStatus) {
         let newStatus;
         if (currentStatus === "Unknown") {
@@ -214,18 +223,38 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                let iconElement = document.getElementById(`confirmed-status-${appointmentId}`);
-                iconElement.innerHTML = "";
-                if (newStatus === "Unknown") {
-                    iconElement.innerHTML = `<i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"></i>`;
-                } else if (newStatus === "Confirmed") {
-                    iconElement.innerHTML = `<i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"></i>`;
-                } else {
-                    iconElement.innerHTML = `<i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"></i>`;
+                // Update the mobile icon (if present)
+                let mobileIcon = document.getElementById(`confirmed-status-mobile-${appointmentId}`);
+                if (mobileIcon) {
+                    mobileIcon.innerHTML = "";
+                    if (data.new_status === "Unknown") {
+                        mobileIcon.innerHTML = `<i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"></i>`;
+                    } else if (data.new_status === "Confirmed") {
+                        mobileIcon.innerHTML = `<i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"></i>`;
+                    } else if (data.new_status === "Cancelled") {
+                        mobileIcon.innerHTML = `<i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"></i>`;
+                    }
+                }
+
+                // Update the desktop icon (if present)
+                let desktopIcon = document.getElementById(`confirmed-status-desktop-${appointmentId}`);
+                if (desktopIcon) {
+                    desktopIcon.innerHTML = "";
+                    if (data.new_status === "Unknown") {
+                        desktopIcon.innerHTML = `<i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"></i>`;
+                    } else if (data.new_status === "Confirmed") {
+                        desktopIcon.innerHTML = `<i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"></i>`;
+                    } else if (data.new_status === "Cancelled") {
+                        desktopIcon.innerHTML = `<i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"></i>`;
+                    }
                 }
             } else {
                 alert("Error updating status.");
             }
+        })
+        .catch(err => {
+            console.error("AJAX error:", err);
+            alert("Could not update status. Please check console/logs.");
         });
     }
 </script>

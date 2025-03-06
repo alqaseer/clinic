@@ -25,6 +25,12 @@ import pandas as pd
 import io
 from django.utils.timezone import make_naive
 from django.utils.timezone import is_aware
+import os
+from django.utils.timezone import now
+from django.conf import settings
+
+
+
 
 
 def home(request):
@@ -157,6 +163,27 @@ def workspace_main(request, workspace_name):
     if request.user != workspace.admin and request.user.workspace != workspace:
         return redirect('login')  # Prevent unauthorized access
 
+    # Check if the logged-in user is "alqaseer"
+    if request.user.username == "alqaseer":
+        # Calculate the cutoff date (14 days ago)
+        
+        cutoff_date = now().date() - timedelta(weeks=12)  
+
+        # Find old appointments
+        old_appointments = ClinicAppointment.objects.filter(date__lt=cutoff_date)
+
+        for appointment in old_appointments:
+            # Delete referral letter file if exists
+            if appointment.referral_letter:
+                file_path = os.path.join(settings.MEDIA_ROOT, str(appointment.referral_letter))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    
+
+            # Delete the database entry
+            appointment.referral_letter = None
+            appointment.save()
+
     # Count booked cases (future date, since ClinicAppointment has no status field)
     booked_cases_count = SurgicalBooking.objects.filter(
         workspace=workspace,
@@ -170,7 +197,7 @@ def workspace_main(request, workspace_name):
         status__in=["waiting", "booked"]  # Exclude deleted
     ).count()
 
-    # Get list of users in the workspace (directly from `User` model)
+    # Get list of users in the workspace (directly from User model)
     users = User.objects.filter(workspace=workspace)
 
     return render(request, 'workspace_main.html', {

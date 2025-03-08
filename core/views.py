@@ -188,7 +188,8 @@ def workspace_main(request, workspace_name):
     booked_cases_count = SurgicalBooking.objects.filter(
         workspace=workspace,
         date__gte=now().date()  # Only future cases
-    ).count()
+        ).count()
+
 
     # Count waiting list cases from SurgicalBooking (no date, not deleted)
     waiting_list_count = SurgicalBooking.objects.filter(

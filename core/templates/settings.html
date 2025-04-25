@@ -10,7 +10,7 @@
 
     <!-- Select Open Days -->
     <div>
-        <label for="days_open" class="block text-sm font-medium text-gray-700">Select yor clinic Open Days:</label>
+        <label for="days_open" class="block text-sm font-medium text-gray-700">Select your clinic Open Days:</label>
         <select 
             name="days_open" 
             id="days_open" 
@@ -38,6 +38,20 @@
             </option>
             {% endfor %}
         </select>
+    </div>
+
+    <!-- Maximum Slots (number input field) -->
+    <div>
+        <label for="maximum" class="block text-sm font-medium text-gray-700">Maximum Appointments Per Day:</label>
+        <input 
+            type="number" 
+            name="maximum" 
+            id="maximum" 
+            value="{{ workspace.maximum }}"
+            min="1"
+            step="1"
+            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm">
+        <p class="text-sm text-gray-500">When this number is reached, the day will be automatically locked for new appointments.</p>
     </div>
 
     <!-- Save Button -->

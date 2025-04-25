@@ -6,19 +6,53 @@
 <h1 class="text-xl font-semibold mb-4">Appointments for {{ date }}</h1>
 
 <!-- Print & Add Appointment Buttons -->
+<!-- Print & Add Appointment Buttons -->
 <div class="flex items-center space-x-4 mb-6">
-    <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" 
-       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
-        <i class="fas fa-plus mr-2"></i>
-        Add Appointment
-    </a>
+    {% if not is_locked or request.user == workspace.admin %}
+        <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" 
+           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
+            <i class="fas fa-plus mr-2"></i>
+            Add Appointment
+        </a>
+    {% endif %}
 
     <button onclick="printAppointments()" 
             class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center">
         <i class="fas fa-print mr-2"></i>
         Print
     </button>
+    
+    {% if request.user == workspace.admin %}
+        {% if is_locked %}
+            <form action="{% url 'delete_lock' workspace.name date|date:'Y-m-d' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center">
+                    <i class="fas fa-unlock mr-2"></i>
+                    Unlock Day
+                </button>
+            </form>
+        {% else %}
+            <form action="{% url 'create_lock' workspace.name date|date:'Y-m-d' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center">
+                    <i class="fas fa-lock mr-2"></i>
+                    Lock Day
+                </button>
+            </form>
+        {% endif %}
+    {% endif %}
 </div>
+
+{% if is_locked %}
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded" role="alert">
+        <p class="font-bold">Day is locked</p>
+        <p>Only the workspace administrator can add new patients to this day.</p>
+    </div>
+{% endif %}
+
+
 
 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
     <!-- MOBILE VIEW -->
@@ -172,17 +206,19 @@
         document.body.appendChild(popup);
     }
 
-    // Function to Print Appointments
-    function printAppointments() {
-        let printWindow = window.open("", "", "width=800,height=600");
-        let printContent = "<html><head><title>Appointments for {{ date }}</title></head><body>";
-        printContent += "<h2>Appointments for {{ date }}</h2>";
-        printContent += "<table border='1' cellspacing='0' cellpadding='5' style='font-size:10px; width:100%;'>";
-        printContent += "<thead><tr><th>Time</th><th>Patient Name</th><th>Civil ID</th><th>Phone</th><th>Type</th><th>Confirmed</th></tr></thead><tbody>";
+// Function to Print Appointments
+function printAppointments() {
+    let printWindow = window.open("", "", "width=800,height=600");
+    let printContent = "<html><head><title>Appointments for {{ date }}</title></head><body>";
+    printContent += "<h2>Appointments for {{ date }}</h2>";
+    printContent += "<table border='1' cellspacing='0' cellpadding='5' style='font-size:10px; width:100%;'>";
+    printContent += "<thead><tr><th>Time</th><th>Patient Name</th><th>Civil ID</th><th>Phone</th><th>Type</th><th>Confirmed</th></tr></thead><tbody>";
 
-        {% for time in timeslots %}
-            {% for appointment in appointments %}
-                {% if appointment.time|date:"H:i" == time %}
+    {% for time in timeslots %}
+        {% for appointment in appointments %}
+            {% if appointment.time|date:"H:i" == time %}
+                // Skip appointments with "Cancelled" status
+                {% if appointment.confirmed != "Cancelled" %}
                     printContent += "<tr>";
                     printContent += "<td>{{ time }}</td>";
                     printContent += "<td>{{ appointment.patient_name }}</td>";
@@ -192,14 +228,15 @@
                     printContent += "<td>{{ appointment.confirmed }}</td>";
                     printContent += "</tr>";
                 {% endif %}
-            {% endfor %}
+            {% endif %}
         {% endfor %}
+    {% endfor %}
 
-        printContent += "</tbody></table></body></html>";
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.print();
-    }
+    printContent += "</tbody></table></body></html>";
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
 
     // Function to Toggle Confirmed Status (AJAX)
     function toggleConfirmed(appointmentId, currentStatus) {

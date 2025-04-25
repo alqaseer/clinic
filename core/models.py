@@ -27,7 +27,8 @@ class Workspace(models.Model):
     admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_workspace')
     rooms = models.PositiveIntegerField(default=1)  # Default to 1 room
     days_open = models.JSONField(default=list)  # List of days when the clinic is open
-
+    maximum = models.PositiveIntegerField(default=20)
+    
     def is_day_open(self, day_name):
         """
         Checks if a specific day is open for booking.
@@ -90,6 +91,9 @@ class ClinicAppointment(models.Model):
         return f"{self.patient_name} - {self.date} at {self.time}"
 
 
+class Lock(models.Model):
+    date = models.DateField()
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='lock')
 class ActionLog(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="action_logs")
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)

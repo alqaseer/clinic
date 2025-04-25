@@ -395,16 +395,28 @@ def settings_page(request, workspace_name):
         # Handle form submission
         days_open = request.POST.getlist("days_open")
         rooms = request.POST.get("rooms")
+        maximum = request.POST.get("maximum")  # Get the maximum value from the form
 
         if not rooms:
             rooms = workspace.rooms  # Use the current number of rooms as the default value
         else:
             rooms = int(rooms)
+            
+        if not maximum:
+            maximum = workspace.maximum  # Use the current maximum as the default value
+        else:
+            try:
+                maximum = int(maximum)
+                if maximum < 1:  # Ensure maximum is at least 1
+                    maximum = 1
+            except ValueError:
+                maximum = workspace.maximum  # If invalid input, keep current value
 
         # Ensure days are stored in the correct format
         days_open = [day for day in days_open]  # This ensures we store the full day names
         workspace.days_open = days_open
         workspace.rooms = rooms
+        workspace.maximum = maximum  # Save the maximum value
         workspace.save()
 
         # Redirect to the workspace main page
@@ -428,7 +440,7 @@ def settings_page(request, workspace_name):
         {
             "workspace": workspace,
             "days_of_week": days_of_week,
-            "rooms_range": rooms_range,  # Pass the range to the template
+            "rooms_range": rooms_range,
         },
     )
 
@@ -437,15 +449,19 @@ def day_appointments(request, workspace_name, date):
     workspace = get_object_or_404(Workspace, name=workspace_name)
     date_obj = datetime.strptime(date, "%Y-%m-%d").date()
     
-
     # Get appointments for the selected day
     appointments = ClinicAppointment.objects.filter(workspace=workspace, date=date_obj)
     timeplots = ["08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45","10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00","12:15","12:30"]
+    
+    # Check if the day is locked
+    is_locked = Lock.objects.filter(workspace=workspace, date=date_obj).exists()
+    
     context = {
         "timeslots": timeplots,
         "workspace": workspace,
         "date": date_obj,
         "appointments": appointments,
+        "is_locked": is_locked,  # Add the lock status to the context
     }
     return render(request, "day_appointments.html", context)
 
@@ -517,6 +533,37 @@ def add_appointment(request, workspace_name):
                 user=request.user,
                 action_description=f"Added clinic appointment for {appointment.patient_name} (Civil ID: {appointment.civil_id}) on {appointment.date} at {appointment.time}."
             )
+
+            # Check if the number of appointments for this day has reached the maximum
+            appointments_count = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=selected_date
+            ).count()
+            
+            # If the count equals the maximum and no lock exists, create a lock
+            if appointments_count == workspace.maximum:
+                # Check if a lock already exists for this day
+                lock_exists = Lock.objects.filter(
+                    workspace=workspace, 
+                    date=selected_date
+                ).exists()
+                
+                if not lock_exists:
+                    # Create a lock for this day
+                    Lock.objects.create(
+                        workspace=workspace,
+                        date=selected_date
+                    )
+                    
+                    # Log the automatic locking
+                    ActionLog.objects.create(
+                        workspace=workspace,
+                        user=request.user,
+                        action_description=f"Day {selected_date} automatically locked as it reached maximum capacity ({workspace.maximum} appointments)."
+                    )
+                    
+                    # Add a message to inform the user
+                    messages.info(request, f"This day has reached its maximum capacity and has been automatically locked.")
 
             return redirect("day_appointments", workspace_name=workspace_name, date=appointment.date)
     else:
@@ -846,3 +893,89 @@ def download_workspace_data(request):
     response = HttpResponse(output.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response["Content-Disposition"] = f'attachment; filename="{workspace.name}.xlsx"'
     return response
+
+
+
+@login_required
+def create_lock(request, workspace_name, date):
+    """Creates a Lock object for a specific date and workspace."""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    
+    # Get the referring URL to redirect back to
+    referring_url = request.META.get('HTTP_REFERER')
+    
+    # Ensure user belongs to this workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+    
+    try:
+        # Parse the date string into a datetime object
+        lock_date = datetime.strptime(date, '%Y-%m-%d').date()
+        
+        # Check if lock already exists
+        existing_lock = Lock.objects.filter(workspace=workspace, date=lock_date).first()
+        
+        if not existing_lock:
+            # Create new lock
+            Lock.objects.create(workspace=workspace, date=lock_date)
+            
+            # Add action log entry
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Locked date {lock_date.strftime('%Y-%m-%d')}."
+            )
+            
+            messages.success(request, f"Date {lock_date.strftime('%Y-%m-%d')} has been locked.")
+        else:
+            messages.info(request, f"Date {lock_date.strftime('%Y-%m-%d')} was already locked.")
+    except ValueError:
+        messages.error(request, "Invalid date format.")
+    
+    # Redirect back to referring page if available, otherwise to calendar view
+    if referring_url:
+        return redirect(referring_url)
+    else:
+        return redirect('calendar_view', workspace_name=workspace_name)
+
+
+@login_required
+def delete_lock(request, workspace_name, date):
+    """Deletes a Lock object for a specific date and workspace."""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    
+    # Get the referring URL to redirect back to
+    referring_url = request.META.get('HTTP_REFERER')
+    
+    # Ensure user belongs to this workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+    
+    try:
+        # Parse the date string into a datetime object
+        lock_date = datetime.strptime(date, '%Y-%m-%d').date()
+        
+        # Try to find and delete the lock
+        lock = Lock.objects.filter(workspace=workspace, date=lock_date).first()
+        
+        if lock:
+            lock.delete()
+            
+            # Add action log entry
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Unlocked date {lock_date.strftime('%Y-%m-%d')}."
+            )
+            
+            messages.success(request, f"Date {lock_date.strftime('%Y-%m-%d')} has been unlocked.")
+        else:
+            messages.info(request, f"No lock found for date {lock_date.strftime('%Y-%m-%d')}.")
+    except ValueError:
+        messages.error(request, "Invalid date format.")
+    
+    # Redirect back to referring page if available, otherwise to calendar view
+    if referring_url:
+        return redirect(referring_url)
+    else:
+        return redirect('calendar_view', workspace_name=workspace_name)

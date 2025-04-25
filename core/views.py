@@ -186,10 +186,10 @@ def workspace_main(request, workspace_name):
 
     # Count booked cases (future date, since ClinicAppointment has no status field)
     booked_cases_count = SurgicalBooking.objects.filter(
-        workspace=workspace,
-        date__gte=now().date(),  # Only future cases
-        status__in=['booked', 'waiting', 'past']
-        ).count()
+    workspace=workspace,
+    date__gte=now().date(),
+    status='booked'
+    ).count()
 
 
     # Count waiting list cases from SurgicalBooking (no date, not deleted)
@@ -243,7 +243,7 @@ def waiting_list(request, workspace_name):
         workspace=workspace, 
         date__isnull=True,  # Date is empty (null)
         status__in=['booked', 'waiting', 'past']  # Exclude 'deleted' cases
-    ).order_by('-created_at')  # Arrange by creation date, newest first
+    ).order_by('created_at')  # Arrange by creation date, newest first
 
     return render(request, 'waiting_list.html', {'cases': cases, 'workspace': workspace})
 

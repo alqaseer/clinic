@@ -118,7 +118,7 @@ def login_view(request):
 
             # Set session expiry based on "Remember Me"
             if remember_me:
-                request.session.set_expiry(12096000)  # 2 weeks
+                request.session.set_expiry(1209600)  # 2 weeks
             else:
                 request.session.set_expiry(0)  # Expires when browser closes
 
@@ -133,7 +133,6 @@ def login_view(request):
             messages.error(request, "Invalid username or password.")
             return redirect("login")
 
-    return render(request, "login.html")
 
 def logout_view(request):
     # If the user is authenticated, get their workspace name

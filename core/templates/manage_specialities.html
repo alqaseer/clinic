@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Manage Specialities</h1>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="row">
+        {% for speciality in specialities %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3>{{ speciality.name }}</h3>
+                </div>
+                <div class="card-body">
+                    <h5>Current Workspaces</h5>
+                    {% if speciality.workspaces.all %}
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Workspace</th>
+                                <th>Maximum New Referrals</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for workspace in speciality.workspaces.all %}
+                            <tr>
+                                <td>{{ workspace.name }}</td>
+                                <td>
+                                    <form method="post" class="form-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="update_referrals" value="true">
+                                        <input type="hidden" name="workspace_id" value="{{ workspace.id }}">
+                                        <div class="input-group">
+                                            <input type="number" name="maximum_new_referrals" 
+                                                   value="{{ workspace.maximum_new_referrals }}" 
+                                                   class="form-control" min="0">
+                                            <div class="input-group-append">
+                                                <button type="submit" class="btn btn-outline-secondary">Update</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="speciality_id" value="{{ speciality.id }}">
+                                        <input type="hidden" name="workspace_id" value="{{ workspace.id }}">
+                                        <input type="hidden" name="action" value="remove">
+                                        <button type="submit" class="btn btn-danger">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>No workspaces assigned to this speciality.</p>
+                    {% endif %}
+                    
+                    <h5 class="mt-4">Add Workspace</h5>
+                    <form method="post" class="form-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="speciality_id" value="{{ speciality.id }}">
+                        <input type="hidden" name="action" value="add">
+                        <div class="input-group">
+                            <select name="workspace_id" class="form-control">
+                                <option value="">-- Select Workspace --</option>
+                                {% for workspace in all_workspaces %}
+                                    {% if workspace not in speciality.workspaces.all %}
+                                    <option value="{{ workspace.id }}">{{ workspace.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <div class="input-group-append">
+                                <button type="submit" class="btn btn-success">Add</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No specialities found.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

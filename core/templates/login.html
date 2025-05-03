@@ -27,34 +27,38 @@
         {% endif %}
 
         <!-- Login Form -->
-        <form method="POST" class="mt-6" onsubmit="lowercaseInputs()">
+        <form method="POST" class="mt-6" onsubmit="lowercaseInputs()" autocomplete="on">
             {% csrf_token %}
 
             <!-- Workspace Name -->
             <div class="mb-4">
                 <label for="workspace_name" class="block text-sm font-semibold text-gray-700">Workspace Name</label>
-                <input type="text" name="workspace_name" id="workspace_name" required
+                <input type="text" name="workspace_name" id="workspace_name" required 
+                    autocomplete="on"
                     class="w-full border border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
             </div>
 
             <!-- Username -->
             <div class="mb-4">
                 <label for="username" class="block text-sm font-semibold text-gray-700">Username</label>
-                <input type="text" name="username" id="username" required
+                <input type="text" name="username" id="username" required 
+                    autocomplete="username"
                     class="w-full border border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
             </div>
 
             <!-- Password -->
             <div class="mb-4">
                 <label for="password" class="block text-sm font-semibold text-gray-700">Password</label>
-                <input type="password" name="password" id="password" required
+                <input type="password" name="password" id="password" required 
+                    autocomplete="current-password"
                     class="w-full border border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
             </div>
 
             <!-- Remember Me -->
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
-                    <input type="checkbox" name="remember_me" id="remember_me" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <input type="checkbox" name="remember_me" id="remember_me" checked
+                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                     <label for="remember_me" class="ml-2 text-sm text-gray-700">Remember Me</label>
                 </div>
                 <a href="#" class="text-sm text-blue-600 hover:underline">Forgot Password?</a>
@@ -76,7 +80,57 @@
             usernameField.value = usernameField.value.toLowerCase();
             workspaceField.value = workspaceField.value.toLowerCase();
         }
-    </script>
 
+        // Set "Remember Me" to checked by default
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('remember_me').checked = true;
+        });
+        
+        // Store workspace name in localStorage when form is submitted
+        document.querySelector('form').addEventListener('submit', function() {
+            let workspaceField = document.getElementById("workspace_name");
+            if (workspaceField.value) {
+                // Get existing entries or initialize a new array
+                let savedWorkspaces = JSON.parse(localStorage.getItem('savedWorkspaces') || '[]');
+                
+                // Add the new entry if it doesn't exist
+                if (!savedWorkspaces.includes(workspaceField.value)) {
+                    // Limit to last 5 entries
+                    if (savedWorkspaces.length >= 5) {
+                        savedWorkspaces.pop();
+                    }
+                    savedWorkspaces.unshift(workspaceField.value);
+                    localStorage.setItem('savedWorkspaces', JSON.stringify(savedWorkspaces));
+                }
+            }
+        });
+        
+        // Populate datalist with saved workspaces when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            let savedWorkspaces = JSON.parse(localStorage.getItem('savedWorkspaces') || '[]');
+            if (savedWorkspaces.length > 0) {
+                // Create datalist if it doesn't exist
+                let datalist = document.getElementById('workspace-list');
+                if (!datalist) {
+                    datalist = document.createElement('datalist');
+                    datalist.id = 'workspace-list';
+                    document.body.appendChild(datalist);
+                }
+                
+                // Add options to datalist
+                savedWorkspaces.forEach(function(workspace) {
+                    let option = document.createElement('option');
+                    option.value = workspace;
+                    datalist.appendChild(option);
+                });
+                
+                // Connect datalist to input
+                document.getElementById('workspace_name').setAttribute('list', 'workspace-list');
+            }
+        });
+    </script>
+    
+    <!-- Datalist for workspace autocomplete -->
+    <datalist id="workspace-list"></datalist>
 </body>
 </html>

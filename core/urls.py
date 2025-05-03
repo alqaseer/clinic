@@ -32,9 +32,29 @@ urlpatterns = [
     path('workspace/<str:workspace_name>/unlock/<str:date>/', views.delete_lock, name='delete_lock'),
 
 
+    # Referrals
+    path('manage-specialities/', views.manage_specialities, name='manage_specialities'),
+
+    # Doctor URLs
+    path('doctor/login/', views.doctor_login, name='doctor_login'),
+    path('doctor/login2/', views.doctor_login2, name='doctor_login2'),
+    path('doctor/logout/', views.doctor_logout, name='doctor_logout'),
+    path('doctor/logout2/', views.doctor_logout2, name='doctor_logout2'),
+    path('doctor/dashboard/', views.doctor_dashboard, name='doctor_dashboard'),
+    path('doctor/book-appointment/', views.book_appointment, name='book_appointment'),
+    path('doctor/register/', views.doctor_register, name='doctor_register'),
+    path('doctor/change-appointment-date/', views.change_appointment_date, name='change_appointment_date'),
+    path('doctor/search-appointments/', views.doctor_search_appointments, name='doctor_search_appointments'),
+    path('refer/', views.doctor_dashboard, name='refer'),
+
+    
 
 
-
+    #clerk
+    path('doctor/calendar/', views.doctor_calendar, name='doctor_calendar'),
+    path('doctor/appointments/<int:year>/<int:month>/<int:day>/', views.doctor_day_appointments, name='doctor_day_appointments'),
+    path('doctor/appointments/<int:year>/<int:month>/<int:day>/print-all/', views.print_all_appointments, name='print_all_appointments'),
+    path('clerk/', views.doctor_calendar, name='doctor_calendar'),
 
     # 2️⃣ API endpoint for AJAX search
     path("workspace/<str:workspace_name>/appointments/search/ajax/", views.search_appointments_ajax, name="search_appointments_ajax"),

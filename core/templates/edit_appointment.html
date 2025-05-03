@@ -3,125 +3,176 @@
 {% block title %}Edit Appointment{% endblock %}
 
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">Edit Appointment</h1>
-
-<form method="POST" enctype="multipart/form-data" class="space-y-4">
-    {% csrf_token %}
-
-    <div>
-        <label for="patient_name" class="block text-sm font-medium text-gray-700">Patient Name:</label>
-        <input
-            type="text"
-            name="patient_name"
-            id="patient_name"
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
-            value="{{ form.patient_name.value|default_if_none:'' }}"
-            required
-        >
+<div class="max-w-3xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+        <h1 class="text-xl font-semibold text-white">Edit Appointment</h1>
     </div>
 
-    <div>
-        <label for="civil_id" class="block text-sm font-medium text-gray-700">Civil ID:</label>
-        <input
-            type="text"
-            name="civil_id"
-            id="civil_id"
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
-            value="{{ form.civil_id.value|default_if_none:'' }}"
-            minlength="12"
-            maxlength="12"
-            pattern="\d{12}"
-            oninvalid="this.setCustomValidity('Civil ID must be exactly 12 digits.')"
-            oninput="this.setCustomValidity('')"
-            required
-        >
-        <p class="text-sm text-gray-500">Civil ID must be exactly 12 digits.</p>
-    </div>
+    <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+        {% csrf_token %}
 
-    <div>
-        <label for="phone_number" class="block text-sm font-medium text-gray-700">Phone Number:</label>
-        <input
-            type="text"
-            name="phone_number"
-            id="phone_number"
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
-            value="{{ form.phone_number.value|default_if_none:'' }}"
-            minlength="8"
-            maxlength="8"
-            pattern="\d{8}"
-            oninvalid="this.setCustomValidity('Phone number must be exactly 8 digits.')"
-            oninput="this.setCustomValidity('')"
-            required
-        >
-        <p class="text-sm text-gray-500">Phone number must be exactly 8 digits.</p>
-    </div>
-
-    <div>
-        <label for="appointment_type" class="block text-sm font-medium text-gray-700">Appointment Type:</label>
-        {{ form.appointment_type }}
-    </div>
-
-    <!-- ✅ Confirmed Field Added -->
-    <div>
-        <label for="confirmed" class="block text-sm font-medium text-gray-700">Status:</label>
-        <select
-            name="confirmed"
-            id="confirmed"
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
-        >
-            <option value="Unknown" {% if form.confirmed.value == "Unknown" %}selected{% endif %}>Unknown</option>
-            <option value="Confirmed" {% if form.confirmed.value == "Confirmed" %}selected{% endif %}>Confirmed</option>
-            <option value="Cancelled" {% if form.confirmed.value == "Cancelled" %}selected{% endif %}>Cancelled</option>
-        </select>
-    </div>
-
-    <div>
-        <label for="date" class="block text-sm font-medium text-gray-700">Date:</label>
-        <input
-            type="date"
-            name="date"
-            id="date"
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
-            value="{{ form.date.value|date:"Y-m-d" }}"
-            required
-        >
-    </div>
-
-    <div>
-        <label for="time" class="block text-sm font-medium text-gray-700">Time:</label>
-        <div class="grid grid-cols-4 gap-2 mt-2">
-            {% for time, count in time_slots %}
-            <label
-                class="block text-center py-2 px-4 rounded-md shadow-sm cursor-pointer
-                       {% if time == form.time.value|time:"H:i" %}bg-blue-500 text-white{% elif count >= workspace.rooms %}bg-red-100{% else %}bg-gray-100 hover:bg-blue-100{% endif %}">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Patient Name -->
+            <div>
+                <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
                 <input
-                    type="radio"
-                    name="time"
-                    value="{{ time }}"
-                    class="hidden peer"
-                    {% if time == form.time.value|time:"H:i" %}checked{% endif %}
+                    type="text"
+                    name="patient_name"
+                    id="patient_name"
+                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value="{{ form.patient_name.value|default_if_none:'' }}"
+                    required
                 >
-                <span
-                    class="peer-checked:bg-blue-500 peer-checked:text-white block w-full">
-                    {{ time }} - {{ count }} Patients
-                </span>
-            </label>
-            {% endfor %}
+            </div>
+
+            <!-- Civil ID -->
+            <div>
+                <label for="civil_id" class="block text-sm font-medium text-gray-700 mb-1">Civil ID</label>
+                <input
+                    type="text"
+                    name="civil_id"
+                    id="civil_id"
+                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value="{{ form.civil_id.value|default_if_none:'' }}"
+                    minlength="12"
+                    maxlength="12"
+                    pattern="\d{12}"
+                    oninvalid="this.setCustomValidity('Civil ID must be exactly 12 digits.')"
+                    oninput="this.setCustomValidity('')"
+                    required
+                >
+                <p class="mt-1 text-sm text-gray-500">Civil ID must be exactly 12 digits.</p>
+            </div>
         </div>
-    </div>
 
-    <div>
-        <label for="referral_letter" class="block text-sm font-medium text-gray-700">Referral Letter (Optional):</label>
-        <input
-            type="file"
-            name="referral_letter"
-            id="referral_letter"
-            class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
-        >
-    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Phone Number -->
+            <div>
+                <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input
+                    type="text"
+                    name="phone_number"
+                    id="phone_number"
+                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value="{{ form.phone_number.value|default_if_none:'' }}"
+                    minlength="8"
+                    maxlength="8"
+                    pattern="\d{8}"
+                    oninvalid="this.setCustomValidity('Phone number must be exactly 8 digits.')"
+                    oninput="this.setCustomValidity('')"
+                    required
+                >
+                <p class="mt-1 text-sm text-gray-500">Phone number must be exactly 8 digits.</p>
+            </div>
 
-    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-        Save Changes
-    </button>
-</form>
+            <!-- Appointment Type Dropdown -->
+            <div>
+                <label for="appointment_type" class="block text-sm font-medium text-gray-700 mb-1">Appointment Type</label>
+                <select
+                    name="appointment_type"
+                    id="appointment_type"
+                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                >
+                    <option value="New" {% if form.appointment_type.value == "New" %}selected{% endif %}>New</option>
+                    <option value="Follow-Up" {% if form.appointment_type.value == "Follow-Up" %}selected{% endif %}>Follow-Up</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Confirmed Status Dropdown -->
+            <div>
+                <label for="confirmed" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                    name="confirmed"
+                    id="confirmed"
+                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                    <option value="Unknown" {% if form.confirmed.value == "Unknown" %}selected{% endif %}>Unknown</option>
+                    <option value="Confirmed" {% if form.confirmed.value == "Confirmed" %}selected{% endif %}>Confirmed</option>
+                    <option value="Cancelled" {% if form.confirmed.value == "Cancelled" %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+
+            <!-- Date Field -->
+            <div>
+                <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input
+                    type="date"
+                    name="date"
+                    id="date"
+                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value="{{ form.date.value|date:'Y-m-d' }}"
+                    required
+                >
+            </div>
+        </div>
+
+        <!-- Time Slot Selection -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Time Slot</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
+                {% for time, count in time_slots %}
+                <label
+                    class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
+                           {% if count >= workspace.rooms %}bg-red-50 border-red-300 text-red-700{% else %}bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300{% endif %}">
+                    <input
+                        type="radio"
+                        name="time"
+                        value="{{ time }}"
+                        class="hidden peer"
+                        {% if time == form.time.value|time:"H:i" %}checked{% endif %}
+                        required
+                    >
+                    <div class="peer-checked:bg-blue-500 peer-checked:text-white rounded transition-colors duration-200 py-3 px-2 w-full h-full">
+                        <div class="font-medium">{{ time }}</div>
+                        <div class="text-xs mt-1 {% if count >= workspace.rooms %}text-red-500{% else %}text-gray-500{% endif %} peer-checked:text-white">
+                            {{ count }} Patients
+                        </div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Simplified Referral Letter Upload -->
+        <div>
+            <label for="referral_letter" class="block text-sm font-medium text-gray-700 mb-1">Referral Letter (Optional)</label>
+            <div class="mt-1 border border-gray-300 rounded-md p-4">
+                <div class="flex flex-col items-center">
+                    <svg class="h-10 w-10 text-gray-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <label for="referral_letter" class="cursor-pointer text-blue-600 hover:text-blue-500 font-medium text-center">
+                        Upload a file
+                        <input
+                            type="file"
+                            name="referral_letter"
+                            id="referral_letter"
+                            class="sr-only"
+                        >
+                    </label>
+                    <p class="text-xs text-gray-500 mt-2">PNG, JPG, PDF up to 10MB</p>
+                </div>
+            </div>
+            
+            {% if form.instance.referral_letter %}
+            <div class="mt-2 flex items-center">
+                <svg class="h-5 w-5 text-green-500 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-sm text-gray-600">Current file: <a href="{{ form.instance.referral_letter.url }}" target="_blank" class="text-blue-600 hover:underline">View</a></span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Submit Button -->
+        <div class="mt-8">
+            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
 {% endblock %}

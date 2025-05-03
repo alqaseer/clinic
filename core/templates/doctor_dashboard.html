@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+    /* Fade transition for the warning message */
+    .fade-enter-active,
+    .fade-leave-active {
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    
+    .fade-enter-from,
+    .fade-leave-to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    
+    /* Additional animation class */
+    .animate-fadeIn {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+        opacity: 0;
+        transform: translateY(-10px);
+        }
+        to {
+        opacity: 1;
+        transform: translateY(0);
+        }
+    }
+    
+    /* Pulse effect for warning icon */
+    .warning-icon-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+        transform: scale(1);
+        }
+        50% {
+        transform: scale(1.1);
+        }
+        100% {
+        transform: scale(1);
+        }
+    }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 flex justify-between items-center">
+                <div class="flex items-center">
+                    <span class="text-xl font-semibold text-gray-800">Dr. {{ doctor.full_name }}</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @click="showAppointmentSearch = true" 
+                            class="text-sm px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors duration-200">
+                        Check Appointment
+                    </button>
+                    <a href="{% url 'doctor_logout' %}" class="text-sm px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-200">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow max-w-3xl mx-auto p-4 md:p-6 w-full">
+            <!-- CSRF form -->
+            <form id="csrf-form" style="display:none">
+                {% csrf_token %}
+            </form>
+            
+            <!-- Messages -->
+            {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %} mb-3">
+                    <p class="text-sm font-medium">{{ message }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Appointment Search Modal -->
+            <div v-if="showAppointmentSearch" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Check Appointments</h3>
+                        <button @click="closeAppointmentSearch" 
+                                class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="search_civil_id" class="block text-sm font-medium text-gray-700 mb-1">Patient Civil ID (12 digits)</label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="search_civil_id" v-model="searchCivilId" maxlength="12"
+                                  class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Enter 12-digit Civil ID">
+                            <button @click="searchAppointments" 
+                                    :disabled="searchLoading || !isValidCivilId"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg v-if="searchLoading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Search
+                            </button>
+                        </div>
+                        <p v-if="!isValidCivilId && searchCivilId.length > 0" class="mt-1 text-sm text-red-600">
+                            Civil ID must be exactly 12 digits
+                        </p>
+                    </div>
+                    
+                    <div v-if="searchResults.length > 0" class="overflow-y-auto max-h-96">
+                        <h4 class="font-medium text-gray-700 mb-2">Appointments for Civil ID: [[ searchCivilId ]]</h4>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clinic</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Speciality</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-for="appointment in searchResults" :key="appointment.id" class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.date ]]</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.time ]]</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.clinic_name ]]</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.speciality_name ]]</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                        <span :class="{
+                                            'px-2 py-1 text-xs font-medium rounded-full': true,
+                                            'bg-green-100 text-green-800': appointment.confirmed === 'Confirmed',
+                                            'bg-yellow-100 text-yellow-800': appointment.confirmed === 'Unknown',
+                                            'bg-red-100 text-red-800': appointment.confirmed === 'Cancelled'
+                                        }">
+                                            [[ appointment.confirmed ]]
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div v-else-if="searchAttempted" class="py-4 text-center text-gray-500">
+                        No appointments found for this Civil ID
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Confirmation Modal -->
+            <div v-if="showConfirmationModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Confirm Date Change</h3>
+                    <div class="p-4 bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200 mb-4">
+                        <p class="font-medium">Warning!</p>
+                        <p>Are you sure you want to change this appointment date? This action cannot be undone.</p>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button @click="showConfirmationModal = false" 
+                                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors duration-200">
+                            Cancel
+                        </button>
+                        <button @click="confirmDateChange" 
+                                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200">
+                            Yes, Change Date
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form View -->
+            <div v-if="!showAppointmentDetails" class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-white">New Patient Referral</h2>
+                </div>
+                
+                <form @submit.prevent="submitForm" class="p-6">
+                    {% csrf_token %}
+                    
+                    <!-- Patient Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
+                            <input type="text" id="patient_name" v-model="patientName" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div v-if="errors.patientName" class="mt-1 text-sm text-red-600">[[ errors.patientName ]]</div>
+                        </div>
+                        
+                        <div>
+                            <label for="civil_id" class="block text-sm font-medium text-gray-700 mb-1">Civil ID (12 digits)</label>
+                            <input type="text" id="civil_id" v-model="civilId" required maxlength="12"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div v-if="errors.civilId" class="mt-1 text-sm text-red-600">[[ errors.civilId ]]</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modified Contact and Specialty Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number (8 digits)</label>
+                            <input type="text" id="phone_number" v-model="phoneNumber" required maxlength="8"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div v-if="errors.phoneNumber" class="mt-1 text-sm text-red-600">[[ errors.phoneNumber ]]</div>
+                        </div>
+                        
+                        <div>
+                            <label for="speciality" class="block text-sm font-medium text-gray-700 mb-1">Refer to Speciality</label>
+                            <select id="speciality" v-model="speciality" @change="checkSpecialtyMessage" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Select Speciality --</option>
+                                {% for speciality in specialities %}
+                                <option value="{{ speciality.id }}" data-message="{{ speciality.message|default:'' }}">{{ speciality.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div v-if="errors.speciality" class="mt-1 text-sm text-red-600">[[ errors.speciality ]]</div>
+                        </div>
+                    </div>
+
+                    <!-- Specialty Warning Message (with animation) -->
+                    <transition name="fade">
+                        <div v-if="specialtyMessage" class="mb-6 p-4 bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200 animate-fadeIn">
+                            <div class="flex items-start">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <div v-html="specialtyMessage"></div>
+                            </div>
+                        </div>
+                    </transition>
+                    
+                    <!-- Diagnosis -->
+                    <div class="mb-6">
+                        <label for="diagnosis" class="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
+                        <textarea id="diagnosis" v-model="diagnosis" rows="3" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        <div v-if="errors.diagnosis" class="mt-1 text-sm text-red-600">[[ errors.diagnosis ]]</div>
+                    </div>
+                    
+                    <!-- Urgent Checkbox -->
+                    <div class="flex items-center mb-6">
+                        <input type="checkbox" id="is_urgent" v-model="isUrgent"
+                              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="is_urgent" class="ml-2 block text-sm text-gray-700">Urgent Case</label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" 
+                            :disabled="loading"
+                            class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 flex justify-center items-center">
+                        <svg v-if="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span v-if="!loading">Book Appointment</span>
+                        <span v-else>Processing...</span>
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Appointment Details View -->
+            <div v-if="showAppointmentDetails" class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="bg-gradient-to-r from-green-600 to-teal-600 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-white">Appointment Confirmed</h2>
+                </div>
+                
+                <div class="p-6">
+                    <div v-if="dateChangeLoading" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                            <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="text-gray-800 font-medium">Searching for a new date...</p>
+                        </div>
+                    </div>
+                
+                    <div class="flex justify-center mb-8">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-xl font-medium text-gray-900 text-center mb-6">Appointment successfully booked!</h3>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Patient Name</h4>
+                                <p class="text-gray-900">[[ appointmentDetails.patientName ]]</p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Civil ID</h4>
+                                <p class="text-gray-900">[[ appointmentDetails.civilId ]]</p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Phone Number</h4>
+                                <p class="text-gray-900">[[ appointmentDetails.phoneNumber ]]</p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Speciality</h4>
+                                <p class="text-gray-900">[[ appointmentDetails.specialityName ]]</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-6">
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-gray-500">Clinic Name</h4>
+                            <p class="text-gray-900">[[ appointmentDetails.clinicName ]]</p>
+                        </div>
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Appointment Date</h4>
+                                <p class="text-gray-900">[[ appointmentDetails.date ]]</p>
+                            </div>
+                            <button @click="showChangeConfirmation" 
+                                    :disabled="dateChangeLoading"
+                                    class="text-blue-600 hover:text-blue-800 underline text-sm focus:outline-none">
+                                Change date?
+                            </button>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-gray-500">Appointment Time</h4>
+                            <p class="text-gray-900">[[ appointmentDetails.time ]]</p>
+                        </div>
+                        <div v-if="dateChanged" class="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md border border-blue-200 flex items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                                <p class="font-medium">Appointment date changed!</p>
+                                <p class="text-sm">Your appointment has been moved to the next available slot.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button @click="resetForm" class="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                        Book New Appointment
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="bg-white py-4 border-t border-gray-200 mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center text-sm text-gray-500">
+                &copy; 2025 Clinic Referral System
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        const { createApp, ref, computed } = Vue
+
+        createApp({
+            delimiters: ['[[', ']]'],
+            setup() {
+                // Form data
+                const patientName = ref('')
+                const civilId = ref('')
+                const phoneNumber = ref('')
+                const speciality = ref('')
+                const diagnosis = ref('')
+                const isUrgent = ref(false)
+                const specialtyMessage = ref('') // New ref for specialty message
+                
+                // App state
+                const loading = ref(false)
+                const showAppointmentDetails = ref(false)
+                const dateChangeLoading = ref(false)
+                const dateChanged = ref(false)
+                const showConfirmationModal = ref(false)
+                const appointmentDetails = ref({
+                    appointmentId: null,
+                    patientName: '',
+                    civilId: '',
+                    phoneNumber: '',
+                    specialityName: '',
+                    clinicName: '',
+                    date: '',
+                    time: '',
+                    workspaceId: null
+                })
+                
+                // Appointment search
+                const showAppointmentSearch = ref(false)
+                const searchCivilId = ref('')
+                const searchLoading = ref(false)
+                const searchResults = ref([])
+                const searchAttempted = ref(false)
+                
+                // Computed properties
+                const isValidCivilId = computed(() => {
+                    return searchCivilId.value.length === 12 && /^\d+$/.test(searchCivilId.value)
+                })
+                
+                // Validation errors
+                const errors = ref({})
+                
+                // Check for specialty message
+                const checkSpecialtyMessage = () => {
+                    // Find the selected option element
+                    const selectedOption = document.querySelector(`option[value="${speciality.value}"]`)
+                    
+                    if (selectedOption && selectedOption.dataset.message) {
+                        specialtyMessage.value = selectedOption.dataset.message
+                    } else {
+                        specialtyMessage.value = ''
+                    }
+                }
+                
+                // Form validation
+                const validateForm = () => {
+                    errors.value = {}
+                    let isValid = true
+                    
+                    if (!patientName.value.trim()) {
+                        errors.value.patientName = 'Patient name is required'
+                        isValid = false
+                    }
+                    
+                    if (!civilId.value) {
+                        errors.value.civilId = 'Civil ID is required'
+                        isValid = false
+                    } else if (civilId.value.length !== 12 || !/^\d+$/.test(civilId.value)) {
+                        errors.value.civilId = 'Civil ID must be exactly 12 digits'
+                        isValid = false
+                    }
+                    
+                    if (!phoneNumber.value) {
+                        errors.value.phoneNumber = 'Phone number is required'
+                        isValid = false
+                    } else if (phoneNumber.value.length !== 8 || !/^\d+$/.test(phoneNumber.value)) {
+                        errors.value.phoneNumber = 'Phone number must be exactly 8 digits'
+                        isValid = false
+                    }
+                    
+                    if (!speciality.value) {
+                        errors.value.speciality = 'Please select a speciality'
+                        isValid = false
+                    }
+                    
+                    if (!diagnosis.value.trim()) {
+                        errors.value.diagnosis = 'Diagnosis is required'
+                        isValid = false
+                    }
+                    
+                    return isValid
+                }
+                
+                // Submit form
+                const submitForm = async () => {
+                    if (!validateForm()) {
+                        return
+                    }
+                    
+                    loading.value = true
+                    
+                    try {
+                        const response = await fetch('{% url "book_appointment" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value
+                            },
+                            body: JSON.stringify({
+                                patient_name: patientName.value,
+                                civil_id: civilId.value,
+                                phone_number: phoneNumber.value,
+                                speciality: speciality.value,
+                                diagnosis: diagnosis.value,
+                                is_urgent: isUrgent.value
+                            })
+                        })
+                        
+                        const data = await response.json()
+                        
+                        if (data.success) {
+                            // Update appointment details
+                            appointmentDetails.value = {
+                                appointmentId: data.appointment_id,
+                                patientName: patientName.value,
+                                civilId: civilId.value,
+                                phoneNumber: phoneNumber.value,
+                                specialityName: data.speciality_name,
+                                clinicName: data.clinic_name,
+                                date: data.appointment_date,
+                                time: data.appointment_time,
+                                workspaceId: data.workspace_id
+                            }
+                            console.log("After assignment:", appointmentDetails.value);
+                            // Show appointment details view
+                            showAppointmentDetails.value = true
+                        } else {
+                            alert(data.message || 'Failed to book appointment')
+                        }
+                    } catch (error) {
+                        console.error('Error booking appointment:', error)
+                        alert('An error occurred while booking the appointment')
+                    } finally {
+                        loading.value = false
+                    }
+                }
+        
+                // Show confirmation dialog
+                const showChangeConfirmation = () => {
+                    showConfirmationModal.value = true
+                }
+                
+                // Confirm date change
+                const confirmDateChange = async () => {
+                    showConfirmationModal.value = false
+                    await changeDateRequest()
+                }
+                
+                // Change date request
+                const changeDateRequest = async function() {
+                    try {
+                        console.log("Starting date change");
+                        
+                        // Get the values directly at the beginning
+                        const appointmentId = appointmentDetails.value.appointmentId;
+                        const workspaceId = appointmentDetails.value.workspaceId;
+                        
+                        console.log(`Using appointment ID: ${appointmentId}, workspace ID: ${workspaceId}`);
+                        
+                        // Check if we have valid IDs
+                        if (!appointmentId || !workspaceId) {
+                            alert('Missing appointment information. Please try again.');
+                            return;
+                        }
+                        
+                        dateChangeLoading.value = true;
+                        
+                        // Get the CSRF token correctly
+                        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                        console.log("CSRF Token:", csrfToken);
+                        
+                        const response = await fetch('{% url "change_appointment_date" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({
+                                appointment_id: appointmentId,
+                                workspace_id: workspaceId
+                            })
+                        });
+                        
+                        console.log("Response status:", response.status);
+                        
+                        if (response.status === 403) {
+                            throw new Error("Permission denied. CSRF token may be invalid.");
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            appointmentDetails.value.date = data.new_date;
+                            appointmentDetails.value.time = data.new_time;
+                            dateChanged.value = true;
+                        } else {
+                            alert(data.message || 'Failed to change appointment date');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred while changing the appointment date: ' + error.message);
+                    } finally {
+                        dateChangeLoading.value = false;
+                    }
+                }
+                
+                // Search for appointments
+                const searchAppointments = async () => {
+                    if (!isValidCivilId.value) {
+                        return;
+                    }
+                    
+                    searchLoading.value = true;
+                    searchAttempted.value = true;
+                    
+                    try {
+                        const response = await fetch(`{% url "doctor_search_appointments" %}?civil_id=${searchCivilId.value}`, {
+                            method: 'GET',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            searchResults.value = data.appointments;
+                        } else {
+                            searchResults.value = [];
+                            console.error('Error:', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error searching appointments:', error);
+                        searchResults.value = [];
+                        alert('An error occurred while searching for appointments');
+                    } finally {
+                        searchLoading.value = false;
+                    }
+                }
+                
+                // Close appointment search
+                const closeAppointmentSearch = () => {
+                    showAppointmentSearch.value = false;
+                    searchCivilId.value = '';
+                    searchResults.value = [];
+                    searchAttempted.value = false;
+                }
+                
+                // Reset form
+                const resetForm = () => {
+                    patientName.value = '';
+                    civilId.value = '';
+                    phoneNumber.value = '';
+                    speciality.value = '';
+                    diagnosis.value = '';
+                    isUrgent.value = false;
+                    specialtyMessage.value = ''; // Clear specialty message
+                    errors.value = {};
+                    showAppointmentDetails.value = false;
+                    dateChanged.value = false;
+                }
+                
+                return {
+                    patientName,
+                    civilId,
+                    phoneNumber,
+                    speciality,
+                    diagnosis,
+                    isUrgent,
+                    specialtyMessage, // Expose specialty message
+                    errors,
+                    loading,
+                    showAppointmentDetails,
+                    dateChangeLoading,
+                    dateChanged,
+                    showConfirmationModal,
+                    appointmentDetails,
+                    showAppointmentSearch,
+                    searchCivilId,
+                    searchLoading,
+                    searchResults,
+                    searchAttempted,
+                    isValidCivilId,
+                    validateForm,
+                    submitForm,
+                    showChangeConfirmation,
+                    confirmDateChange,
+                    changeDateRequest,
+                    searchAppointments,
+                    closeAppointmentSearch,
+                    resetForm,
+                    checkSpecialtyMessage // Expose new method
+                }
+            }
+        }).mount('#app')
+        
+    </script>
+</body>
+</html>

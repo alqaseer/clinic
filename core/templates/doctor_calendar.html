@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor Appointment Calendar</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #333;
+        }
+        #calendar {
+            margin-top: 20px;
+        }
+        .fc-daygrid-day {
+            cursor: pointer;
+        }
+        .clinic-name {
+            font-size: 11px;
+            text-align: center;
+            margin: 2px 0;
+            display: block;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Doctor Appointment Calendar</h2>
+            <a href="{% url 'doctor_logout2' %}" class="logout-btn">Logout</a>
+        </div>
+        
+        <div id="calendar"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store appointment data for all available months
+            var allAppointmentData = {
+                {% for date, clinics in appointments_by_date.items %}
+                    "{{ date }}": [
+                        {% for clinic in clinics %}
+                            "{{ clinic }}",
+                        {% endfor %}
+                    ],
+                {% endfor %}
+            };
+            
+            // Initialize calendar
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                initialDate: '{{ today|date:"Y-m-d" }}',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: ''
+                },
+                dateClick: function(info) {
+                    var date = info.dateStr;
+                    var parts = date.split('-');
+                    var year = parts[0];
+                    var month = parts[1];
+                    var day = parts[2];
+                    
+                    window.location.href = '/doctor/appointments/' + year + '/' + month + '/' + day + '/';
+                },
+                // Add this event handler for when the view changes (like changing months)
+                datesSet: function(info) {
+                    // After the month view is updated, add clinic names
+                    addClinicNames();
+                }
+            });
+            
+            calendar.render();
+            
+            // Function to add clinic names to day cells
+            function addClinicNames() {
+                setTimeout(function() {
+                    // Get all day cells
+                    var dayCells = document.querySelectorAll('.fc-daygrid-day');
+                    dayCells.forEach(function(dayCell) {
+                        var dateStr = dayCell.getAttribute('data-date');
+                        var container = dayCell.querySelector('.fc-daygrid-day-bottom');
+                        
+                        // Clear any existing clinic names
+                        if (container) {
+                            container.innerHTML = '';
+                            
+                            // Add clinic names if available for this date
+                            if (allAppointmentData[dateStr]) {
+                                allAppointmentData[dateStr].forEach(function(clinicName) {
+                                    var div = document.createElement('div');
+                                    div.className = 'clinic-name';
+                                    div.textContent = clinicName;
+                                    container.appendChild(div);
+                                });
+                            }
+                        }
+                    });
+                }, 100); // Short delay to ensure calendar is fully rendered
+            }
+            
+            // Call once on initial load
+            addClinicNames();
+            
+            // Add functionality to month navigation buttons
+            document.querySelector('.fc-prev-button').addEventListener('click', function() {
+                // When a new month is shown, we need to update the clinic names
+                addClinicNames();
+            });
+            
+            document.querySelector('.fc-next-button').addEventListener('click', function() {
+                // When a new month is shown, we need to update the clinic names
+                addClinicNames();
+            });
+            
+            document.querySelector('.fc-today-button').addEventListener('click', function() {
+                // When today button is clicked, we need to update the clinic names
+                addClinicNames();
+            });
+        });
+    </script>
+</body>
+</html>

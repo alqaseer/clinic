@@ -7,6 +7,15 @@ from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
 
 
 class CustomUserCreationForm(forms.ModelForm):
+    full_name = forms.CharField(
+        max_length=255,
+        help_text="Enter your full name.",
+        required=True,
+        widget=forms.TextInput(attrs={
+            "class": "w-full border border-gray-300 p-3 rounded-md bg-gray-50 text-lg focus:ring-blue-500 focus:border-blue-500"
+        })
+    )
+    
     workspace_name = forms.CharField(
         max_length=255,
         help_text="Enter your workspace name.",
@@ -18,7 +27,7 @@ class CustomUserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["username", "email", "password"]
+        fields = ["full_name", "username", "email", "password"]
         widgets = {
             "username": forms.TextInput(attrs={
                 "class": "w-full border border-gray-300 p-3 rounded-md bg-gray-50 text-lg focus:ring-blue-500 focus:border-blue-500"

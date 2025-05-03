@@ -28,23 +28,38 @@ from django.utils.timezone import is_aware
 import os
 from django.utils.timezone import now
 from django.conf import settings
-
+from django.views.decorators.csrf import csrf_protect
 
 
 
 
 def home(request):
-    # If the user is logged in, check for a workspace
+    # If the user is logged in as a regular user, check for a workspace
     if request.user.is_authenticated:
         user_workspace = Workspace.objects.filter(user=request.user).first()
         if user_workspace:
             return redirect("workspace_main", workspace_name=user_workspace.name)
+    
+    # If the user is logged in as a doctor, check if they are a clerk
+    if 'doctor_id' in request.session:
+        doctor_id = request.session['doctor_id']
+        try:
+            doctor = Doctor.objects.get(id=doctor_id)
+            if doctor.clerk:
+                # If doctor is a clerk, redirect to clerk page (doctor_calendar)
+                return redirect("doctor_calendar")
+            else:
+                # If doctor is not a clerk, redirect to referral page (doctor_dashboard)
+                return redirect("refer")
+        except Doctor.DoesNotExist:
+            # If doctor doesn't exist, clear the session
+            del request.session['doctor_id']
+            del request.session['doctor_name']
 
     # If user is not logged in or has no workspace, show home page
     return render(request, "home.html")
 
 
-# Sign-up view for Admin
 def signup(request):
     if request.method == "POST":
         form = CustomUserCreationForm(request.POST)
@@ -52,13 +67,20 @@ def signup(request):
             user = form.save(commit=False)
             user.is_staff = True  # Make this user an admin
             
-            # 🔴 Fix: Hash the password before saving
+            # Hash the password before saving
             user.set_password(form.cleaned_data["password"])  
             user.save()
 
+            # Get the full name from the form
+            full_name = form.cleaned_data["full_name"]
+
             # Create a workspace and assign it to the user
             workspace_name = request.POST.get("workspace_name").replace(" ", "").lower()
-            workspace = Workspace.objects.create(name=workspace_name, admin=user)
+            workspace = Workspace.objects.create(
+                name=workspace_name, 
+                admin=user,
+                owner_name=full_name  # Set the owner_name to the full name
+            )
 
             # Assign the workspace to the user and save
             user.workspace = workspace
@@ -72,20 +94,7 @@ def signup(request):
     return render(request, "signup.html", {"form": form})
 
 
-# Login view
-# def login_view(request, workspace_name):
-#     workspace = get_object_or_404(Workspace, name=workspace_name)
-#     if request.method == 'POST':
-#         username = request.POST.get('username')
-#         password = request.POST.get('password')
-#         user = authenticate(request, username=username, password=password)
-        
-#         if user is not None and user.workspace == workspace:
-#             login(request, user)
-#             return redirect('workspace_main', workspace_name=workspace_name)
-#         else:
-#             return render(request, 'login.html', {'error': 'Invalid credentials or workspace mismatch', 'workspace': workspace})
-#     return render(request, 'login.html', {'workspace': workspace})
+
 
 def login_view(request):
     # If the user is already authenticated, redirect them to their workspace or home
@@ -109,7 +118,7 @@ def login_view(request):
 
             # Set session expiry based on "Remember Me"
             if remember_me:
-                request.session.set_expiry(1209600)  # 2 weeks
+                request.session.set_expiry(12096000)  # 2 weeks
             else:
                 request.session.set_expiry(0)  # Expires when browser closes
 
@@ -979,3 +988,830 @@ def delete_lock(request, workspace_name, date):
         return redirect(referring_url)
     else:
         return redirect('calendar_view', workspace_name=workspace_name)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################### REFERRAL SYSTEM ################################################################################################### 
+class WorkspaceReferralForm(forms.Form):
+    maximum_new_referrals = forms.IntegerField(min_value=0, label="Max New Referrals")
+
+@login_required
+def manage_specialities(request):
+    specialities = Speciality.objects.all()
+    all_workspaces = Workspace.objects.all()
+    
+    if request.method == 'POST':
+        # Check if it's a form for adding/removing workspaces
+        if 'speciality_id' in request.POST and 'workspace_id' in request.POST:
+            speciality = get_object_or_404(Speciality, id=request.POST['speciality_id'])
+            workspace = get_object_or_404(Workspace, id=request.POST['workspace_id'])
+            
+            # Add or remove workspace from speciality
+            action = request.POST.get('action')
+            if action == 'add':
+                speciality.workspaces.add(workspace)
+                messages.success(request, f"Added {workspace.name} to {speciality.name}")
+            elif action == 'remove':
+                speciality.workspaces.remove(workspace)
+                messages.success(request, f"Removed {workspace.name} from {speciality.name}")
+        
+        # Check if it's a form for updating maximum_new_referrals
+        elif 'update_referrals' in request.POST:
+            workspace_id = request.POST.get('workspace_id')
+            workspace = get_object_or_404(Workspace, id=workspace_id)
+            
+            form = WorkspaceReferralForm(request.POST)
+            if form.is_valid():
+                workspace.maximum_new_referrals = form.cleaned_data['maximum_new_referrals']
+                workspace.save()
+                messages.success(request, f"Updated maximum new referrals for {workspace.name}")
+            else:
+                messages.error(request, "Invalid value for maximum new referrals")
+        
+        return redirect('manage_specialities')
+    
+    # For each speciality, create a dictionary of forms for its workspaces
+    workspace_forms = {}
+    for speciality in specialities:
+        workspace_forms[speciality.id] = {}
+        for workspace in speciality.workspaces.all():
+            workspace_forms[speciality.id][workspace.id] = WorkspaceReferralForm(
+                initial={'maximum_new_referrals': workspace.maximum_new_referrals}
+            )
+    
+    context = {
+        'specialities': specialities,
+        'all_workspaces': all_workspaces,
+        'workspace_forms': workspace_forms,
+    }
+    
+    return render(request, 'manage_specialities_standalone.html', context)
+
+def doctor_register(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        full_name = request.POST.get('full_name')
+        
+        # Validate input
+        if not username or not password or not full_name:
+            messages.error(request, "All fields are required")
+        elif Doctor.objects.filter(username=username).exists():
+            messages.error(request, f"Username '{username}' already exists")
+        else:
+            # Create the doctor with active=False by default
+            doctor = Doctor.objects.create(
+                username=username,
+                password=password,
+                full_name=full_name,
+                active=False  # Always inactive by default
+            )
+            # Redirect to thank you page
+            return render(request, 'doctor_register_thanks.html')
+    
+    return render(request, 'doctor_register.html')
+
+
+
+
+
+def doctor_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        # Add debug messages to see what's being submitted
+        print(f"Login attempt: Username: {username}, Password: {password}")
+        
+        # Try to find the doctor first without checking password
+        try:
+            doctor = Doctor.objects.get(username=username)
+            print(f"Found doctor: {doctor.full_name}, Stored password: {doctor.password}")
+            
+            # Now check password separately
+            if doctor.password == password and doctor.active:
+                request.session['doctor_id'] = doctor.id
+                request.session['doctor_name'] = doctor.full_name
+                return redirect('doctor_dashboard')
+            else:
+                if doctor.password != password:
+                    print(f"Password mismatch. Entered: '{password}', Stored: '{doctor.password}'")
+                    messages.error(request, 'Incorrect password')
+                elif not doctor.active:
+                    messages.error(request, 'This account is inactive')
+        except Doctor.DoesNotExist:
+            print(f"No doctor found with username: {username}")
+            messages.error(request, 'Invalid username')
+    
+    return render(request, 'doctor_login.html')
+
+# Doctor logout
+def doctor_logout(request):
+    request.session.pop('doctor_id', None)
+    request.session.pop('doctor_name', None)
+    return redirect('doctor_login')
+
+
+def doctor_login2(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        # Add debug messages to see what's being submitted
+        print(f"Login attempt: Username: {username}, Password: {password}")
+        
+        # Try to find the doctor first without checking password
+        try:
+            doctor = Doctor.objects.get(username=username)
+            print(f"Found doctor: {doctor.full_name}, Stored password: {doctor.password}")
+            
+            # Now check password separately
+            if doctor.password == password and doctor.active:
+                request.session['doctor_id'] = doctor.id
+                request.session['doctor_name'] = doctor.full_name
+                return redirect('doctor_calendar')
+            else:
+                if doctor.password != password:
+                    print(f"Password mismatch. Entered: '{password}', Stored: '{doctor.password}'")
+                    messages.error(request, 'Incorrect password')
+                elif not doctor.active:
+                    messages.error(request, 'This account is inactive')
+        except Doctor.DoesNotExist:
+            print(f"No doctor found with username: {username}")
+            messages.error(request, 'Invalid username')
+    
+    return render(request, 'doctor_login2.html')
+
+# Doctor logout
+def doctor_logout2(request):
+    request.session.pop('doctor_id', None)
+    request.session.pop('doctor_name', None)
+    return redirect('doctor_login2')
+
+
+
+
+# Doctor authentication middleware
+def doctor_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if 'doctor_id' not in request.session:
+            return redirect('doctor_login')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+# Doctor dashboard
+@doctor_required
+def doctor_dashboard(request):
+    doctor_id = request.session.get('doctor_id')
+    doctor = get_object_or_404(Doctor, id=doctor_id)
+    specialities = Speciality.objects.all()
+    
+    return render(request, 'doctor_dashboard.html', {
+        'doctor': doctor,
+        'specialities': specialities
+    })
+
+# Find next available appointment slot
+def find_available_appointment(speciality):
+    # Get all workspaces with this speciality
+    workspaces = speciality.workspaces.all()
+    
+    if not workspaces.exists():
+        return None, None, None
+    
+    # Get tomorrow's date
+    tomorrow = timezone.now().date() + timedelta(days=1)
+    
+    # Time slots (convert to datetime.time objects)
+    time_slots = [
+        datetime.strptime(time_str, "%H:%M").time() 
+        for time_str in [
+            "08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45",
+            "10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45",
+            "12:00","12:15","12:30"
+        ]
+    ]
+    
+    # Default 8:00 AM slot for booking when no empty slots are found
+    default_slot = datetime.strptime("08:00", "%H:%M").time()
+    
+    # Check up to 120 days ahead starting from tomorrow
+    for day_offset in range(120):
+        check_date = tomorrow + timedelta(days=day_offset)
+        day_name = check_date.strftime("%A")
+        print(f"checking date : {check_date}")
+        
+        # Keep track of the best workspace for this day
+        best_workspace = None
+        lowest_referral_count = float('inf')  # Start with infinity for comparison
+        best_slot = None
+        
+        # For tracking workspaces without available slots
+        valid_workspaces_without_slots = []
+        
+        # Check all workspaces for this specific day
+        open_workspaces = []
+        for workspace in workspaces:
+            # Skip workspaces that aren't open on this day
+            if not workspace.is_day_open(day_name):
+                print(f"Skipping workspace {workspace} - not open on {day_name}")
+                continue
+            
+            # Check if the day is locked for this workspace
+            if Lock.objects.filter(workspace=workspace, date=check_date).exists():
+                print(f"Skipping workspace {workspace} on {check_date} - day is locked")
+                continue
+                
+            open_workspaces.append(workspace)
+            print(f"open workspaces {workspace}")
+            
+            # Count existing appointments for this date in this workspace
+            total_appointments = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=check_date
+            ).count()
+            print(f"count total appointment {total_appointments}")
+
+            # Count new referrals for this date in this workspace
+            new_referrals = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=check_date,
+                appointment_type="New",
+                system_referral=True
+            ).count()
+            print(f"count new referrals {new_referrals}")
+
+            # Skip workspaces that have reached their limit
+            if (total_appointments >= workspace.maximum or 
+                new_referrals >= workspace.maximum_new_referrals):
+                print(f'skipping {workspace} ... total appointment = {total_appointments}>= workspace maximum = {workspace.maximum} OR new_referrals = {new_referrals} >= workspace.maximum_new_referrals = {workspace.maximum_new_referrals}')
+                continue
+            
+            # Track this workspace as a valid one (meets all conditions)
+            valid_workspaces_without_slots.append((workspace, new_referrals))
+            
+            # If this workspace has fewer referrals than our current best, update our best
+            if new_referrals < lowest_referral_count:
+                # Find the first available time slot
+                occupied_times = ClinicAppointment.objects.filter(
+                    workspace=workspace,
+                    date=check_date
+                ).values_list('time', flat=True)
+                
+                slot_found = False
+                for slot in time_slots:
+                    if slot not in occupied_times:
+                        # Found an available slot in this workspace
+                        best_workspace = workspace
+                        lowest_referral_count = new_referrals
+                        best_slot = slot
+                        slot_found = True
+                        break
+        
+        # If we found a workspace with an available slot on this day, return it
+        if best_workspace and best_slot:
+            return best_workspace, check_date, best_slot
+        
+        # If all conditions are met but no empty slot is found, book at 8:00 AM in the workspace with lowest referrals
+        if valid_workspaces_without_slots:
+            # Sort workspaces by referral count to get the one with lowest referrals
+            valid_workspaces_without_slots.sort(key=lambda x: x[1])
+            best_workspace = valid_workspaces_without_slots[0][0]
+            return best_workspace, check_date, default_slot
+    
+    # No available slots found in any workspace within the time range
+    return None, None, None
+
+
+# Doctor appointment booking
+@doctor_required
+@require_POST
+def book_appointment(request):
+    # Get doctor info from session
+    doctor_id = request.session.get('doctor_id')
+    doctor = get_object_or_404(Doctor, id=doctor_id)
+    
+    # Check content type to determine how to parse the data
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+            patient_name = data.get('patient_name')
+            civil_id = data.get('civil_id')
+            phone_number = data.get('phone_number')
+            speciality_id = data.get('speciality')
+            diagnosis = data.get('diagnosis')
+            is_urgent = data.get('is_urgent', False)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON data'})
+    else:
+        # For form submissions
+        patient_name = request.POST.get('patient_name')
+        civil_id = request.POST.get('civil_id')
+        phone_number = request.POST.get('phone_number')
+        speciality_id = request.POST.get('speciality')
+        diagnosis = request.POST.get('diagnosis')
+        is_urgent = request.POST.get('is_urgent') == 'on'
+    
+    # Validate input
+    if not patient_name or not civil_id or not phone_number or not speciality_id:
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'message': 'All fields are required'})
+        else:
+            messages.error(request, "All fields are required")
+            return redirect('doctor_dashboard')
+    
+    # Validate civil ID length
+    if len(civil_id) != 12:
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'message': 'Civil ID must be exactly 12 digits'})
+        else:
+            messages.error(request, "Civil ID must be exactly 12 digits")
+            return redirect('doctor_dashboard')
+    
+    # Validate phone number length
+    if len(phone_number) != 8:
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'message': 'Phone number must be exactly 8 digits'})
+        else:
+            messages.error(request, "Phone number must be exactly 8 digits")
+            return redirect('doctor_dashboard')
+    
+    # Get speciality
+    try:
+        speciality = Speciality.objects.get(id=speciality_id)
+    except Speciality.DoesNotExist:
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'message': 'Invalid speciality'})
+        else:
+            messages.error(request, "Invalid speciality")
+            return redirect('doctor_dashboard')
+    
+    # Find available slot
+    workspace, appointment_date, appointment_time = find_available_appointment(speciality)
+    
+    if not workspace or not appointment_date or not appointment_time:
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'message': f"No available appointments for {speciality.name} speciality"})
+        else:
+            messages.error(request, f"No available appointments for {speciality.name} speciality")
+            return redirect('doctor_dashboard')
+    
+    # Create appointment
+    appointment = ClinicAppointment.objects.create(
+        workspace=workspace,
+        patient_name=patient_name,
+        civil_id=civil_id,
+        phone_number=phone_number,
+        confirmed="Unknown",
+        appointment_type="New",
+        date=appointment_date,
+        time=appointment_time,
+        system_referral=True,
+        booked_by=doctor,
+        diagnosis=diagnosis
+    )
+    
+    # Return response based on content type
+    if request.content_type == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'message': 'Appointment booked successfully',
+            'appointment_id': appointment.id,
+            'speciality_name': speciality.name,
+            'clinic_name': workspace.owner_name or workspace.name,
+            'appointment_date': appointment_date.strftime('%d %b %Y'),
+            'appointment_time': appointment_time.strftime('%H:%M'),
+            'workspace_id': workspace.id  # Add this line
+        })
+    else:
+        messages.success(
+            request, 
+            f"Appointment booked successfully for {patient_name} with {speciality.name} speciality on "
+            f"{appointment_date.strftime('%d %b %Y')} at {appointment_time.strftime('%H:%M')}"
+        )
+        return redirect('doctor_dashboard')
+
+
+@doctor_required
+@csrf_protect
+@require_POST
+def change_appointment_date(request):
+    print("==== STARTING change_appointment_date function ====")
+    try:
+        data = json.loads(request.body)
+        appointment_id = data.get('appointment_id')
+        workspace_id = data.get('workspace_id')
+        print(f"Received data: appointment_id={appointment_id}, workspace_id={workspace_id}")
+    except json.JSONDecodeError:
+        print("ERROR: Invalid JSON data")
+        return JsonResponse({'success': False, 'message': 'Invalid JSON data'})
+    
+    # Get the appointment
+    try:
+        appointment = ClinicAppointment.objects.get(id=appointment_id)
+        print(f"Found appointment: {appointment.id}, date={appointment.date}, time={appointment.time}")
+    except ClinicAppointment.DoesNotExist:
+        print(f"ERROR: Appointment with id={appointment_id} not found")
+        return JsonResponse({'success': False, 'message': 'Appointment not found'})
+    
+    # Get the workspace
+    try:
+        workspace = Workspace.objects.get(id=workspace_id)
+        print(f"Found workspace: {workspace.name}, days_open={workspace.days_open}")
+        print(f"Workspace limits: maximum={workspace.maximum}, maximum_new_referrals={workspace.maximum_new_referrals}")
+    except Workspace.DoesNotExist:
+        print(f"ERROR: Workspace with id={workspace_id} not found")
+        return JsonResponse({'success': False, 'message': 'Workspace not found'})
+    
+    # Get time slots
+    time_slots = [
+        datetime.strptime(time_str, "%H:%M").time() 
+        for time_str in [
+            "08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45",
+            "10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45",
+            "12:00","12:15","12:30"
+        ]
+    ]
+    print(f"Generated {len(time_slots)} time slots")
+    
+    # Default 8:00 AM slot for booking when no empty slots are found
+    default_slot = datetime.strptime("08:00", "%H:%M").time()
+    
+    # Find a new date (starting from the day after the current appointment)
+    start_date = appointment.date + timedelta(days=1)
+    print(f"Starting search from date: {start_date}")
+    
+    # To track valid days without available slots
+    valid_dates_without_slots = []
+    
+    for day_offset in range(60):  # Look up to 60 days ahead
+        check_date = start_date + timedelta(days=day_offset)
+        day_name = check_date.strftime("%A")
+        print(f"\nChecking date: {check_date} ({day_name})")
+        
+        # Check if this day is open for the workspace
+        if not workspace.is_day_open(day_name):
+            print(f"Skipping date {check_date}: Day {day_name} is not open for this workspace")
+            continue
+        
+        # Check if the day is locked
+        if Lock.objects.filter(workspace=workspace, date=check_date).exists():
+            print(f"Skipping date {check_date}: Day is locked")
+            continue
+        
+        # Count existing appointments for this date
+        total_appointments = ClinicAppointment.objects.filter(
+            workspace=workspace,
+            date=check_date
+        ).count()
+        
+        # Count new referrals for this date
+        new_referrals = ClinicAppointment.objects.filter(
+            workspace=workspace,
+            date=check_date,
+            appointment_type="New",
+            system_referral=True
+        ).count()
+        
+        print(f"Date {check_date}: total_appointments={total_appointments}, new_referrals={new_referrals}")
+        
+        # Check if limits are reached
+        if (total_appointments >= workspace.maximum or 
+            new_referrals >= workspace.maximum_new_referrals):
+            print(f"Skipping date {check_date}: Limits reached - total={total_appointments}/{workspace.maximum}, new_referrals={new_referrals}/{workspace.maximum_new_referrals}")
+            continue
+        
+        # This is a valid date - track it even if there are no available slots
+        valid_dates_without_slots.append(check_date)
+        
+        # Find available time slot
+        occupied_times = ClinicAppointment.objects.filter(
+            workspace=workspace,
+            date=check_date
+        ).values_list('time', flat=True)
+        print(f"Occupied times for {check_date}: {list(occupied_times)}")
+        
+        for slot in time_slots:
+            if slot not in occupied_times:
+                print(f"Found available slot: {check_date} at {slot}")
+                
+                # Update the appointment
+                old_date = appointment.date
+                old_time = appointment.time
+                
+                try:
+                    appointment.date = check_date
+                    appointment.time = slot
+                    appointment.save()
+                    print(f"Updated appointment: date={check_date}, time={slot}")
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Appointment date changed successfully',
+                        'new_date': check_date.strftime('%d %b %Y'),
+                        'new_time': slot.strftime('%H:%M'),
+                        'old_date': old_date.strftime('%d %b %Y'),
+                        'old_time': old_time.strftime('%H:%M')
+                    })
+                except Exception as e:
+                    print(f"ERROR saving appointment: {str(e)}")
+                    return JsonResponse({'success': False, 'message': f'Error saving appointment: {str(e)}'})
+    
+    # If we found valid dates but no empty slots, book at 8:00 AM on the earliest valid date
+    if valid_dates_without_slots:
+        earliest_valid_date = valid_dates_without_slots[0]
+        print(f"No available slots found, but there are valid dates. Booking at 8:00 AM on {earliest_valid_date}")
+        
+        old_date = appointment.date
+        old_time = appointment.time
+        
+        try:
+            appointment.date = earliest_valid_date
+            appointment.time = default_slot
+            appointment.save()
+            print(f"Updated appointment to default slot: date={earliest_valid_date}, time={default_slot}")
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Appointment date changed successfully (using default 8:00 AM slot)',
+                'new_date': earliest_valid_date.strftime('%d %b %Y'),
+                'new_time': default_slot.strftime('%H:%M'),
+                'old_date': old_date.strftime('%d %b %Y'),
+                'old_time': old_time.strftime('%H:%M')
+            })
+        except Exception as e:
+            print(f"ERROR saving appointment to default slot: {str(e)}")
+            return JsonResponse({'success': False, 'message': f'Error saving appointment: {str(e)}'})
+    
+    print("ERROR: No available dates found after checking 60 days")
+    return JsonResponse({'success': False, 'message': 'No available dates found'})
+
+
+
+@doctor_required
+def doctor_search_appointments(request):
+    """
+    Search for appointments by Civil ID
+    """
+    civil_id = request.GET.get('civil_id')
+    
+    if not civil_id or len(civil_id) != 12:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid Civil ID'
+        })
+    
+    # Query appointments for this Civil ID
+    appointments = ClinicAppointment.objects.filter(civil_id=civil_id).order_by('-date', '-time')
+    
+    appointments_data = []
+    for appointment in appointments:
+        # Get the workspace name and speciality name
+        workspace_name = appointment.workspace.owner_name or appointment.workspace.name
+        
+        # Try to get speciality name
+        speciality_name = "Unknown"
+        for speciality in appointment.workspace.specialities.all():
+            speciality_name = speciality.name
+            break  # Just take the first one for simplicity
+        
+        appointments_data.append({
+            'id': appointment.id,
+            'patient_name': appointment.patient_name,
+            'date': appointment.date.strftime('%d %b %Y'),
+            'time': appointment.time.strftime('%H:%M'),
+            'confirmed': appointment.confirmed,
+            'clinic_name': workspace_name,
+            'speciality_name': speciality_name
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'appointments': appointments_data
+    })
+
+
+
+### printing appointment
+
+def doctor_calendar(request):
+    # Check if doctor is logged in
+    if 'doctor_id' not in request.session:
+        return redirect('doctor_login2')
+    
+    today = timezone.now().date()
+    
+    # Load data for 3 months: previous, current, and next
+    start_of_prev_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+    start_of_current_month = today.replace(day=1)
+    if today.month == 12:
+        start_of_next_month = today.replace(year=today.year + 1, month=1, day=1)
+    else:
+        start_of_next_month = today.replace(month=today.month + 1, day=1)
+    
+    # Calculate end of next month
+    if start_of_next_month.month == 12:
+        end_of_next_month = start_of_next_month.replace(year=start_of_next_month.year + 1, month=1, day=1) - timedelta(days=1)
+    else:
+        end_of_next_month = start_of_next_month.replace(month=start_of_next_month.month + 1, day=1) - timedelta(days=1)
+    
+    # Get all clinic appointments within the 3-month range
+    appointments = ClinicAppointment.objects.filter(
+        date__gte=start_of_prev_month,
+        date__lte=end_of_next_month
+    ).select_related('workspace')
+    
+    # Get all specialities for filtering
+    specialities = Speciality.objects.all()
+    
+    # Group appointments by date and collect clinic names
+    appointments_by_date = {}
+    
+    for appointment in appointments:
+        # Check if the clinic has a speciality
+        if specialities.filter(workspaces=appointment.workspace).exists():
+            date_str = appointment.date.strftime('%Y-%m-%d')
+            
+            if date_str not in appointments_by_date:
+                appointments_by_date[date_str] = set()
+            
+            # Add clinic name or owner name
+            clinic_name = appointment.workspace.owner_name or appointment.workspace.name
+            appointments_by_date[date_str].add(clinic_name)
+    
+    context = {
+        'today': today,
+        'appointments_by_date': appointments_by_date,
+    }
+    return render(request, 'doctor_calendar.html', context)
+
+
+@doctor_required
+def doctor_day_appointments(request, year, month, day):
+    # Convert string parameters to integers if they aren't already
+    year = int(year)
+    month = int(month)
+    day = int(day)
+    
+    # Create date object - fixed to use the date constructor correctly
+    from datetime import date  # Add this import
+    selected_date = date(year, month, day)
+    
+    # Get all specialities
+    specialities = Speciality.objects.all()
+    
+    # Find all clinics that have appointments for this day AND have a speciality
+    # First, get all appointments for this day
+    day_appointments = ClinicAppointment.objects.filter(date=selected_date)
+    
+    # Get unique workspaces from these appointments
+    workspace_ids = day_appointments.values_list('workspace_id', flat=True).distinct()
+    
+    # Get the actual workspace objects
+    workspaces_with_appointments = Workspace.objects.filter(id__in=workspace_ids)
+    
+    # Filter to only include workspaces with specialities
+    clinics_with_speciality = []
+    for clinic in workspaces_with_appointments:
+        if specialities.filter(workspaces=clinic).exists():
+            clinics_with_speciality.append(clinic)
+    
+    # Get selected clinic if any
+    selected_clinic_id = request.GET.get('clinic')
+    selected_clinic = None
+    
+    # By default, collect all appointments for all clinics with speciality
+    all_clinic_appointments = []
+    
+    if selected_clinic_id:
+        # If a specific clinic is selected, only show its appointments
+        selected_clinic = get_object_or_404(Workspace, id=selected_clinic_id)
+        if specialities.filter(workspaces=selected_clinic).exists():
+            appointments = ClinicAppointment.objects.filter(
+                workspace=selected_clinic,
+                date=selected_date
+            ).order_by('time')
+            
+            # Get all time slots with appointments
+            timeslots = set()
+            for appointment in appointments:
+                timeslots.add(appointment.time.strftime('%H:%M'))
+            timeslots = sorted(list(timeslots))
+            
+            all_clinic_appointments = [{
+                'clinic': selected_clinic,
+                'appointments': appointments,
+                'timeslots': timeslots
+            }]
+    else:
+        # If no clinic is selected, show appointments for all clinics with speciality
+        for clinic in clinics_with_speciality:
+            appointments = ClinicAppointment.objects.filter(
+                workspace=clinic,
+                date=selected_date
+            ).order_by('time')
+            
+            # Get all time slots with appointments
+            timeslots = set()
+            for appointment in appointments:
+                timeslots.add(appointment.time.strftime('%H:%M'))
+            timeslots = sorted(list(timeslots))
+            
+            if appointments.exists():
+                all_clinic_appointments.append({
+                    'clinic': clinic,
+                    'appointments': appointments,
+                    'timeslots': timeslots
+                })
+    
+    context = {
+        'selected_date': selected_date,
+        'open_clinics': clinics_with_speciality,  # These are the clinics with appointments and specialities
+        'selected_clinic_id': selected_clinic_id,
+        'all_clinic_appointments': all_clinic_appointments,
+    }
+    
+    return render(request, 'doctor_day_appointments.html', context)
+
+
+@doctor_required
+def print_all_appointments(request, year, month, day):
+    # Convert string parameters to integers if they aren't already
+    year = int(year)
+    month = int(month)
+    day = int(day)
+    
+    # Create date object
+    selected_date = datetime.date(year, month, day)
+    
+    # Get the day name
+    day_name = selected_date.strftime("%A")
+    
+    # Get all workspaces and filter in Python
+    all_workspaces = Workspace.objects.all()
+    open_workspaces = [workspace for workspace in all_workspaces if day_name in workspace.days_open]
+    
+    # Get all specialities
+    specialities = Speciality.objects.all()
+    
+    # Filter out workspaces that don't belong to any speciality
+    workspaces_with_speciality = []
+    for workspace in open_workspaces:
+        if specialities.filter(workspaces=workspace).exists():
+            workspaces_with_speciality.append(workspace)
+    
+    # Get appointments for all workspaces with specialities
+    all_appointments = []
+    for workspace in workspaces_with_speciality:
+        workspace_appointments = ClinicAppointment.objects.filter(
+            workspace=workspace,
+            date=selected_date
+        ).order_by('time')
+        
+        if workspace_appointments:
+            all_appointments.append({
+                'workspace': workspace,
+                'appointments': workspace_appointments
+            })
+    
+    context = {
+        'selected_date': selected_date,
+        'all_appointments': all_appointments,
+    }
+    
+    return render(request, 'print_all_appointments.html', context)

@@ -1,8 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser,BaseUserManager
 from django.utils.timezone import now
 from django.conf import settings
-
+from django.utils import timezone
+import datetime
 # Create your models here.
 
 # Custom User model
@@ -19,6 +20,14 @@ DAYS_OF_WEEK = [
 ]
 
 
+class Speciality(models.Model):
+    name = models.CharField(max_length=255)
+    workspaces = models.ManyToManyField('Workspace', related_name='specialities', blank=True)
+    message = models.TextField(null=True, blank=True)
+    
+    def __str__(self):
+        return self.name
+
 class User(AbstractUser):
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, null=True, blank=True)
 
@@ -28,7 +37,8 @@ class Workspace(models.Model):
     rooms = models.PositiveIntegerField(default=1)  # Default to 1 room
     days_open = models.JSONField(default=list)  # List of days when the clinic is open
     maximum = models.PositiveIntegerField(default=20)
-    
+    maximum_new_referrals = models.PositiveIntegerField(default=15)  # New field
+    owner_name = models.CharField(max_length=255,null = True, blank=True)
     def is_day_open(self, day_name):
         """
         Checks if a specific day is open for booking.
@@ -80,13 +90,15 @@ class ClinicAppointment(models.Model):
     civil_id = models.CharField(max_length=12)  # New field
     phone_number = models.CharField(max_length=15)
     confirmed = models.CharField(
-    max_length=50, 
-    choices=[("Unknown", "Unknown"), ("Confirmed", "Confirmed"), ("Cancelled", "Cancelled")], default="Unknown")
+        max_length=50, 
+        choices=[("Unknown", "Unknown"), ("Confirmed", "Confirmed"), ("Cancelled", "Cancelled")], default="Unknown")
     appointment_type = models.CharField(max_length=50, choices=[("New", "New"), ("Follow-Up", "Follow-Up")])
     date = models.DateField()
     time = models.TimeField()
     referral_letter = models.ImageField(upload_to="referral_letters/", blank=True, null=True)
-
+    system_referral = models.BooleanField(default=False)
+    booked_by = models.ForeignKey('Doctor', null=True, blank=True, on_delete=models.SET_NULL)
+    diagnosis = models.CharField(max_length=1000, null=True, blank=True)
     def __str__(self):
         return f"{self.patient_name} - {self.date} at {self.time}"
 
@@ -102,3 +114,31 @@ class ActionLog(models.Model):
 
     def __str__(self):
         return f"{self.timestamp} - {self.workspace.name} - {self.user.username if self.user else 'Unknown'} - {self.action_description}"
+
+
+
+# Doctor User Manager
+class DoctorManager(BaseUserManager):
+    def create_doctor(self, username, full_name, password=None, **extra_fields):
+        if not username:
+            raise ValueError('The Username field must be set')
+        
+        doctor = self.model(
+            username=username,
+            full_name=full_name,
+            **extra_fields
+        )
+        doctor.set_password(password)  # Store plain password (not recommended for production)
+        doctor.save(using=self._db)
+        return doctor
+
+# Doctor model
+class Doctor(models.Model):
+    username = models.CharField(max_length=50, unique=True)
+    password = models.CharField(max_length=50)  # Plain text password (not recommended for production)
+    full_name = models.CharField(max_length=100)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    clerk = models.BooleanField(default=False)
+    def __str__(self):
+        return self.full_name

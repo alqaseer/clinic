@@ -133,6 +133,19 @@ def login_view(request):
             messages.error(request, "Invalid username or password.")
             return redirect("login")
 
+    # Clear any lock/unlock messages
+    storage = messages.get_messages(request)
+    for message in list(storage):
+        if 'locked' in str(message) or 'unlocked' in str(message):
+            # Skip this message
+            pass
+        else:
+            # Keep other messages by adding them back
+            messages.add_message(request, message.level, message.message)
+
+    # Make sure to return an HttpResponse object
+    return render(request, "login.html")
+
 
 def logout_view(request):
     # If the user is authenticated, get their workspace name

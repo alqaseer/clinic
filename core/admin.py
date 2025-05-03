@@ -31,8 +31,21 @@ class SpecialityAdmin(admin.ModelAdmin):
         return ", ".join([workspace.name for workspace in obj.workspaces.all()])
     get_workspaces.short_description = "Workspaces"
 
+# Create a ModelForm for the Workspace model
+class WorkspaceAdminForm(forms.ModelForm):
+    class Meta:
+        model = Workspace
+        fields = '__all__'
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make days_open field not required
+        if 'days_open' in self.fields:
+            self.fields['days_open'].required = False
+
 # Custom Admin for Workspace
 class WorkspaceAdmin(admin.ModelAdmin):
+    form = WorkspaceAdminForm  # Use the custom form
     list_display = ('name', 'admin_username', 'get_specialities')
     search_fields = ('name', 'admin__username', 'specialities__name')
     inlines = [SurgicalBookingInline, SpecialityInline]

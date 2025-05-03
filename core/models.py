@@ -78,9 +78,11 @@ class SurgicalBooking(models.Model):
         default='waiting'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    photo_attachment = models.ImageField(upload_to="surgical_attachments/", blank=True, null=True)
 
     def __str__(self):
         return f"{self.name} ({self.civil_id})"
+
 
 
 

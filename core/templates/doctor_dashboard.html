@@ -253,12 +253,7 @@
                         <div v-if="errors.diagnosis" class="mt-1 text-sm text-red-600">[[ errors.diagnosis ]]</div>
                     </div>
                     
-                    <!-- Urgent Checkbox -->
-                    <div class="flex items-center mb-6">
-                        <input type="checkbox" id="is_urgent" v-model="isUrgent"
-                              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                        <label for="is_urgent" class="ml-2 block text-sm text-gray-700">Urgent Case</label>
-                    </div>
+
                     
                     <!-- Submit Button -->
                     <button type="submit" 
@@ -352,7 +347,14 @@
                             </div>
                         </div>
                     </div>
-                    
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                        <div class="flex items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5 mr-2 text-red-600 flex-shrink-0 warning-icon-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p class="text-red-700 font-medium">If the case is urgent please speak to Dr.[[ appointmentDetails.clinicName ]] or his team to try to get an earlier appointment</p>
+                        </div>
+                    </div>
                     <button @click="resetForm" class="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
                         Book New Appointment
                     </button>

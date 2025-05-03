@@ -171,12 +171,11 @@ def workspace_main(request, workspace_name):
 
     # Check if the logged-in user is "alqaseer"
     if request.user.username == "alqaseer":
-        # Calculate the cutoff date (14 days ago)
-        
-        cutoff_date = now().date() - timedelta(weeks=12)  
+        # Calculate the cutoff date for referral letters (12 weeks ago)
+        cutoff_date_letters = now().date() - timedelta(weeks=12)  
 
         # Find old appointments
-        old_appointments = ClinicAppointment.objects.filter(date__lt=cutoff_date)
+        old_appointments = ClinicAppointment.objects.filter(date__lt=cutoff_date_letters)
 
         for appointment in old_appointments:
             # Delete referral letter file if exists
@@ -185,18 +184,44 @@ def workspace_main(request, workspace_name):
                 if os.path.exists(file_path):
                     os.remove(file_path)
                     
-
             # Delete the database entry
             appointment.referral_letter = None
             appointment.save()
+            
+        # Calculate the cutoff date for surgical photos (2 years ago)
+        cutoff_date_photos = now().date() - timedelta(days=730)  # 365*2
+        print("looking and deleting old surgical booking's photos")
+        # Find old surgical bookings with photos
+        old_bookings = SurgicalBooking.objects.filter(
+            created_at__lt=cutoff_date_photos,
+            photo_attachment__isnull=False
+        )
+        
+        for booking in old_bookings:
+            # Delete the photo file if it exists
+            if booking.photo_attachment:
+                
+                file_path = os.path.join(settings.MEDIA_ROOT, str(booking.photo_attachment))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    
+            # Clear the photo field in the database
+            booking.photo_attachment = None
+            booking.save()
+            
+            # Log the action
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Automatically removed old photo for {booking.name} (Civil ID: {booking.civil_id}) due to 2-year retention policy."
+            )
 
     # Count booked cases (future date, since ClinicAppointment has no status field)
     booked_cases_count = SurgicalBooking.objects.filter(
-    workspace=workspace,
-    date__gte=now().date(),
-    status='booked'
+        workspace=workspace,
+        date__gte=now().date(),
+        status='booked'
     ).count()
-
 
     # Count waiting list cases from SurgicalBooking (no date, not deleted)
     waiting_list_count = SurgicalBooking.objects.filter(
@@ -214,7 +239,6 @@ def workspace_main(request, workspace_name):
         "waiting_list_count": waiting_list_count,
         "users": users
     })
-
 
 @login_required
 def booked_cases(request, workspace_name):
@@ -300,7 +324,7 @@ def add_surgical_booking(request, workspace_name):
         return redirect('login')
 
     if request.method == 'POST':
-        form = SurgicalBookingForm(request.POST)
+        form = SurgicalBookingForm(request.POST, request.FILES)  # Updated to handle file uploads
         if form.is_valid():
             booking = form.save(commit=False)
             booking.workspace = workspace  # Assign the booking to the current workspace
@@ -310,13 +334,12 @@ def add_surgical_booking(request, workspace_name):
                 booking.status = 'waiting'
             booking.save()
 
-            # ✅ Add new ActionLog entry
+            # Add new ActionLog entry
             ActionLog.objects.create(
                 workspace=workspace,
                 user=request.user,
                 action_description=f"Added surgical booking for {booking.name} (Civil ID: {booking.civil_id}) (Procedure: {booking.procedure})."
             )
-
 
             return redirect('booked_cases', workspace_name=workspace_name)  # Redirect to booked cases
     else:
@@ -690,7 +713,8 @@ def edit_surgical_booking(request, workspace_name, case_id):
     next_url = request.GET.get("next", request.POST.get("next", request.META.get("HTTP_REFERER", None)))
 
     if request.method == "POST":
-        form = SurgicalBookingForm(request.POST, instance=case)
+        # Add request.FILES parameter to handle file uploads
+        form = SurgicalBookingForm(request.POST, request.FILES, instance=case)
         if form.is_valid():
             form.save()
             # ✅ Add new ActionLog entry

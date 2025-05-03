@@ -3,88 +3,118 @@
 {% block title %}Add Surgical Booking{% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
-    <h1 class="text-2xl font-bold text-gray-800 mb-4 text-center">Add Surgical Booking</h1>
+<div class="max-w-2xl mx-auto bg-white shadow-md rounded-lg p-8">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Add Surgical Booking</h1>
 
-    <form method="POST" enctype="multipart/form-data" class="space-y-4">
+    {% if form.errors %}
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+        <p class="font-bold">Please correct the errors below:</p>
+        <ul class="list-disc list-inside">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
         {% csrf_token %}
 
-        <!-- Patient Name -->
-        <div>
-            <label for="id_name" class="block text-sm font-medium text-gray-700">Patient Name</label>
-            <input type="text" name="name" id="id_name" value="{{ form.name.value|default_if_none:'' }}" 
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Patient Name -->
+            <div>
+                <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
+                <input type="text" name="name" id="id_name" value="{{ form.name.value|default_if_none:'' }}" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
 
-        <!-- Civil ID -->
-        <div>
-            <label for="id_civil_id" class="block text-sm font-medium text-gray-700">Civil ID</label>
-            <input type="text" name="civil_id" id="id_civil_id" value="{{ form.civil_id.value|default_if_none:'' }}" 
-                minlength="12" maxlength="12" pattern="\d{12}"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
-        </div>
+            <!-- Civil ID -->
+            <div>
+                <label for="id_civil_id" class="block text-sm font-medium text-gray-700 mb-1">Civil ID</label>
+                <input type="text" name="civil_id" id="id_civil_id" value="{{ form.civil_id.value|default_if_none:'' }}" 
+                    minlength="12" maxlength="12" pattern="\d{12}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                <p class="mt-1 text-xs text-gray-500">Must be exactly 12 digits</p>
+            </div>
 
-        <!-- Phone Number -->
-        <div>
-            <label for="id_phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
-            <input type="text" name="phone" id="id_phone" value="{{ form.phone.value|default_if_none:'' }}" 
-                minlength="8" maxlength="8" pattern="\d{8}"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            <!-- Phone Number -->
+            <div>
+                <label for="id_phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input type="text" name="phone" id="id_phone" value="{{ form.phone.value|default_if_none:'' }}" 
+                    minlength="8" maxlength="8" pattern="\d{8}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                <p class="mt-1 text-xs text-gray-500">Must be exactly 8 digits</p>
+            </div>
+
+            <!-- Side Selection -->
+            <div>
+                <label for="id_side" class="block text-sm font-medium text-gray-700 mb-1">Side</label>
+                <select name="side" id="id_side"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <option value="Right" {% if form.side.value == "Right" %}selected{% endif %}>Right</option>
+                    <option value="Left" {% if form.side.value == "Left" %}selected{% endif %}>Left</option>
+                    <option value="Not Applicable" {% if form.side.value == "Not Applicable" or not form.side.value %}selected{% endif %}>Not Applicable</option>
+                </select>
+            </div>
         </div>
 
         <!-- Diagnosis -->
         <div>
-            <label for="id_diagnosis" class="block text-sm font-medium text-gray-700">Diagnosis</label>
+            <label for="id_diagnosis" class="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
             <textarea name="diagnosis" id="id_diagnosis"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 rows="2" required>{{ form.diagnosis.value|default_if_none:'' }}</textarea>
         </div>
 
         <!-- Procedure -->
         <div>
-            <label for="id_procedure" class="block text-sm font-medium text-gray-700">Procedure</label>
+            <label for="id_procedure" class="block text-sm font-medium text-gray-700 mb-1">Procedure</label>
             <textarea name="procedure" id="id_procedure"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 rows="2" required>{{ form.procedure.value|default_if_none:'' }}</textarea>
         </div>
 
-        <!-- Side Selection -->
+        <!-- Photo Attachment - New field -->
         <div>
-            <label for="id_side" class="block text-sm font-medium text-gray-700">Side</label>
-            <select name="side" id="id_side"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                <option value="Right" {% if form.side.value == "Right" %}selected{% endif %}>Right</option>
-                <option value="Left" {% if form.side.value == "Left" %}selected{% endif %}>Left</option>
-                <option value="Not Applicable" {% if form.side.value == "Not Applicable" or not form.side.value %}selected{% endif %}>Not Applicable</option>
-            </select>
+            <label for="id_photo_attachment" class="block text-sm font-medium text-gray-700 mb-1">Photo Attachment</label>
+            <div class="flex items-center">
+                <input type="file" name="photo_attachment" id="id_photo_attachment" accept="image/*"
+                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+            <p class="mt-1 text-xs text-gray-500">Optional. Upload relevant images or documents (X-rays, reports, etc.)</p>
         </div>
 
-        <!-- Date -->
-        <div>
-            <label for="id_date" class="block text-sm font-medium text-gray-700">Date</label>
-            <input type="date" name="date" id="id_date" value="{{ form.date.value|date:'Y-m-d' }}" 
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                min="{% now 'Y-m-d' %}">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Date -->
+            <div>
+                <label for="id_date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input type="date" name="date" id="id_date" value="{{ form.date.value|date:'Y-m-d' }}" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    min="{% now 'Y-m-d' %}">
+                <p class="mt-1 text-xs text-gray-500">Leave empty if waiting for scheduling</p>
+            </div>
         </div>
 
         <!-- Notes -->
         <div>
-            <label for="id_notes" class="block text-sm font-medium text-gray-700">Notes</label>
+            <label for="id_notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea name="notes" id="id_notes"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 rows="3">{{ form.notes.value|default_if_none:'' }}</textarea>
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex flex-col space-y-2 mt-6">
-            <button type="submit"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center">
-                Add Booking
-            </button>
+        <div class="flex flex-col sm:flex-row sm:justify-between space-y-2 sm:space-y-0 sm:space-x-4 mt-8">
             <a href="{% url 'booked_cases' workspace.name %}" 
-                class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 text-center">
+                class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-center transition-colors">
                 Cancel
             </a>
+            <button type="submit"
+                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center transition-colors">
+                Add Booking
+            </button>
         </div>
     </form>
 </div>

@@ -40,22 +40,7 @@ def home(request):
         if user_workspace:
             return redirect("workspace_main", workspace_name=user_workspace.name)
     
-    # If the user is logged in as a doctor, check if they are a clerk
-    if 'doctor_id' in request.session:
-        doctor_id = request.session['doctor_id']
-        try:
-            doctor = Doctor.objects.get(id=doctor_id)
-            if doctor.clerk:
-                # If doctor is a clerk, redirect to clerk page (doctor_calendar)
-                return redirect("doctor_calendar")
-            else:
-                # If doctor is not a clerk, redirect to referral page (doctor_dashboard)
-                return redirect("refer")
-        except Doctor.DoesNotExist:
-            # If doctor doesn't exist, clear the session
-            del request.session['doctor_id']
-            del request.session['doctor_name']
-
+    
     # If user is not logged in or has no workspace, show home page
     return render(request, "home.html")
 

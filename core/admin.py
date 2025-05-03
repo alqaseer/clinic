@@ -1,13 +1,14 @@
 from django.contrib import admin
+from django import forms  # Add this import
 from .models import *
 
 # Inline for booked surgical cases
-class SurgicalBookingInline(admin.TabularInline):  # Display cases in a tabular format
+class SurgicalBookingInline(admin.TabularInline):
     model = SurgicalBooking
-    extra = 0  # No extra blank fields
-    fields = ('name', 'civil_id', 'phone', 'procedure', 'date', 'status')  # Fields to show
-    readonly_fields = ('name', 'civil_id', 'phone', 'procedure', 'date', 'status')  # Make them non-editable
-    ordering = ('date',)  # Order cases by date
+    extra = 0
+    fields = ('name', 'civil_id', 'phone', 'procedure', 'date', 'status')
+    readonly_fields = ('name', 'civil_id', 'phone', 'procedure', 'date', 'status')
+    ordering = ('date',)
 
     def get_queryset(self, request):
         """Filter to show only booked cases"""
@@ -20,17 +21,6 @@ class SpecialityInline(admin.TabularInline):
     verbose_name = "Speciality"
     verbose_name_plural = "Specialities"
 
-# Admin for Speciality
-class SpecialityAdmin(admin.ModelAdmin):
-    list_display = ('name', 'get_workspaces')
-    search_fields = ('name', 'workspaces__name')
-    filter_horizontal = ('workspaces',)  # Makes managing many-to-many relationships easier
-    
-    def get_workspaces(self, obj):
-        """Display the workspaces associated with this speciality"""
-        return ", ".join([workspace.name for workspace in obj.workspaces.all()])
-    get_workspaces.short_description = "Workspaces"
-
 # Create a ModelForm for the Workspace model
 class WorkspaceAdminForm(forms.ModelForm):
     class Meta:
@@ -42,6 +32,17 @@ class WorkspaceAdminForm(forms.ModelForm):
         # Make days_open field not required
         if 'days_open' in self.fields:
             self.fields['days_open'].required = False
+
+# Admin for Speciality
+class SpecialityAdmin(admin.ModelAdmin):
+    list_display = ('name', 'get_workspaces')
+    search_fields = ('name', 'workspaces__name')
+    filter_horizontal = ('workspaces',)
+    
+    def get_workspaces(self, obj):
+        """Display the workspaces associated with this speciality"""
+        return ", ".join([workspace.name for workspace in obj.workspaces.all()])
+    get_workspaces.short_description = "Workspaces"
 
 # Custom Admin for Workspace
 class WorkspaceAdmin(admin.ModelAdmin):

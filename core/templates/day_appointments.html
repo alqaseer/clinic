@@ -71,9 +71,9 @@
                             {% if not forloop.first and previous_time == time %}
                                 <div class="border-t-2 border-gray-300 my-4 w-full"></div>
                             {% endif %}
-                            <!-- Check if it's a new referral and highlight with pale yellow background -->
-                            <div class="{% if appointment.system_referral and appointment.appointment_type == 'New' %}bg-yellow-50 p-3 rounded{% else %}p-2{% endif %} break-words"
-                                {% if appointment.system_referral and appointment.appointment_type == 'New' %}data-referral="true"{% endif %}>
+                            <!-- Highlight all new appointments -->
+                            <div class="{% if appointment.appointment_type == 'New' %}bg-yellow-50 p-3 rounded{% else %}p-2{% endif %} break-words"
+                                {% if appointment.appointment_type == 'New' %}data-new="true"{% endif %}>
                                 <div class="text-gray-900 font-medium">{{ appointment.patient_name }}</div>
                                 <div class="text-gray-600">ID: {{ appointment.civil_id }}</div>
                                 {% with time as previous_time %}
@@ -139,9 +139,9 @@
                             {% if not forloop.first and previous_time == time %}
                                 <div class="border-t-2 border-gray-300 my-6 w-full opacity-100"></div>
                             {% endif %}
-                            <!-- Add data-referral attribute for highlighting in JavaScript -->
-                            <div class="{% if appointment.system_referral and appointment.appointment_type == 'New' %}bg-yellow-50{% endif %} flex items-center space-x-3 text-sm p-2" 
-                                {% if appointment.system_referral and appointment.appointment_type == 'New' %}data-referral="true"{% endif %}>
+                            <!-- Highlight all new appointments -->
+                            <div class="{% if appointment.appointment_type == 'New' %}bg-yellow-50{% endif %} flex items-center space-x-3 text-sm p-2" 
+                                {% if appointment.appointment_type == 'New' %}data-new="true"{% endif %}>
                                 <span class="text-gray-900 font-medium">{{ appointment.patient_name }}</span>
                                 <span class="text-gray-400">|</span>
                                 <span class="text-gray-600">{{ appointment.civil_id }}</span>
@@ -206,11 +206,11 @@
     </table>
 </div>
 
-<!-- Legend for new referrals with narrower highlight -->
+<!-- Legend for new appointments with narrower highlight -->
 <div class="mt-6 flex items-center justify-center">
     <span class="inline-flex items-center px-4 py-2 bg-yellow-50 text-gray-800 rounded-md border border-yellow-100">
         <i class="fas fa-info-circle mr-2"></i>
-        <strong>Note:</strong> Highlighted rows indicate new patient referrals
+        <strong>Note:</strong> Highlighted rows indicate new patient appointments
     </span>
 </div>
 
@@ -314,13 +314,13 @@ function printAppointments() {
     printContent += "table { border-collapse: collapse; width: 100%; }";
     printContent += "th, td { border: 1px solid #aaa; padding: 4px; text-align: left; font-size: 9px; line-height: 1.1; }"; // Smaller font and padding
     printContent += "th { background-color: #f2f2f2; font-weight: bold; }";
-    printContent += "tr.new-referral { background-color: #b0b0b0 !important; }"; // Darker gray background
+    printContent += "tr.new-appointment { background-color: #b0b0b0 !important; }"; // Darker gray background
     printContent += ".legend { margin-top: 8px; font-size: 8px; text-align: center; }"; // Smaller legend
     printContent += ".legend span { display: inline-block; background-color: #b0b0b0; padding: 2px 8px; border-radius: 2px; }"; // Darker gray for legend too
     printContent += "#printTip { display: block; }"; // Show by default
     printContent += "@media print {";
     printContent += "  @page { margin: 0.5cm; }"; // Smaller page margins
-    printContent += "  tr.new-referral { background-color: #b0b0b0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }"; // Force in print media
+    printContent += "  tr.new-appointment { background-color: #b0b0b0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }"; // Force in print media
     printContent += "  table { page-break-inside: auto; }";
     printContent += "  tr { page-break-inside: avoid; page-break-after: auto; }";
     printContent += "  #printTip { display: none !important; }"; // Hide when printing
@@ -339,9 +339,9 @@ function printAppointments() {
             {% if appointment.time|date:"H:i" == time %}
                 // Skip appointments with "Cancelled" status
                 {% if appointment.confirmed != "Cancelled" %}
-                    // Apply the new-referral class directly to the tr element with darker background
-                    {% if appointment.system_referral and appointment.appointment_type == 'New' %}
-                        printContent += "<tr class='new-referral' style='background-color: #b0b0b0;'>";  // Inline style as backup with darker gray
+                    // Apply the new-appointment class directly to the tr element with darker background
+                    {% if appointment.appointment_type == 'New' %}
+                        printContent += "<tr class='new-appointment' style='background-color: #b0b0b0;'>";  // Inline style as backup with darker gray
                     {% else %}
                         printContent += "<tr>";
                     {% endif %}
@@ -362,7 +362,7 @@ function printAppointments() {
     
     // Compact legend with darker background
     printContent += "<div class='legend'>";
-    printContent += "<span><strong>Note:</strong> Highlighted rows indicate new patient referrals</span>";
+    printContent += "<span><strong>Note:</strong> Highlighted rows indicate new patient appointments</span>";
     printContent += "</div>";
     
     // Print tip that will only be visible in the browser, not when printing

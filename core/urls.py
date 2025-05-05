@@ -60,6 +60,8 @@ urlpatterns = [
     path("workspace/<str:workspace_name>/appointments/search/ajax/", views.search_appointments_ajax, name="search_appointments_ajax"),
 
 
+    #patient lookup
+    path('patient-lookup/', views.patient_lookup, name='patient_lookup'),
 
 
 

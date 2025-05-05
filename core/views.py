@@ -1836,3 +1836,80 @@ def print_all_appointments(request, year, month, day):
     }
     
     return render(request, 'print_all_appointments.html', context)
+
+
+from django.http import JsonResponse
+from django.db.models import Q
+from django.utils import timezone
+from .models import ClinicAppointment, SurgicalBooking
+
+def patient_lookup(request):
+    # Get the query parameter from the request
+    phone_number = request.GET.get('phone_number')
+    civil_id = request.GET.get('civil_id')
+    
+    # Check if at least one parameter is provided
+    if not phone_number and not civil_id:
+        return JsonResponse({'error': 'Please provide either phone_number or civil_id'}, status=400)
+    
+    # Initialize query filter for ClinicAppointment
+    clinic_q_filter = Q()
+    # Initialize query filter for SurgicalBooking
+    surgical_q_filter = Q()
+    
+    # Build the query based on provided parameters
+    if phone_number:
+        clinic_q_filter |= Q(phone_number=phone_number)  # ClinicAppointment uses 'phone_number'
+        surgical_q_filter |= Q(phone=phone_number)  # SurgicalBooking uses 'phone'
+    
+    if civil_id:
+        clinic_q_filter |= Q(civil_id=civil_id)
+        surgical_q_filter |= Q(civil_id=civil_id)
+    
+    # Query both models
+    surgical_bookings = SurgicalBooking.objects.filter(surgical_q_filter).order_by('-created_at')
+    clinic_appointments = ClinicAppointment.objects.filter(clinic_q_filter).order_by('-date', '-time')
+    
+    # Get the latest entries
+    latest_surgical = surgical_bookings.first()
+    latest_clinic = clinic_appointments.first()
+    
+    # Determine which entry is more recent
+    latest_entry = None
+    
+    if latest_surgical and latest_clinic:
+        # Compare creation date of surgical booking with appointment date+time
+        surgical_datetime = latest_surgical.created_at
+        clinic_datetime = timezone.datetime.combine(latest_clinic.date, latest_clinic.time)
+        
+        # Make timezone aware if needed
+        if not clinic_datetime.tzinfo:
+            clinic_datetime = timezone.make_aware(clinic_datetime)
+        
+        if surgical_datetime > clinic_datetime:
+            latest_entry = latest_surgical
+        else:
+            latest_entry = latest_clinic
+    elif latest_surgical:
+        latest_entry = latest_surgical
+    elif latest_clinic:
+        latest_entry = latest_clinic
+    
+    # Return the response
+    if latest_entry:
+        if isinstance(latest_entry, SurgicalBooking):
+            response_data = {
+                'phone_number': latest_entry.phone,  # SurgicalBooking uses 'phone'
+                'patient_name': latest_entry.name,   # SurgicalBooking uses 'name'
+                'civil_id': latest_entry.civil_id
+            }
+        else:  # ClinicAppointment
+            response_data = {
+                'phone_number': latest_entry.phone_number,  # ClinicAppointment uses 'phone_number'
+                'patient_name': latest_entry.patient_name,  # ClinicAppointment uses 'patient_name'
+                'civil_id': latest_entry.civil_id
+            }
+        
+        return JsonResponse(response_data)
+    else:
+        return JsonResponse({'error': 'No patient found with the provided information'}, status=404)

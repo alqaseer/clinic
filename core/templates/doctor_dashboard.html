@@ -62,10 +62,12 @@
                     <span class="text-xl font-semibold text-gray-800">Dr. {{ doctor.full_name }}</span>
                 </div>
                 <div class="flex items-center space-x-4">
+{% verbatim %}
                     <button @click="showAppointmentSearch = true" 
                             class="text-sm px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                         Check Appointment
                     </button>
+{% endverbatim %}
                     <a href="{% url 'doctor_logout' %}" class="text-sm px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-200">
                         Logout
                     </a>
@@ -91,6 +93,7 @@
             </div>
             {% endif %}
             
+{% verbatim %}
             <!-- Appointment Search Modal -->
             <div v-if="showAppointmentSearch" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                 <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
@@ -107,7 +110,7 @@
                     <div class="mb-6">
                         <label for="search_civil_id" class="block text-sm font-medium text-gray-700 mb-1">Patient Civil ID (12 digits)</label>
                         <div class="flex space-x-2">
-                            <input type="text" id="search_civil_id" v-model="searchCivilId" maxlength="12"
+                            <input type="tel" id="search_civil_id" v-model="searchCivilId" maxlength="12"
                                   class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   placeholder="Enter 12-digit Civil ID">
                             <button @click="searchAppointments" 
@@ -126,7 +129,7 @@
                     </div>
                     
                     <div v-if="searchResults.length > 0" class="overflow-y-auto max-h-96">
-                        <h4 class="font-medium text-gray-700 mb-2">Appointments for Civil ID: [[ searchCivilId ]]</h4>
+                        <h4 class="font-medium text-gray-700 mb-2">Appointments for Civil ID: {{ searchCivilId }}</h4>
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -139,10 +142,10 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="appointment in searchResults" :key="appointment.id" class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.date ]]</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.time ]]</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.clinic_name ]]</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">[[ appointment.speciality_name ]]</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ appointment.date }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ appointment.time }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ appointment.clinic_name }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ appointment.speciality_name }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap text-sm">
                                         <span :class="{
                                             'px-2 py-1 text-xs font-medium rounded-full': true,
@@ -150,7 +153,7 @@
                                             'bg-yellow-100 text-yellow-800': appointment.confirmed === 'Unknown',
                                             'bg-red-100 text-red-800': appointment.confirmed === 'Cancelled'
                                         }">
-                                            [[ appointment.confirmed ]]
+                                            {{ appointment.confirmed }}
                                         </span>
                                     </td>
                                 </tr>
@@ -192,44 +195,51 @@
                 </div>
                 
                 <form @submit.prevent="submitForm" class="p-6">
+{% endverbatim %}
                     {% csrf_token %}
-                    
-                    <!-- Patient Details -->
+{% verbatim %}                    
+                    <!-- Patient Details - Rearranged fields -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Phone Number - First Field -->
+                        <div>
+                            <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number (8 digits)</label>
+                            <input type="tel" id="phone_number" v-model="phoneNumber" required maxlength="8"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div v-if="errors.phoneNumber" class="mt-1 text-sm text-red-600">{{ errors.phoneNumber }}</div>
+                        </div>
+                        
+                        <!-- Civil ID - Second Field -->
+                        <div>
+                            <label for="civil_id" class="block text-sm font-medium text-gray-700 mb-1">Civil ID (12 digits)</label>
+                            <input type="tel" id="civil_id" v-model="civilId" required maxlength="12"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div v-if="errors.civilId" class="mt-1 text-sm text-red-600">{{ errors.civilId }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Patient Name and Specialty Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Patient Name - Third Field -->
                         <div>
                             <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
                             <input type="text" id="patient_name" v-model="patientName" required 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <div v-if="errors.patientName" class="mt-1 text-sm text-red-600">[[ errors.patientName ]]</div>
+                            <div v-if="errors.patientName" class="mt-1 text-sm text-red-600">{{ errors.patientName }}</div>
                         </div>
                         
-                        <div>
-                            <label for="civil_id" class="block text-sm font-medium text-gray-700 mb-1">Civil ID (12 digits)</label>
-                            <input type="text" id="civil_id" v-model="civilId" required maxlength="12"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <div v-if="errors.civilId" class="mt-1 text-sm text-red-600">[[ errors.civilId ]]</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Modified Contact and Specialty Section -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number (8 digits)</label>
-                            <input type="text" id="phone_number" v-model="phoneNumber" required maxlength="8"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <div v-if="errors.phoneNumber" class="mt-1 text-sm text-red-600">[[ errors.phoneNumber ]]</div>
-                        </div>
-                        
+                        <!-- Specialty - Fourth Field -->
                         <div>
                             <label for="speciality" class="block text-sm font-medium text-gray-700 mb-1">Refer to Speciality</label>
                             <select id="speciality" v-model="speciality" @change="checkSpecialtyMessage" required
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">-- Select Speciality --</option>
+{% endverbatim %}
                                 {% for speciality in specialities %}
                                 <option value="{{ speciality.id }}" data-message="{{ speciality.message|default:'' }}">{{ speciality.name }}</option>
                                 {% endfor %}
+{% verbatim %}
                             </select>
-                            <div v-if="errors.speciality" class="mt-1 text-sm text-red-600">[[ errors.speciality ]]</div>
+                            <div v-if="errors.speciality" class="mt-1 text-sm text-red-600">{{ errors.speciality }}</div>
                         </div>
                     </div>
 
@@ -250,10 +260,8 @@
                         <label for="diagnosis" class="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
                         <textarea id="diagnosis" v-model="diagnosis" rows="3" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                        <div v-if="errors.diagnosis" class="mt-1 text-sm text-red-600">[[ errors.diagnosis ]]</div>
+                        <div v-if="errors.diagnosis" class="mt-1 text-sm text-red-600">{{ errors.diagnosis }}</div>
                     </div>
-                    
-
                     
                     <!-- Submit Button -->
                     <button type="submit" 
@@ -266,9 +274,11 @@
                         <span v-if="!loading">Book Appointment</span>
                         <span v-else>Processing...</span>
                     </button>
+{% endverbatim %}
                 </form>
             </div>
             
+{% verbatim %}
             <!-- Appointment Details View -->
             <div v-if="showAppointmentDetails" class="bg-white rounded-xl shadow-md overflow-hidden">
                 <div class="bg-gradient-to-r from-green-600 to-teal-600 px-6 py-4">
@@ -300,19 +310,19 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <h4 class="text-sm font-medium text-gray-500">Patient Name</h4>
-                                <p class="text-gray-900">[[ appointmentDetails.patientName ]]</p>
+                                <p class="text-gray-900">{{ appointmentDetails.patientName }}</p>
                             </div>
                             <div>
                                 <h4 class="text-sm font-medium text-gray-500">Civil ID</h4>
-                                <p class="text-gray-900">[[ appointmentDetails.civilId ]]</p>
+                                <p class="text-gray-900">{{ appointmentDetails.civilId }}</p>
                             </div>
                             <div>
                                 <h4 class="text-sm font-medium text-gray-500">Phone Number</h4>
-                                <p class="text-gray-900">[[ appointmentDetails.phoneNumber ]]</p>
+                                <p class="text-gray-900">{{ appointmentDetails.phoneNumber }}</p>
                             </div>
                             <div>
                                 <h4 class="text-sm font-medium text-gray-500">Speciality</h4>
-                                <p class="text-gray-900">[[ appointmentDetails.specialityName ]]</p>
+                                <p class="text-gray-900">{{ appointmentDetails.specialityName }}</p>
                             </div>
                         </div>
                     </div>
@@ -320,12 +330,12 @@
                     <div class="border-t border-gray-200 pt-6">
                         <div class="mb-4">
                             <h4 class="text-sm font-medium text-gray-500">Clinic Name</h4>
-                            <p class="text-gray-900">[[ appointmentDetails.clinicName ]]</p>
+                            <p class="text-gray-900">{{ appointmentDetails.clinicName }}</p>
                         </div>
                         <div class="mb-4 flex items-center justify-between">
                             <div>
                                 <h4 class="text-sm font-medium text-gray-500">Appointment Date</h4>
-                                <p class="text-gray-900">[[ appointmentDetails.date ]]</p>
+                                <p class="text-gray-900">{{ appointmentDetails.date }}</p>
                             </div>
                             <button @click="showChangeConfirmation" 
                                     :disabled="dateChangeLoading"
@@ -335,7 +345,7 @@
                         </div>
                         <div class="mb-4">
                             <h4 class="text-sm font-medium text-gray-500">Appointment Time</h4>
-                            <p class="text-gray-900">[[ appointmentDetails.time ]]</p>
+                            <p class="text-gray-900">{{ appointmentDetails.time }}</p>
                         </div>
                         <div v-if="dateChanged" class="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md border border-blue-200 flex items-start">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -352,7 +362,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5 mr-2 text-red-600 flex-shrink-0 warning-icon-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            <p class="text-red-700 font-medium">If the case is urgent please speak to Dr.[[ appointmentDetails.clinicName ]] or his team to try to get an earlier appointment</p>
+                            <p class="text-red-700 font-medium">If the case is urgent please speak to Dr.{{ appointmentDetails.clinicName }} or his team to try to get an earlier appointment</p>
                         </div>
                     </div>
                     <button @click="resetForm" class="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
@@ -360,6 +370,7 @@
                     </button>
                 </div>
             </div>
+{% endverbatim %}
         </main>
         
         <!-- Footer -->
@@ -374,7 +385,6 @@
         const { createApp, ref, computed } = Vue
 
         createApp({
-            delimiters: ['[[', ']]'],
             setup() {
                 // Form data
                 const patientName = ref('')
@@ -403,6 +413,9 @@
                     workspaceId: null
                 })
                 
+                // Patient lookup state
+                const dataFetched = ref(false)
+                
                 // Appointment search
                 const showAppointmentSearch = ref(false)
                 const searchCivilId = ref('')
@@ -417,6 +430,33 @@
                 
                 // Validation errors
                 const errors = ref({})
+                
+                // Patient lookup function
+                const lookupPatient = async (phone = '', civil = '') => {
+                    if (dataFetched.value) return // Prevent lookup if data already fetched
+                    
+                    const params = new URLSearchParams()
+                    
+                    if (phone) params.append('phone_number', phone)
+                    if (civil) params.append('civil_id', civil)
+                    
+                    try {
+                        const response = await fetch(`/patient-lookup/?${params.toString()}`)
+                        const data = await response.json()
+                        
+                        if (response.ok) {
+                            // Auto-populate form fields
+                            phoneNumber.value = data.phone_number
+                            civilId.value = data.civil_id
+                            patientName.value = data.patient_name
+                                                        
+                            // Mark data as fetched
+                            dataFetched.value = true
+                        }
+                    } catch (error) {
+                        console.error('Error fetching patient data:', error)
+                    }
+                }
                 
                 // Check for specialty message
                 const checkSpecialtyMessage = () => {
@@ -646,6 +686,22 @@
                     errors.value = {};
                     showAppointmentDetails.value = false;
                     dateChanged.value = false;
+                    dataFetched.value = false;
+                }
+                
+                // Input watchers for patient lookup
+                const watchPhoneNumber = () => {
+                    phoneNumber.value = phoneNumber.value.replace(/[^0-9]/g, '')
+                    if (phoneNumber.value.length === 8 && !dataFetched.value) {
+                        lookupPatient(phoneNumber.value, '')
+                    }
+                }
+                
+                const watchCivilId = () => {
+                    civilId.value = civilId.value.replace(/[^0-9]/g, '')
+                    if (civilId.value.length === 12 && !dataFetched.value) {
+                        lookupPatient('', civilId.value)
+                    }
                 }
                 
                 return {
@@ -677,7 +733,22 @@
                     searchAppointments,
                     closeAppointmentSearch,
                     resetForm,
-                    checkSpecialtyMessage // Expose new method
+                    checkSpecialtyMessage, // Expose new method
+                    watchPhoneNumber,
+                    watchCivilId
+                }
+            },
+            mounted() {
+                // Setup watchers for phone number and civil ID inputs
+                const phoneInput = document.getElementById('phone_number')
+                const civilIdInput = document.getElementById('civil_id')
+                
+                if (phoneInput) {
+                    phoneInput.addEventListener('input', this.watchPhoneNumber)
+                }
+                
+                if (civilIdInput) {
+                    civilIdInput.addEventListener('input', this.watchCivilId)
                 }
             }
         }).mount('#app')

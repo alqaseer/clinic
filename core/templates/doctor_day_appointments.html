@@ -89,7 +89,7 @@
             .container {
                 max-width: 100%;
             }
-            tr.new-referral {
+            tr.new-appointment {
                 background-color: #b0b0b0 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -98,7 +98,7 @@
                 margin: 0.5cm;
             }
         }
-        .new-referral {
+        .new-appointment {
             background-color: #b0b0b0;
         }
     </style>
@@ -157,7 +157,7 @@
                                                     <div class="border-t-2 border-gray-300 my-6 w-full opacity-100"></div>
                                                 {% endif %}
                                                 
-                                                <div class="{% if appointment.system_referral and appointment.appointment_type == 'New' %}bg-yellow-50{% endif %} flex items-center space-x-3 text-sm p-2">
+                                                <div class="{% if appointment.appointment_type == 'New' %}bg-yellow-50{% endif %} flex items-center space-x-3 text-sm p-2">
                                                     <span class="text-gray-900 font-medium">{{ appointment.patient_name }}</span>
                                                     <span class="text-gray-400">|</span>
                                                     <span class="text-gray-600">{{ appointment.civil_id }}</span>
@@ -199,11 +199,11 @@
             <p>No appointments found for any clinics on this date.</p>
         {% endif %}
         
-        <!-- Legend for new referrals -->
+        <!-- Legend for new appointments -->
         <div class="mt-6 flex items-center justify-center no-print">
             <span class="inline-flex items-center px-4 py-2 bg-yellow-50 text-gray-800 rounded-md border border-yellow-100">
                 <i class="fas fa-info-circle mr-2"></i>
-                <strong>Note:</strong> Highlighted rows indicate new patient referrals
+                <strong>Note:</strong> Highlighted rows indicate new patient appointments
             </span>
         </div>
     </div>
@@ -220,13 +220,13 @@
             printContent += "table { border-collapse: collapse; width: 100%; }";
             printContent += "th, td { border: 1px solid #aaa; padding: 4px; text-align: left; font-size: 9px; line-height: 1.1; }";
             printContent += "th { background-color: #f2f2f2; font-weight: bold; }";
-            printContent += "tr.new-referral { background-color: #b0b0b0 !important; }";
+            printContent += "tr.new-appointment { background-color: #b0b0b0 !important; }";
             printContent += ".legend { margin-top: 8px; font-size: 8px; text-align: center; }";
             printContent += ".legend span { display: inline-block; background-color: #b0b0b0; padding: 2px 8px; border-radius: 2px; }";
             printContent += "#printTip { display: block; }";
             printContent += "@media print {";
             printContent += "  @page { margin: 0.5cm; }";
-            printContent += "  tr.new-referral { background-color: #b0b0b0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }";
+            printContent += "  tr.new-appointment { background-color: #b0b0b0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }";
             printContent += "  table { page-break-inside: auto; }";
             printContent += "  tr { page-break-inside: avoid; page-break-after: auto; }";
             printContent += "  #printTip { display: none !important; }";
@@ -257,9 +257,9 @@
                         {% if appointment.time|date:"H:i" == time %}
                             // Skip appointments with "Cancelled" status
                             {% if appointment.confirmed != "Cancelled" %}
-                                // Apply the new-referral class directly to the tr element with darker background
-                                {% if appointment.system_referral and appointment.appointment_type == 'New' %}
-                                    printContent += "<tr class='new-referral' style='background-color: #b0b0b0;'>";
+                                // Changed condition: Now highlight ALL appointments with type 'New', not just referrals
+                                {% if appointment.appointment_type == 'New' %}
+                                    printContent += "<tr class='new-appointment' style='background-color: #b0b0b0;'>";
                                 {% else %}
                                     printContent += "<tr>";
                                 {% endif %}
@@ -278,9 +278,9 @@
                 
                 printContent += "</tbody></table>";
                 
-                // Compact legend with darker background
+                // Updated legend text to match the new behavior
                 printContent += "<div class='legend'>";
-                printContent += "<span><strong>Note:</strong> Highlighted rows indicate new patient referrals</span>";
+                printContent += "<span><strong>Note:</strong> Highlighted rows indicate new patient appointments</span>";
                 printContent += "</div>";
                 
                 printContent += "</div>"; // Close clinic section

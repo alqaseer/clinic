@@ -29,8 +29,9 @@ import os
 from django.utils.timezone import now
 from django.conf import settings
 from django.views.decorators.csrf import csrf_protect
-
-
+from django.views.generic import ListView
+from django.db.models import Q
+from django.views.decorators.http import require_GET
 
 
 def home(request):
@@ -1913,3 +1914,154 @@ def patient_lookup(request):
         return JsonResponse(response_data)
     else:
         return JsonResponse({'error': 'No patient found with the provided information'}, status=404)
+
+# This is the fixed system_referrals_list view function section
+# The issue was with how the 'referred_at' attribute was being handled
+
+@require_GET
+def system_referrals_list(request):
+    """
+    View to list all system referrals (appointments with system_referral=True)
+    with filtering, searching and pagination
+    """
+    # Base queryset - get appointments with system_referral=True ordered by creation date (newest first)
+    try:
+        appointments = ClinicAppointment.objects.filter(
+            system_referral=True
+        ).order_by('-created_at')
+    except:
+        # Fallback if created_at field doesn't exist
+        appointments = ClinicAppointment.objects.filter(
+            system_referral=True
+        ).order_by('-date', '-time')
+    
+    # Get all specialities for the filter dropdowns
+    specialities = Speciality.objects.all().order_by('name')
+    
+    # Handle search query
+    search_query = request.GET.get('search', '')
+    if search_query:
+        appointments = appointments.filter(
+            Q(patient_name__icontains=search_query) |
+            Q(phone_number__icontains=search_query) |
+            Q(civil_id__icontains=search_query)
+        )
+    
+    # Handle speciality filter
+    speciality_id = request.GET.get('speciality', 'all')
+    selected_speciality = speciality_id  # Store for template
+    
+    if speciality_id and speciality_id != 'all':
+        try:
+            # Get the speciality object
+            speciality = Speciality.objects.get(id=speciality_id)
+            
+            # Get all workspaces associated with this speciality
+            workspace_ids = speciality.workspaces.values_list('id', flat=True)
+            
+            # Filter appointments by these workspaces
+            appointments = appointments.filter(workspace_id__in=workspace_ids)
+        except Speciality.DoesNotExist:
+            pass
+    
+    # Handle workspace filter (only applied if speciality is selected)
+    workspace_id = request.GET.get('workspace', 'all')
+    selected_workspace = workspace_id  # Store for template
+    
+    if workspace_id and workspace_id != 'all' and speciality_id and speciality_id != 'all':
+        try:
+            # Filter appointments by selected workspace
+            appointments = appointments.filter(workspace_id=workspace_id)
+        except:
+            pass
+    
+    # Generate a list of workspaces for the selected speciality (for the dynamic dropdown)
+    workspaces = []
+    if speciality_id and speciality_id != 'all':
+        try:
+            speciality = Speciality.objects.get(id=speciality_id)
+            workspaces = speciality.workspaces.all().order_by('owner_name', 'name')
+        except Speciality.DoesNotExist:
+            workspaces = []
+    
+    # Handle the 'referred_at' attribute for each appointment
+    # This is a key fix to ensure the proper column data is shown
+    for appointment in appointments:
+        if not hasattr(appointment, 'created_at') or not appointment.created_at:
+            # Set a placeholder for referred_at if created_at doesn't exist
+            appointment.referred_at = 'No record'
+        else:
+            # Format the created_at timestamp as referred_at
+            appointment.referred_at = appointment.created_at.strftime('%d %b %Y %H:%M')
+    
+    # Pagination
+    paginator = Paginator(appointments, 100)  # 100 referrals per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Check if this is an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # If it's an AJAX request, return JSON
+        appointment_data = []
+        for appointment in page_obj:
+            # Get the referring doctor name if available
+            referring_doctor = None
+            if appointment.booked_by:
+                referring_doctor = appointment.booked_by.full_name
+                
+            appointment_data.append({
+                'id': appointment.id,
+                'patient_name': appointment.patient_name,
+                'civil_id': appointment.civil_id,
+                'phone_number': appointment.phone_number,
+                'date': appointment.date.strftime('%d %b %Y'),
+                'time': appointment.time.strftime('%H:%M'),
+                'referred_at': getattr(appointment, 'referred_at', 'No record'),
+                'diagnosis': appointment.diagnosis or 'No diagnosis',
+                'workspace_name': appointment.workspace.owner_name or appointment.workspace.name,
+                'confirmed': appointment.confirmed,
+                'referred_by': referring_doctor or 'Not specified',
+            })
+        
+        return JsonResponse({
+            'appointments': appointment_data,
+            'page': page_obj.number,
+            'has_next': page_obj.has_next(),
+            'has_previous': page_obj.has_previous(),
+            'total_pages': paginator.num_pages,
+            'total_items': paginator.count,
+        })
+    
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'specialities': specialities,
+        'workspaces': workspaces,
+        'selected_speciality': selected_speciality,
+        'selected_workspace': selected_workspace,
+    }
+    
+    # Use the standalone template
+    return render(request, 'system_referrals_standalone.html', context)
+
+@require_GET
+def api_workspaces_by_speciality(request, speciality_id):
+    """
+    API endpoint to get workspaces filtered by speciality
+    """
+    try:
+        speciality = Speciality.objects.get(id=speciality_id)
+        workspaces = speciality.workspaces.all().order_by('owner_name', 'name')
+        
+        workspace_data = [
+            {
+                'id': workspace.id,
+                'name': workspace.name,
+                'owner_name': workspace.owner_name or workspace.name,
+            }
+            for workspace in workspaces
+        ]
+        
+        return JsonResponse({'workspaces': workspace_data})
+    except Speciality.DoesNotExist:
+        return JsonResponse({'error': 'Speciality not found'}, status=404)

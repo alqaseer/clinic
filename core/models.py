@@ -101,6 +101,7 @@ class ClinicAppointment(models.Model):
     system_referral = models.BooleanField(default=False)
     booked_by = models.ForeignKey('Doctor', null=True, blank=True, on_delete=models.SET_NULL)
     diagnosis = models.CharField(max_length=1000, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"{self.patient_name} - {self.date} at {self.time}"
 

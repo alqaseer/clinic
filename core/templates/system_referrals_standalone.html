@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Referrals</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .transition-all {
+            transition-property: all;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+        
+        .table-row-link:hover {
+            cursor: pointer;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            min-width: 120px;
+            max-width: 300px;
+            background-color: #374151;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+        }
+        
+        /* Tooltip for diagnosis */
+        td.tooltip .tooltiptext {
+            text-align: left;
+            white-space: normal;
+            word-break: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">System Referrals</h2>
+            
+            <!-- Search and Filter Form -->
+            <form method="GET" action="/system-referrals/" class="mb-6" id="filter-form">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Search Input -->
+                    <div class="md:col-span-2">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                name="search" 
+                                id="search-input"
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Search by name, phone or civil ID" 
+                                value="{{ search_query }}"
+                            >
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+    
+    <!-- Diagnosis Modal -->
+    <div id="diagnosis-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">Diagnosis: <span id="modal-patient-name" class="font-normal"></span></h3>
+                <button onclick="hideDiagnosisModal()" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-4 max-h-96 overflow-y-auto">
+                <p id="modal-diagnosis-content" class="text-gray-700 whitespace-pre-line"></p>
+            </div>
+            <div class="px-6 py-3 bg-gray-50 text-right">
+                <button onclick="hideDiagnosisModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Speciality Filter -->
+                    <div>
+                        <select 
+                            name="speciality" 
+                            id="speciality-select" 
+                            class="w-full py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="all">All Specialities</option>
+                            {% for speciality in specialities %}
+                                <option value="{{ speciality.id }}" {% if selected_speciality == speciality.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ speciality.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Workspace Filter -->
+                    <div>
+                        <select 
+                            name="workspace" 
+                            id="workspace-select" 
+                            class="w-full py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                            {% if not selected_speciality or selected_speciality == 'all' %}disabled{% endif %}
+                        >
+                            <option value="all">All Workspaces</option>
+                            {% for workspace in workspaces %}
+                                <option value="{{ workspace.id }}" {% if selected_workspace == workspace.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ workspace.owner_name|default:workspace.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mt-4 flex space-x-2">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all">
+                        Apply Filters
+                    </button>
+                    {% if search_query or selected_speciality != 'all' or selected_workspace != 'all' %}
+                    <a href="/system-referrals/" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all" id="clear-filters">
+                        Clear Filters
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+            
+            <!-- Results Count -->
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700">
+                            Found <span class="font-medium">{{ page_obj.paginator.count }}</span> system referrals 
+                            <span class="text-xs text-gray-500 ml-2">(sorted by newest first)</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Responsive Table -->
+            <div class="overflow-x-auto bg-white rounded-lg shadow overflow-hidden">
+                <!-- Fixed table structure with correct column order -->
+<table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+        <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Patient Name
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Civil ID
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Phone
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Appointment Date
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Time
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Referred At
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Diagnosis
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Clinic Name
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Referred By
+            </th>
+        </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        {% for appointment in page_obj %}
+            <tr class="hover:bg-gray-50 transition-all table-row-link" data-patient-id="{{ appointment.id }}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {{ appointment.patient_name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ appointment.civil_id }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ appointment.phone_number }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ appointment.date|date:"d M Y" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ appointment.time|time:"H:i" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ appointment.referred_at }}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                    {% if appointment.diagnosis %}
+                        <div class="flex items-center">
+                            <span class="truncate max-w-[150px] inline-block">{{ appointment.diagnosis }}</span>
+                            {% if appointment.diagnosis|length > 30 %}
+                                <button onclick="showDiagnosisModal('{{ appointment.id }}', '{{ appointment.patient_name }}', event)" class="ml-2 text-blue-600 hover:text-blue-800 text-xs font-medium">more</button>
+                            {% endif %}
+                        </div>
+                        <!-- Hidden full diagnosis for modal -->
+                        <div id="diagnosis-{{ appointment.id }}" class="hidden">{{ appointment.diagnosis }}</div>
+                    {% else %}
+                        <span class="text-gray-400">No diagnosis</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ appointment.workspace.owner_name|default:appointment.workspace.name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {% if appointment.confirmed == 'Confirmed' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Confirmed
+                        </span>
+                    {% elif appointment.confirmed == 'Cancelled' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Cancelled
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Unknown
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {% if appointment.booked_by %}
+                        <span class="font-medium">{{ appointment.booked_by.full_name }}</span>
+                    {% else %}
+                        <span class="text-gray-400">Not specified</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="10" class="px-6 py-10 text-center text-sm text-gray-500">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="mt-1">No system referrals found matching your criteria.</p>
+                    <p class="mt-3">
+                        <a href="/system-referrals/" class="text-blue-600 hover:text-blue-900">
+                            Clear all filters
+                        </a>
+                    </p>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="mt-6">
+                <nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0">
+                    <div class="flex w-0 flex-1">
+                        {% if page_obj.has_previous %}
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_speciality %}&speciality={{ selected_speciality }}{% endif %}{% if selected_workspace %}&workspace={{ selected_workspace }}{% endif %}" 
+                           class="inline-flex items-center border-t-2 border-transparent py-4 pr-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                            <svg class="mr-3 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                            </svg>
+                            First
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="hidden md:flex">
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <a href="#" aria-current="page" class="inline-flex items-center border-t-2 border-blue-500 px-4 py-4 text-sm font-medium text-blue-600">
+                                    {{ num }}
+                                </a>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_speciality %}&speciality={{ selected_speciality }}{% endif %}{% if selected_workspace %}&workspace={{ selected_workspace }}{% endif %}" 
+                                   class="inline-flex items-center border-t-2 border-transparent px-4 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="flex w-0 flex-1 justify-end">
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_speciality %}&speciality={{ selected_speciality }}{% endif %}{% if selected_workspace %}&workspace={{ selected_workspace }}{% endif %}" 
+                           class="inline-flex items-center border-t-2 border-transparent py-4 pl-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                            Last
+                            <svg class="ml-3 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </div>
+                </nav>
+                
+                <!-- Mobile Pagination Controls -->
+                <div class="flex justify-between mt-4 md:hidden">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_speciality %}&speciality={{ selected_speciality }}{% endif %}{% if selected_workspace %}&workspace={{ selected_workspace }}{% endif %}" 
+                       class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Previous
+                    </a>
+                    {% else %}
+                    <span class="relative inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500">
+                        Previous
+                    </span>
+                    {% endif %}
+                    
+                    <span class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_speciality %}&speciality={{ selected_speciality }}{% endif %}{% if selected_workspace %}&workspace={{ selected_workspace }}{% endif %}" 
+                       class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Next
+                    </a>
+                    {% else %}
+                    <span class="relative inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500">
+                        Next
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Embedded JavaScript -->
+    <script>
+        // Make functions available globally
+        function showDiagnosisModal(appointmentId, patientName, event) {
+            // Prevent row click event from firing
+            event.stopPropagation();
+            
+            // Get the full diagnosis text
+            const diagnosisElement = document.getElementById(`diagnosis-${appointmentId}`);
+            if (!diagnosisElement) return;
+            
+            // Set the diagnosis text in the modal
+            const modalContent = document.getElementById('modal-diagnosis-content');
+            modalContent.textContent = diagnosisElement.textContent;
+            
+            // Set the patient name in the modal
+            const patientNameElement = document.getElementById('modal-patient-name');
+            patientNameElement.textContent = patientName;
+            
+            // Show the modal
+            const modal = document.getElementById('diagnosis-modal');
+            modal.classList.remove('hidden');
+            
+            // Add event listener to close on ESC key
+            document.addEventListener('keydown', closeModalOnEsc);
+            
+            // Add event listener to close when clicking outside
+            modal.addEventListener('click', closeModalOnOutsideClick);
+        }
+        
+        function hideDiagnosisModal() {
+            const modal = document.getElementById('diagnosis-modal');
+            modal.classList.add('hidden');
+            
+            // Remove event listeners
+            document.removeEventListener('keydown', closeModalOnEsc);
+            modal.removeEventListener('click', closeModalOnOutsideClick);
+        }
+        
+        function closeModalOnEsc(event) {
+            if (event.key === 'Escape') {
+                hideDiagnosisModal();
+            }
+        }
+        
+        function closeModalOnOutsideClick(event) {
+            const modalContent = document.querySelector('#diagnosis-modal > div');
+            if (event.target === event.currentTarget) {
+                hideDiagnosisModal();
+            }
+        }
+        
+        /**
+         * System Referrals Page JavaScript
+         * Handles dynamic filtering, search, and UI interactions
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const filterForm = document.getElementById('filter-form');
+            const specialitySelect = document.getElementById('speciality-select');
+            const workspaceSelect = document.getElementById('workspace-select');
+            const searchInput = document.getElementById('search-input');
+            const clearFilterBtn = document.getElementById('clear-filters');
+            
+            // Constants
+            const DEBOUNCE_DELAY = 300; // milliseconds
+            
+            // Initialize state
+            initializeFilters();
+            
+            /**
+             * Initialize filters and event listeners
+             */
+            function initializeFilters() {
+                // Initialize workspace dropdown state
+                updateWorkspaceSelectState();
+                
+                // Event listeners
+                specialitySelect.addEventListener('change', handleSpecialityChange);
+                workspaceSelect.addEventListener('change', handleWorkspaceChange);
+                
+                // Add debounced search functionality
+                if (searchInput) {
+                    searchInput.addEventListener('input', debounce(handleSearchInput, DEBOUNCE_DELAY));
+                    // Also handle Enter key for immediate search
+                    searchInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            filterForm.submit();
+                        }
+                    });
+                }
+                
+                // Handle clear filters button
+                if (clearFilterBtn) {
+                    clearFilterBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        clearAllFilters();
+                    });
+                }
+                
+                // Initialize row click handlers
+                initializeRowClicks();
+                
+                // Add live search highlighting
+                setupLiveSearch();
+            }
+            
+            /**
+             * Initialize row click handlers
+             */
+            function initializeRowClicks() {
+                const tableRows = document.querySelectorAll('.table-row-link');
+                
+                tableRows.forEach(row => {
+                    row.addEventListener('click', function(e) {
+                        // Don't navigate if clicking on a button or link
+                        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
+                            e.target.closest('a') || e.target.closest('button')) {
+                            return;
+                        }
+                        
+                        // Get the patient ID from the row
+                        const patientId = this.getAttribute('data-patient-id');
+                        if (patientId) {
+                            window.location.href = `/appointments/${patientId}/`;
+                        }
+                    });
+                });
+            }
+            
+            /**
+             * Handle speciality selection change
+             */
+            function handleSpecialityChange() {
+                // Update workspace dropdown state
+                updateWorkspaceSelectState();
+                
+                // Reset workspace selection when speciality changes
+                workspaceSelect.value = 'all';
+                
+                // Optional: Auto-submit form when speciality changes
+                // filterForm.submit();
+            }
+            
+            /**
+             * Handle workspace selection change
+             */
+            function handleWorkspaceChange() {
+                // Optional: Auto-submit form when workspace changes
+                // filterForm.submit();
+            }
+            
+            /**
+             * Handle search input with debouncing
+             */
+            function handleSearchInput() {
+                // Only trigger search if the input has at least 2 characters or is empty
+                if (searchInput.value.length > 1 || searchInput.value.length === 0) {
+                    highlightSearchMatches(searchInput.value);
+                }
+            }
+            
+            /**
+             * Update workspace select dropdown state based on speciality selection
+             */
+            function updateWorkspaceSelectState() {
+                if (specialitySelect.value === 'all') {
+                    workspaceSelect.disabled = true;
+                } else {
+                    workspaceSelect.disabled = false;
+                }
+            }
+            
+            /**
+             * Make table rows clickable
+             */
+            function setupTableRowClicks() {
+                const tableRows = document.querySelectorAll('.table-row-link');
+                
+                tableRows.forEach(row => {
+                    row.addEventListener('click', function(e) {
+                        // Don't navigate if clicking on a button or link
+                        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
+                            e.target.closest('a') || e.target.closest('button')) {
+                            return;
+                        }
+                        
+                        // Get the patient ID from the row
+                        const patientId = this.getAttribute('data-patient-id');
+                        if (patientId) {
+                            window.location.href = `/appointments/${patientId}/`;
+                        }
+                    });
+                });
+            }
+            
+            /**
+             * Set up live search highlighting
+             */
+            function setupLiveSearch() {
+                // Initial search highlighting if there's a value
+                if (searchInput && searchInput.value) {
+                    highlightSearchMatches(searchInput.value);
+                }
+            }
+            
+            /**
+             * Highlight search matches in the table
+             * @param {string} searchTerm - The term to search for
+             */
+            function highlightSearchMatches(searchTerm) {
+                // Get all table rows except header
+                const tableRows = document.querySelectorAll('tbody tr');
+                
+                if (searchTerm.length === 0) {
+                    // Reset all highlights
+                    tableRows.forEach(row => {
+                        row.classList.remove('bg-yellow-50');
+                        
+                        // Reset cell text
+                        row.querySelectorAll('td').forEach(cell => {
+                            const originalText = cell.getAttribute('data-original-text');
+                            if (originalText) {
+                                cell.textContent = originalText;
+                            }
+                        });
+                    });
+                    return;
+                }
+                
+                // Highlight matching rows
+                tableRows.forEach(row => {
+                    const rowText = row.textContent.toLowerCase();
+                    const searchTermLower = searchTerm.toLowerCase();
+                    
+                    if (rowText.includes(searchTermLower)) {
+                        row.classList.add('bg-yellow-50');
+                        
+                        // Highlight matching text within cells
+                        row.querySelectorAll('td').forEach(cell => {
+                            // Skip cells with complex content (badges, buttons)
+                            if (cell.querySelector('span') || cell.querySelector('button') || cell.querySelector('svg')) {
+                                return;
+                            }
+                            
+                            const cellText = cell.textContent;
+                            
+                            // Store original text if not already stored
+                            if (!cell.getAttribute('data-original-text')) {
+                                cell.setAttribute('data-original-text', cellText);
+                            }
+                            
+                            // Highlight matches with case-insensitive regex
+                            if (cellText.toLowerCase().includes(searchTermLower)) {
+                                const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+                                cell.innerHTML = cellText.replace(regex, '<span class="bg-yellow-200 px-1 rounded">$1</span>');
+                            }
+                        });
+                    } else {
+                        row.classList.remove('bg-yellow-50');
+                    }
+                });
+            }
+            
+            /**
+             * Clear all filters and reset the form
+             */
+            function clearAllFilters() {
+                // Reset search input
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                
+                // Reset speciality selection
+                specialitySelect.value = 'all';
+                
+                // Reset workspace selection and state
+                workspaceSelect.value = 'all';
+                updateWorkspaceSelectState();
+                
+                // Submit the form to refresh the page
+                filterForm.submit();
+            }
+            
+            /**
+             * Helper function: Debounce
+             * Limits how often a function can be called
+             */
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+            
+            /**
+             * Helper function: Escape special characters for regex
+             */
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+        });
+        
+        /**
+         * Show diagnosis modal with full diagnosis text
+         * @param {string} appointmentId - ID of the appointment
+         * @param {string} patientName - Name of the patient
+         * @param {Event} event - Click event
+         */
+        function showDiagnosisModal(appointmentId, patientName, event) {
+            // Prevent row click event from firing
+            event.stopPropagation();
+            
+            // Get the full diagnosis text
+            const diagnosisElement = document.getElementById(`diagnosis-${appointmentId}`);
+            if (!diagnosisElement) return;
+            
+            // Set the diagnosis text in the modal
+            const modalContent = document.getElementById('modal-diagnosis-content');
+            modalContent.textContent = diagnosisElement.textContent;
+            
+            // Set the patient name in the modal
+            const patientNameElement = document.getElementById('modal-patient-name');
+            patientNameElement.textContent = patientName;
+            
+            // Show the modal
+            const modal = document.getElementById('diagnosis-modal');
+            modal.classList.remove('hidden');
+            
+            // Add event listener to close on ESC key
+            document.addEventListener('keydown', closeModalOnEsc);
+            
+            // Add event listener to close when clicking outside
+            modal.addEventListener('click', closeModalOnOutsideClick);
+        }
+        
+        /**
+         * Hide the diagnosis modal
+         */
+        function hideDiagnosisModal() {
+            const modal = document.getElementById('diagnosis-modal');
+            modal.classList.add('hidden');
+            
+            // Remove event listeners
+            document.removeEventListener('keydown', closeModalOnEsc);
+            modal.removeEventListener('click', closeModalOnOutsideClick);
+        }
+        
+        /**
+         * Close modal when ESC key is pressed
+         * @param {KeyboardEvent} event - Keyboard event
+         */
+        function closeModalOnEsc(event) {
+            if (event.key === 'Escape') {
+                hideDiagnosisModal();
+            }
+        }
+        
+        /**
+         * Close modal when clicking outside the modal content
+         * @param {MouseEvent} event - Mouse event
+         */
+        function closeModalOnOutsideClick(event) {
+            const modalContent = document.querySelector('#diagnosis-modal > div');
+            if (event.target === event.currentTarget) {
+                hideDiagnosisModal();
+            }
+        }
+        
+        /**
+         * Function to fetch workspaces by speciality ID using AJAX
+         * @param {string} specialityId - ID of the selected speciality
+         */
+        function fetchWorkspacesBySpeciality(specialityId) {
+            // Add loading state to workspace select
+            const workspaceSelect = document.getElementById('workspace-select');
+            workspaceSelect.classList.add('animate-pulse');
+            
+            // Build the URL
+            const url = `/api/workspaces-by-speciality/${specialityId}/`;
+            
+            // Create headers with CSRF token for Django
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Get CSRF token from cookie if it exists
+            const csrftoken = getCookie('csrftoken');
+            if (csrftoken) {
+                headers['X-CSRFToken'] = csrftoken;
+            }
+            
+            // Fetch workspaces
+            fetch(url, {
+                method: 'GET',
+                headers: headers,
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Clear current options except the first one
+                workspaceSelect.innerHTML = '<option value="all">All Workspaces</option>';
+                
+                // Add new options
+                if (data.workspaces && data.workspaces.length > 0) {
+                    data.workspaces.forEach(workspace => {
+                        const option = document.createElement('option');
+                        option.value = workspace.id;
+                        option.textContent = workspace.owner_name || workspace.name;
+                        workspaceSelect.appendChild(option);
+                    });
+                } else {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No workspaces found';
+                    option.disabled = true;
+                    workspaceSelect.appendChild(option);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching workspaces:', error);
+                
+                // Display error option
+                workspaceSelect.innerHTML = `
+                    <option value="all">All Workspaces</option>
+                    <option value="" disabled selected>Error loading workspaces</option>
+                `;
+            })
+            .finally(() => {
+                // Remove loading state
+                workspaceSelect.classList.remove('animate-pulse');
+            });
+        }
+        
+        /**
+         * Helper function to get cookie by name (for CSRF token)
+         */
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }

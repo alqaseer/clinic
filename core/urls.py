@@ -55,6 +55,11 @@ urlpatterns = [
     path('doctor/appointments/<int:year>/<int:month>/<int:day>/', views.doctor_day_appointments, name='doctor_day_appointments'),
     path('doctor/appointments/<int:year>/<int:month>/<int:day>/print-all/', views.print_all_appointments, name='print_all_appointments'),
     path('clerk/', views.doctor_calendar, name='doctor_calendar'),
+    # System Referrals
+    path('system-referrals/', views.system_referrals_list, name='system_referrals_list'),
+    
+    # API endpoints
+    path('api/workspaces-by-speciality/<int:speciality_id>/', views.api_workspaces_by_speciality, name='api_workspaces_by_speciality'),
 
     # 2️⃣ API endpoint for AJAX search
     path("workspace/<str:workspace_name>/appointments/search/ajax/", views.search_appointments_ajax, name="search_appointments_ajax"),

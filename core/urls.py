@@ -57,7 +57,7 @@ urlpatterns = [
     path('clerk/', views.doctor_calendar, name='doctor_calendar'),
     # System Referrals
     path('system-referrals/', views.system_referrals_list, name='system_referrals_list'),
-    
+    path('referrals-statistics/', views.system_referrals_stats, name='system_referrals_stats'),
     # API endpoints
     path('api/workspaces-by-speciality/<int:speciality_id>/', views.api_workspaces_by_speciality, name='api_workspaces_by_speciality'),
 

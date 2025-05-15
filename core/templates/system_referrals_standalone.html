@@ -377,466 +377,481 @@
         </div>
     </div>
 
-    <!-- Embedded JavaScript -->
-    <script>
-        // Make functions available globally
-        function showDiagnosisModal(appointmentId, patientName, event) {
-            // Prevent row click event from firing
-            event.stopPropagation();
-            
-            // Get the full diagnosis text
-            const diagnosisElement = document.getElementById(`diagnosis-${appointmentId}`);
-            if (!diagnosisElement) return;
-            
-            // Set the diagnosis text in the modal
-            const modalContent = document.getElementById('modal-diagnosis-content');
-            modalContent.textContent = diagnosisElement.textContent;
-            
-            // Set the patient name in the modal
-            const patientNameElement = document.getElementById('modal-patient-name');
-            patientNameElement.textContent = patientName;
-            
-            // Show the modal
-            const modal = document.getElementById('diagnosis-modal');
-            modal.classList.remove('hidden');
-            
-            // Add event listener to close on ESC key
-            document.addEventListener('keydown', closeModalOnEsc);
-            
-            // Add event listener to close when clicking outside
-            modal.addEventListener('click', closeModalOnOutsideClick);
-        }
+    
+<!-- Embedded JavaScript -->
+<script>
+    /**
+     * System Referrals Page JavaScript
+     * Handles dynamic filtering, search, and UI interactions
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM Elements
+        const filterForm = document.getElementById('filter-form');
+        const specialitySelect = document.getElementById('speciality-select');
+        const workspaceSelect = document.getElementById('workspace-select');
+        const searchInput = document.getElementById('search-input');
+        const clearFilterBtn = document.getElementById('clear-filters');
         
-        function hideDiagnosisModal() {
-            const modal = document.getElementById('diagnosis-modal');
-            modal.classList.add('hidden');
-            
-            // Remove event listeners
-            document.removeEventListener('keydown', closeModalOnEsc);
-            modal.removeEventListener('click', closeModalOnOutsideClick);
-        }
+        // Constants
+        const DEBOUNCE_DELAY = 300; // milliseconds
         
-        function closeModalOnEsc(event) {
-            if (event.key === 'Escape') {
-                hideDiagnosisModal();
-            }
-        }
-        
-        function closeModalOnOutsideClick(event) {
-            const modalContent = document.querySelector('#diagnosis-modal > div');
-            if (event.target === event.currentTarget) {
-                hideDiagnosisModal();
-            }
-        }
+        // Initialize state
+        initializeFilters();
         
         /**
-         * System Referrals Page JavaScript
-         * Handles dynamic filtering, search, and UI interactions
+         * Initialize filters and event listeners
          */
-        document.addEventListener('DOMContentLoaded', function() {
-            // DOM Elements
-            const filterForm = document.getElementById('filter-form');
-            const specialitySelect = document.getElementById('speciality-select');
-            const workspaceSelect = document.getElementById('workspace-select');
-            const searchInput = document.getElementById('search-input');
-            const clearFilterBtn = document.getElementById('clear-filters');
+        function initializeFilters() {
+            // Initialize workspace dropdown state
+            updateWorkspaceSelectState();
             
-            // Constants
-            const DEBOUNCE_DELAY = 300; // milliseconds
+            // Event listeners
+            specialitySelect.addEventListener('change', handleSpecialityChange);
+            workspaceSelect.addEventListener('change', handleWorkspaceChange);
             
-            // Initialize state
-            initializeFilters();
-            
-            /**
-             * Initialize filters and event listeners
-             */
-            function initializeFilters() {
-                // Initialize workspace dropdown state
-                updateWorkspaceSelectState();
-                
-                // Event listeners
-                specialitySelect.addEventListener('change', handleSpecialityChange);
-                workspaceSelect.addEventListener('change', handleWorkspaceChange);
-                
-                // Add debounced search functionality
-                if (searchInput) {
-                    searchInput.addEventListener('input', debounce(handleSearchInput, DEBOUNCE_DELAY));
-                    // Also handle Enter key for immediate search
-                    searchInput.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            filterForm.submit();
-                        }
-                    });
-                }
-                
-                // Handle clear filters button
-                if (clearFilterBtn) {
-                    clearFilterBtn.addEventListener('click', function(e) {
+            // Add debounced search functionality
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce(handleSearchInput, DEBOUNCE_DELAY));
+                // Also handle Enter key for immediate search
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
                         e.preventDefault();
-                        clearAllFilters();
-                    });
-                }
-                
-                // Initialize row click handlers
-                initializeRowClicks();
-                
-                // Add live search highlighting
-                setupLiveSearch();
-            }
-            
-            /**
-             * Initialize row click handlers
-             */
-            function initializeRowClicks() {
-                const tableRows = document.querySelectorAll('.table-row-link');
-                
-                tableRows.forEach(row => {
-                    row.addEventListener('click', function(e) {
-                        // Don't navigate if clicking on a button or link
-                        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
-                            e.target.closest('a') || e.target.closest('button')) {
-                            return;
-                        }
-                        
-                        // Get the patient ID from the row
-                        const patientId = this.getAttribute('data-patient-id');
-                        if (patientId) {
-                            window.location.href = `/appointments/${patientId}/`;
-                        }
-                    });
-                });
-            }
-            
-            /**
-             * Handle speciality selection change
-             */
-            function handleSpecialityChange() {
-                // Update workspace dropdown state
-                updateWorkspaceSelectState();
-                
-                // Reset workspace selection when speciality changes
-                workspaceSelect.value = 'all';
-                
-                // Optional: Auto-submit form when speciality changes
-                // filterForm.submit();
-            }
-            
-            /**
-             * Handle workspace selection change
-             */
-            function handleWorkspaceChange() {
-                // Optional: Auto-submit form when workspace changes
-                // filterForm.submit();
-            }
-            
-            /**
-             * Handle search input with debouncing
-             */
-            function handleSearchInput() {
-                // Only trigger search if the input has at least 2 characters or is empty
-                if (searchInput.value.length > 1 || searchInput.value.length === 0) {
-                    highlightSearchMatches(searchInput.value);
-                }
-            }
-            
-            /**
-             * Update workspace select dropdown state based on speciality selection
-             */
-            function updateWorkspaceSelectState() {
-                if (specialitySelect.value === 'all') {
-                    workspaceSelect.disabled = true;
-                } else {
-                    workspaceSelect.disabled = false;
-                }
-            }
-            
-            /**
-             * Make table rows clickable
-             */
-            function setupTableRowClicks() {
-                const tableRows = document.querySelectorAll('.table-row-link');
-                
-                tableRows.forEach(row => {
-                    row.addEventListener('click', function(e) {
-                        // Don't navigate if clicking on a button or link
-                        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
-                            e.target.closest('a') || e.target.closest('button')) {
-                            return;
-                        }
-                        
-                        // Get the patient ID from the row
-                        const patientId = this.getAttribute('data-patient-id');
-                        if (patientId) {
-                            window.location.href = `/appointments/${patientId}/`;
-                        }
-                    });
-                });
-            }
-            
-            /**
-             * Set up live search highlighting
-             */
-            function setupLiveSearch() {
-                // Initial search highlighting if there's a value
-                if (searchInput && searchInput.value) {
-                    highlightSearchMatches(searchInput.value);
-                }
-            }
-            
-            /**
-             * Highlight search matches in the table
-             * @param {string} searchTerm - The term to search for
-             */
-            function highlightSearchMatches(searchTerm) {
-                // Get all table rows except header
-                const tableRows = document.querySelectorAll('tbody tr');
-                
-                if (searchTerm.length === 0) {
-                    // Reset all highlights
-                    tableRows.forEach(row => {
-                        row.classList.remove('bg-yellow-50');
-                        
-                        // Reset cell text
-                        row.querySelectorAll('td').forEach(cell => {
-                            const originalText = cell.getAttribute('data-original-text');
-                            if (originalText) {
-                                cell.textContent = originalText;
-                            }
-                        });
-                    });
-                    return;
-                }
-                
-                // Highlight matching rows
-                tableRows.forEach(row => {
-                    const rowText = row.textContent.toLowerCase();
-                    const searchTermLower = searchTerm.toLowerCase();
-                    
-                    if (rowText.includes(searchTermLower)) {
-                        row.classList.add('bg-yellow-50');
-                        
-                        // Highlight matching text within cells
-                        row.querySelectorAll('td').forEach(cell => {
-                            // Skip cells with complex content (badges, buttons)
-                            if (cell.querySelector('span') || cell.querySelector('button') || cell.querySelector('svg')) {
-                                return;
-                            }
-                            
-                            const cellText = cell.textContent;
-                            
-                            // Store original text if not already stored
-                            if (!cell.getAttribute('data-original-text')) {
-                                cell.setAttribute('data-original-text', cellText);
-                            }
-                            
-                            // Highlight matches with case-insensitive regex
-                            if (cellText.toLowerCase().includes(searchTermLower)) {
-                                const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
-                                cell.innerHTML = cellText.replace(regex, '<span class="bg-yellow-200 px-1 rounded">$1</span>');
-                            }
-                        });
-                    } else {
-                        row.classList.remove('bg-yellow-50');
+                        filterForm.submit();
                     }
                 });
             }
             
-            /**
-             * Clear all filters and reset the form
-             */
-            function clearAllFilters() {
-                // Reset search input
-                if (searchInput) {
-                    searchInput.value = '';
-                }
-                
-                // Reset speciality selection
-                specialitySelect.value = 'all';
-                
-                // Reset workspace selection and state
-                workspaceSelect.value = 'all';
-                updateWorkspaceSelectState();
-                
-                // Submit the form to refresh the page
-                filterForm.submit();
+            // Handle clear filters button
+            if (clearFilterBtn) {
+                clearFilterBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    clearAllFilters();
+                });
             }
             
-            /**
-             * Helper function: Debounce
-             * Limits how often a function can be called
-             */
-            function debounce(func, wait) {
-                let timeout;
-                return function executedFunction(...args) {
-                    const later = () => {
-                        clearTimeout(timeout);
-                        func(...args);
-                    };
-                    clearTimeout(timeout);
-                    timeout = setTimeout(later, wait);
-                };
-            }
+            // Initialize row click handlers
+            initializeRowClicks();
             
-            /**
-             * Helper function: Escape special characters for regex
-             */
-            function escapeRegExp(string) {
-                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            }
-        });
-        
-        /**
-         * Show diagnosis modal with full diagnosis text
-         * @param {string} appointmentId - ID of the appointment
-         * @param {string} patientName - Name of the patient
-         * @param {Event} event - Click event
-         */
-        function showDiagnosisModal(appointmentId, patientName, event) {
-            // Prevent row click event from firing
-            event.stopPropagation();
+            // Add live search highlighting
+            setupLiveSearch();
             
-            // Get the full diagnosis text
-            const diagnosisElement = document.getElementById(`diagnosis-${appointmentId}`);
-            if (!diagnosisElement) return;
-            
-            // Set the diagnosis text in the modal
-            const modalContent = document.getElementById('modal-diagnosis-content');
-            modalContent.textContent = diagnosisElement.textContent;
-            
-            // Set the patient name in the modal
-            const patientNameElement = document.getElementById('modal-patient-name');
-            patientNameElement.textContent = patientName;
-            
-            // Show the modal
-            const modal = document.getElementById('diagnosis-modal');
-            modal.classList.remove('hidden');
-            
-            // Add event listener to close on ESC key
-            document.addEventListener('keydown', closeModalOnEsc);
-            
-            // Add event listener to close when clicking outside
-            modal.addEventListener('click', closeModalOnOutsideClick);
+            // Initialize modal functionality
+            setupModalHandlers();
         }
         
         /**
-         * Hide the diagnosis modal
+         * Initialize modal functionality
          */
-        function hideDiagnosisModal() {
-            const modal = document.getElementById('diagnosis-modal');
-            modal.classList.add('hidden');
+        function setupModalHandlers() {
+            // Set up direct event listeners for the "more" buttons
+            const moreButtons = document.querySelectorAll('button.ml-2.text-blue-600');
             
-            // Remove event listeners
-            document.removeEventListener('keydown', closeModalOnEsc);
-            modal.removeEventListener('click', closeModalOnOutsideClick);
-        }
-        
-        /**
-         * Close modal when ESC key is pressed
-         * @param {KeyboardEvent} event - Keyboard event
-         */
-        function closeModalOnEsc(event) {
-            if (event.key === 'Escape') {
-                hideDiagnosisModal();
+            moreButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // Extract IDs and name from the onclick attribute if present
+                    const onclickAttr = this.getAttribute('onclick');
+                    if (onclickAttr) {
+                        const match = onclickAttr.match(/showDiagnosisModal\('([^']+)',\s*'([^']+)',\s*event\)/);
+                        if (match) {
+                            const appointmentId = match[1];
+                            const patientName = match[2];
+                            
+                            // Call our modal function
+                            showDiagnosisModal(appointmentId, patientName, e);
+                            
+                            // Remove the onclick attribute to prevent double calls
+                            this.removeAttribute('onclick');
+                        }
+                    }
+                    
+                    // Ensure the event doesn't propagate and trigger row click
+                    return false;
+                });
+            });
+            
+            // Remove the table-row-link hover effect to indicate rows aren't clickable
+            const tableRows = document.querySelectorAll('.table-row-link');
+            tableRows.forEach(row => {
+                row.classList.remove('hover:bg-gray-50');
+                row.classList.remove('cursor-pointer');
+                row.style.cursor = 'default';
+            });
+            
+            // Set up close button in modal
+            const closeButton = document.querySelector('#diagnosis-modal button');
+            if (closeButton) {
+                closeButton.addEventListener('click', hideDiagnosisModal);
+                // Remove the onclick attribute if present
+                closeButton.removeAttribute('onclick');
             }
         }
         
         /**
-         * Close modal when clicking outside the modal content
-         * @param {MouseEvent} event - Mouse event
+         * Initialize row click handlers
          */
-        function closeModalOnOutsideClick(event) {
-            const modalContent = document.querySelector('#diagnosis-modal > div');
-            if (event.target === event.currentTarget) {
-                hideDiagnosisModal();
+        function initializeRowClicks() {
+            // Per your requirement: clicking on appointment rows should do nothing
+            // So we're removing the row click handler functionality
+            
+            // If you want to re-enable row clicking in the future, uncomment this code:
+            /*
+            const tableRows = document.querySelectorAll('.table-row-link');
+            
+            tableRows.forEach(row => {
+                row.addEventListener('click', function(e) {
+                    // Don't navigate if clicking on a button or link
+                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
+                        e.target.closest('a') || e.target.closest('button')) {
+                        return;
+                    }
+                    
+                    // Get the patient ID from the row
+                    const patientId = this.getAttribute('data-patient-id');
+                    if (patientId) {
+                        window.location.href = `/appointments/${patientId}/`;
+                    }
+                });
+            });
+            */
+        }
+        
+        /**
+         * Handle speciality selection change
+         */
+        function handleSpecialityChange() {
+            // Update workspace dropdown state
+            updateWorkspaceSelectState();
+            
+            // Reset workspace selection when speciality changes
+            workspaceSelect.value = 'all';
+            
+            // Optional: Auto-submit form when speciality changes
+            // filterForm.submit();
+        }
+        
+        /**
+         * Handle workspace selection change
+         */
+        function handleWorkspaceChange() {
+            // Optional: Auto-submit form when workspace changes
+            // filterForm.submit();
+        }
+        
+        /**
+         * Handle search input with debouncing
+         */
+        function handleSearchInput() {
+            // Only trigger search if the input has at least 2 characters or is empty
+            if (searchInput.value.length > 1 || searchInput.value.length === 0) {
+                highlightSearchMatches(searchInput.value);
             }
         }
         
         /**
-         * Function to fetch workspaces by speciality ID using AJAX
-         * @param {string} specialityId - ID of the selected speciality
+         * Update workspace select dropdown state based on speciality selection
          */
-        function fetchWorkspacesBySpeciality(specialityId) {
-            // Add loading state to workspace select
-            const workspaceSelect = document.getElementById('workspace-select');
-            workspaceSelect.classList.add('animate-pulse');
+        function updateWorkspaceSelectState() {
+            if (specialitySelect.value === 'all') {
+                workspaceSelect.disabled = true;
+            } else {
+                workspaceSelect.disabled = false;
+            }
+        }
+        
+        /**
+         * Set up live search highlighting
+         */
+        function setupLiveSearch() {
+            // Initial search highlighting if there's a value
+            if (searchInput && searchInput.value) {
+                highlightSearchMatches(searchInput.value);
+            }
+        }
+        
+        /**
+         * Highlight search matches in the table
+         * @param {string} searchTerm - The term to search for
+         */
+        function highlightSearchMatches(searchTerm) {
+            // Get all table rows except header
+            const tableRows = document.querySelectorAll('tbody tr');
             
-            // Build the URL
-            const url = `/api/workspaces-by-speciality/${specialityId}/`;
-            
-            // Create headers with CSRF token for Django
-            const headers = {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            };
-            
-            // Get CSRF token from cookie if it exists
-            const csrftoken = getCookie('csrftoken');
-            if (csrftoken) {
-                headers['X-CSRFToken'] = csrftoken;
+            if (searchTerm.length === 0) {
+                // Reset all highlights
+                tableRows.forEach(row => {
+                    row.classList.remove('bg-yellow-50');
+                    
+                    // Reset cell text
+                    row.querySelectorAll('td').forEach(cell => {
+                        const originalText = cell.getAttribute('data-original-text');
+                        if (originalText) {
+                            cell.textContent = originalText;
+                        }
+                    });
+                });
+                return;
             }
             
-            // Fetch workspaces
-            fetch(url, {
-                method: 'GET',
-                headers: headers,
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Clear current options except the first one
-                workspaceSelect.innerHTML = '<option value="all">All Workspaces</option>';
+            // Highlight matching rows
+            tableRows.forEach(row => {
+                const rowText = row.textContent.toLowerCase();
+                const searchTermLower = searchTerm.toLowerCase();
                 
-                // Add new options
-                if (data.workspaces && data.workspaces.length > 0) {
-                    data.workspaces.forEach(workspace => {
-                        const option = document.createElement('option');
-                        option.value = workspace.id;
-                        option.textContent = workspace.owner_name || workspace.name;
-                        workspaceSelect.appendChild(option);
+                if (rowText.includes(searchTermLower)) {
+                    row.classList.add('bg-yellow-50');
+                    
+                    // Highlight matching text within cells
+                    row.querySelectorAll('td').forEach(cell => {
+                        // Skip cells with complex content (badges, buttons)
+                        if (cell.querySelector('span') || cell.querySelector('button') || cell.querySelector('svg')) {
+                            return;
+                        }
+                        
+                        const cellText = cell.textContent;
+                        
+                        // Store original text if not already stored
+                        if (!cell.getAttribute('data-original-text')) {
+                            cell.setAttribute('data-original-text', cellText);
+                        }
+                        
+                        // Highlight matches with case-insensitive regex
+                        if (cellText.toLowerCase().includes(searchTermLower)) {
+                            const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+                            cell.innerHTML = cellText.replace(regex, '<span class="bg-yellow-200 px-1 rounded">$1</span>');
+                        }
                     });
                 } else {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = 'No workspaces found';
-                    option.disabled = true;
-                    workspaceSelect.appendChild(option);
+                    row.classList.remove('bg-yellow-50');
                 }
-            })
-            .catch(error => {
-                console.error('Error fetching workspaces:', error);
-                
-                // Display error option
-                workspaceSelect.innerHTML = `
-                    <option value="all">All Workspaces</option>
-                    <option value="" disabled selected>Error loading workspaces</option>
-                `;
-            })
-            .finally(() => {
-                // Remove loading state
-                workspaceSelect.classList.remove('animate-pulse');
             });
         }
         
         /**
-         * Helper function to get cookie by name (for CSRF token)
+         * Clear all filters and reset the form
          */
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+        function clearAllFilters() {
+            // Reset search input
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            
+            // Reset speciality selection
+            specialitySelect.value = 'all';
+            
+            // Reset workspace selection and state
+            workspaceSelect.value = 'all';
+            updateWorkspaceSelectState();
+            
+            // Submit the form to refresh the page
+            filterForm.submit();
+        }
+        
+        /**
+         * Helper function: Debounce
+         * Limits how often a function can be called
+         */
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        /**
+         * Helper function: Escape special characters for regex
+         */
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+    });
+    
+    // Modal-related functions - defined outside the DOMContentLoaded event
+    // to ensure they are available globally
+    
+    /**
+     * Show diagnosis modal with full diagnosis text
+     * @param {string} appointmentId - ID of the appointment
+     * @param {string} patientName - Name of the patient
+     * @param {Event} event - Click event
+     */
+    function showDiagnosisModal(appointmentId, patientName, event) {
+        console.log("Opening modal for:", appointmentId, patientName);
+        
+        // Prevent row click event from firing AND prevent default behaviors
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        
+        // Get the full diagnosis text
+        const diagnosisElement = document.getElementById(`diagnosis-${appointmentId}`);
+        if (!diagnosisElement) {
+            console.error("Diagnosis element not found:", `diagnosis-${appointmentId}`);
+            return;
+        }
+        
+        // Set the diagnosis text in the modal
+        const modalContent = document.getElementById('modal-diagnosis-content');
+        if (!modalContent) {
+            console.error("Modal content element not found");
+            return;
+        }
+        modalContent.textContent = diagnosisElement.textContent;
+        
+        // Set the patient name in the modal
+        const patientNameElement = document.getElementById('modal-patient-name');
+        if (patientNameElement) {
+            patientNameElement.textContent = patientName;
+        }
+        
+        // Show the modal
+        const modal = document.getElementById('diagnosis-modal');
+        if (!modal) {
+            console.error("Modal element not found");
+            return;
+        }
+        modal.classList.remove('hidden');
+        
+        // Add event listener to close on ESC key
+        document.addEventListener('keydown', closeModalOnEsc);
+        
+        // Add event listener to close when clicking outside
+        modal.addEventListener('click', closeModalOnOutsideClick);
+        
+        // Return false to prevent default behavior
+        return false;
+    }
+    
+    /**
+     * Hide the diagnosis modal
+     */
+    function hideDiagnosisModal() {
+        console.log("Closing modal");
+        
+        const modal = document.getElementById('diagnosis-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            
+            // Remove event listeners
+            document.removeEventListener('keydown', closeModalOnEsc);
+            modal.removeEventListener('click', closeModalOnOutsideClick);
+        }
+    }
+    
+    /**
+     * Close modal when ESC key is pressed
+     * @param {KeyboardEvent} event - Keyboard event
+     */
+    function closeModalOnEsc(event) {
+        if (event.key === 'Escape') {
+            hideDiagnosisModal();
+        }
+    }
+    
+    /**
+     * Close modal when clicking outside the modal content
+     * @param {MouseEvent} event - Mouse event
+     */
+    function closeModalOnOutsideClick(event) {
+        if (event.target === event.currentTarget) {
+            hideDiagnosisModal();
+        }
+    }
+    
+    /**
+     * Function to fetch workspaces by speciality ID using AJAX
+     * @param {string} specialityId - ID of the selected speciality
+     */
+    function fetchWorkspacesBySpeciality(specialityId) {
+        // Add loading state to workspace select
+        const workspaceSelect = document.getElementById('workspace-select');
+        workspaceSelect.classList.add('animate-pulse');
+        
+        // Build the URL
+        const url = `/api/workspaces-by-speciality/${specialityId}/`;
+        
+        // Create headers with CSRF token for Django
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        
+        // Get CSRF token from cookie if it exists
+        const csrftoken = getCookie('csrftoken');
+        if (csrftoken) {
+            headers['X-CSRFToken'] = csrftoken;
+        }
+        
+        // Fetch workspaces
+        fetch(url, {
+            method: 'GET',
+            headers: headers,
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Clear current options except the first one
+            workspaceSelect.innerHTML = '<option value="all">All Workspaces</option>';
+            
+            // Add new options
+            if (data.workspaces && data.workspaces.length > 0) {
+                data.workspaces.forEach(workspace => {
+                    const option = document.createElement('option');
+                    option.value = workspace.id;
+                    option.textContent = workspace.owner_name || workspace.name;
+                    workspaceSelect.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No workspaces found';
+                option.disabled = true;
+                workspaceSelect.appendChild(option);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching workspaces:', error);
+            
+            // Display error option
+            workspaceSelect.innerHTML = `
+                <option value="all">All Workspaces</option>
+                <option value="" disabled selected>Error loading workspaces</option>
+            `;
+        })
+        .finally(() => {
+            // Remove loading state
+            workspaceSelect.classList.remove('animate-pulse');
+        });
+    }
+    
+    /**
+     * Helper function to get cookie by name (for CSRF token)
+     */
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
+        return cookieValue;
+    }
+</script>

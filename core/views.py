@@ -32,7 +32,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.generic import ListView
 from django.db.models import Q
 from django.views.decorators.http import require_GET
-
+import calendar
 
 def home(request):
     # If the user is logged in as a regular user, check for a workspace
@@ -2065,3 +2065,125 @@ def api_workspaces_by_speciality(request, speciality_id):
         return JsonResponse({'workspaces': workspace_data})
     except Speciality.DoesNotExist:
         return JsonResponse({'error': 'Speciality not found'}, status=404)
+
+@login_required
+def system_referrals_stats(request):
+    """
+    View for displaying system referral statistics.
+    Only accessible by workspace owners (admins).
+    """
+    user = request.user
+    
+    # Check if user is a workspace admin
+    if not hasattr(user, 'admin_workspace'):
+        return render(request, 'error.html', {'message': 'You do not have permission to access this page.'})
+    
+    # Get current month and year or from request parameters
+    today = timezone.now().date()
+    selected_month = int(request.GET.get('month', today.month))
+    selected_year = int(request.GET.get('year', today.year))
+    
+    # Create date range for filtering
+    start_date = datetime(selected_year, selected_month, 1).date()
+    
+    # Calculate end date (last day of the month)
+    if selected_month == 12:
+        end_date = datetime(selected_year + 1, 1, 1).date() - timedelta(days=1)
+    else:
+        end_date = datetime(selected_year, selected_month + 1, 1).date() - timedelta(days=1)
+    
+    # Get all system referrals in the selected period
+    referrals = ClinicAppointment.objects.filter(
+        system_referral=True,
+        date__gte=start_date,
+        date__lte=end_date
+    )
+    
+    # Calculate statistics
+    total_referrals = referrals.count()
+    new_referrals = referrals.filter(appointment_type="New").count()
+    followup_referrals = referrals.filter(appointment_type="Follow-Up").count()
+    
+    # Get referrals grouped by speciality
+    speciality_stats = []
+    for speciality in Speciality.objects.all():
+        # Count referrals for each workspace in this speciality
+        count = 0
+        for workspace in speciality.workspaces.all():
+            count += referrals.filter(workspace=workspace).count()
+        
+        if count > 0:  # Only include specialities with referrals
+            speciality_stats.append({
+                'name': speciality.name,
+                'count': count
+            })
+    
+    # Sort specialities by count in descending order
+    speciality_stats = sorted(speciality_stats, key=lambda x: x['count'], reverse=True)
+    
+    # Prepare data for specialities chart
+    specialities_labels = json.dumps([s['name'] for s in speciality_stats])
+    specialities_data = json.dumps([s['count'] for s in speciality_stats])
+    
+    # Get referrals grouped by clinic (workspace)
+    # Only include workspaces that belong to at least one speciality
+    workspace_stats = []
+    speciality_workspaces = Speciality.objects.values_list('workspaces', flat=True).distinct()
+    for workspace in Workspace.objects.filter(id__in=speciality_workspaces):
+        count = referrals.filter(workspace=workspace).count()
+        if count > 0:  # Only include workspaces with referrals
+            workspace_stats.append({
+                'name': workspace.owner_name or workspace.name,
+                'count': count
+            })
+    
+    # Sort workspaces by count in descending order
+    workspace_stats = sorted(workspace_stats, key=lambda x: x['count'], reverse=True)
+    
+    # Prepare data for clinics chart
+    clinics_labels = json.dumps([w['name'] for w in workspace_stats])
+    clinics_data = json.dumps([w['count'] for w in workspace_stats])
+    
+    # Get top 10 referring doctors
+    doctor_stats = []
+    doctor_referrals = referrals.values('booked_by').annotate(count=Count('booked_by')).order_by('-count')
+    
+    for dr_ref in doctor_referrals[:10]:  # Limit to top 10
+        if dr_ref['booked_by'] is not None:  # Exclude referrals with no doctor
+            doctor = Doctor.objects.get(id=dr_ref['booked_by'])
+            doctor_stats.append({
+                'doctor_name': doctor.full_name,
+                'count': dr_ref['count'],
+                'percentage': round((dr_ref['count'] / total_referrals) * 100 if total_referrals > 0 else 0)
+            })
+    
+    # Prepare month and year options for the filters
+    months = [(i, calendar.month_name[i]) for i in range(1, 13)]
+    
+    # Generate list of years starting from the earliest appointment year to current year
+    earliest_date = ClinicAppointment.objects.filter(system_referral=True).order_by('date').first()
+    if earliest_date:
+        start_year = earliest_date.date.year
+    else:
+        start_year = today.year
+        
+    years = list(range(start_year, today.year + 1))
+    
+    context = {
+        'selected_month': selected_month,
+        'selected_year': selected_year,
+        'months': months,
+        'years': years,
+        'total_referrals': total_referrals,
+        'new_referrals': new_referrals,
+        'followup_referrals': followup_referrals,
+        'speciality_stats': speciality_stats,
+        'workspace_stats': workspace_stats,
+        'top_doctors': doctor_stats,
+        'specialities_labels': specialities_labels,
+        'specialities_data': specialities_data,
+        'clinics_labels': clinics_labels,
+        'clinics_data': clinics_data,
+    }
+    
+    return render(request, 'system_referrals_stats.html', context)

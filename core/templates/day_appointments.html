@@ -5,11 +5,24 @@
 {% block content %}
 <style>
     @media print {
-        .tooltip, .print-tip {
+        .tooltip, .print-tip, .diagnosis-container {
           display: none !important;
         }
-      }
-
+    }
+    
+    .diagnosis-container {
+        background-color: #f9fafb;
+        border-left: 4px solid #3b82f6;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem;
+        display: none;
+    }
+    
+    .diagnosis-container.active {
+        display: block;
+    }
 </style>
 <h1 class="text-xl font-semibold mb-4">Appointments for {{ workspace.owner_name }} - {{ date|date:"l" }}, {{ date }}</h1>
 
@@ -96,8 +109,8 @@
                                     {% if appointment.diagnosis %}
                                         <a href="javascript:void(0);" 
                                            class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                                           onclick="openDiagnosis('{{ appointment.diagnosis }}')">
-                                           <i class="fas fa-file-medical-alt mr-1"></i>Diagnosis
+                                           onclick="toggleDiagnosis('mobile-diagnosis-{{ appointment.id }}')">
+                                           <i id="mobile-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>Diagnosis
                                         </a>
                                     {% endif %}
                                     {% if appointment.referral_letter %}
@@ -112,6 +125,14 @@
                                        <i class="fas fa-edit mr-1"></i>Edit
                                     </a>
                                 </div>
+                                
+                                <!-- Mobile diagnosis container -->
+                                {% if appointment.diagnosis %}
+                                <div id="mobile-diagnosis-{{ appointment.id }}" class="diagnosis-container">
+                                    <span class="text-gray-700">{{ appointment.diagnosis }}</span>
+                                </div>
+                                {% endif %}
+                                
                                 {% endwith %}
                             </div>
                         {% endif %}
@@ -140,58 +161,68 @@
                                 <div class="border-t-2 border-gray-300 my-6 w-full opacity-100"></div>
                             {% endif %}
                             <!-- Highlight all new appointments -->
-                            <div class="{% if appointment.appointment_type == 'New' %}bg-yellow-50{% endif %} flex items-center space-x-3 text-sm p-2" 
+                            <div class="{% if appointment.appointment_type == 'New' %}bg-yellow-50{% endif %} text-sm p-2" 
                                 {% if appointment.appointment_type == 'New' %}data-new="true"{% endif %}>
-                                <span class="text-gray-900 font-medium">{{ appointment.patient_name }}</span>
-                                <span class="text-gray-400">|</span>
-                                <span class="text-gray-600">{{ appointment.civil_id }}</span>
-                            {% with time as previous_time %}
-                                <span class="text-gray-400">|</span>
-                                <span class="text-gray-600">{{ appointment.phone_number }}</span>
-                                <span class="text-gray-400">|</span>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-gray-900 font-medium">{{ appointment.patient_name }}</span>
+                                    <span class="text-gray-400">|</span>
+                                    <span class="text-gray-600">{{ appointment.civil_id }}</span>
+                                {% with time as previous_time %}
+                                    <span class="text-gray-400">|</span>
+                                    <span class="text-gray-600">{{ appointment.phone_number }}</span>
+                                    <span class="text-gray-400">|</span>
 
-                                <!-- DESKTOP ICON ID -->
-                                <span id="confirmed-status-desktop-{{ appointment.id }}" class="cursor-pointer">
-                                    {% if appointment.confirmed == "Unknown" %}
-                                        <i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
-                                    {% elif appointment.confirmed == "Confirmed" %}
-                                        <i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')"></i>
-                                    {% elif appointment.confirmed == "Cancelled" %}
-                                        <i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
+                                    <!-- DESKTOP ICON ID -->
+                                    <span id="confirmed-status-desktop-{{ appointment.id }}" class="cursor-pointer">
+                                        {% if appointment.confirmed == "Unknown" %}
+                                            <i class="fas fa-question-circle text-yellow-500 hover:text-yellow-600" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')"></i>
+                                        {% elif appointment.confirmed == "Confirmed" %}
+                                            <i class="fas fa-check-circle text-green-500 hover:text-green-600" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')"></i>
+                                        {% elif appointment.confirmed == "Cancelled" %}
+                                            <i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
+                                        {% endif %}
+                                    </span>
+
+                                    <span class="text-gray-400">|</span>
+                                    <span class="text-gray-600">{{ appointment.appointment_type }}</span>
+                                    
+                                    {% if appointment.booked_by %}
+                                        <span class="text-gray-400">|</span>
+                                        <span class="text-gray-400 text-xs">{{ appointment.booked_by.full_name }}</span>
                                     {% endif %}
-                                </span>
-
-                                <span class="text-gray-400">|</span>
-                                <span class="text-gray-600">{{ appointment.appointment_type }}</span>
-                                
-                                {% if appointment.booked_by %}
+                                    
+                                    {% if appointment.diagnosis %}
+                                        <span class="text-gray-400">|</span>
+                                        <a href="javascript:void(0);" 
+                                           class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                                           onclick="toggleDiagnosis('desktop-diagnosis-{{ appointment.id }}')">
+                                           <i id="desktop-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>Diagnosis
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if appointment.referral_letter %}
+                                        <span class="text-gray-400">|</span>
+                                        <a href="javascript:void(0);" 
+                                           class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                                           onclick="openReferral('{{ appointment.referral_letter.url }}')">
+                                           <i class="fas fa-file-medical mr-1"></i>Referral
+                                        </a>
+                                    {% endif %}
+                                    
                                     <span class="text-gray-400">|</span>
-                                    <span class="text-gray-400 text-xs">{{ appointment.booked_by.full_name }}</span>
-                                {% endif %}
+                                    <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
+                                       class="text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                                       <i class="fas fa-edit mr-1"></i>Edit
+                                    </a>
+                                </div>
                                 
+                                <!-- Desktop diagnosis container -->
                                 {% if appointment.diagnosis %}
-                                    <span class="text-gray-400">|</span>
-                                    <a href="javascript:void(0);" 
-                                       class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                                       onclick="openDiagnosis('{{ appointment.diagnosis }}')">
-                                       <i class="fas fa-file-medical-alt mr-1"></i>Diagnosis
-                                    </a>
+                                <div id="desktop-diagnosis-{{ appointment.id }}" class="diagnosis-container">
+                                    <span class="text-gray-700">{{ appointment.diagnosis }}</span>
+                                </div>
                                 {% endif %}
                                 
-                                {% if appointment.referral_letter %}
-                                    <span class="text-gray-400">|</span>
-                                    <a href="javascript:void(0);" 
-                                       class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                                       onclick="openReferral('{{ appointment.referral_letter.url }}')">
-                                       <i class="fas fa-file-medical mr-1"></i>Referral
-                                    </a>
-                                {% endif %}
-                                
-                                <span class="text-gray-400">|</span>
-                                <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                   class="text-blue-600 hover:text-blue-700 transition-colors duration-200">
-                                   <i class="fas fa-edit mr-1"></i>Edit
-                                </a>
                             </div>
                             {% if not forloop.last and appointment.time|date:"H:i" == next_appointment.time|date:"H:i" %}
                                 <div class="border-t-2 border-gray-300 my-4 w-full opacity-75"></div>
@@ -251,138 +282,102 @@
         document.body.appendChild(popup);
     }
 
-    // Function to Open Diagnosis in Popup
-    function openDiagnosis(diagnosisText) {
-        const popup = document.createElement('div');
-        popup.id = 'diagnosisPopup';
-        popup.style.position = 'fixed';
-        popup.style.top = '0';
-        popup.style.left = '0';
-        popup.style.width = '100%';
-        popup.style.height = '100%';
-        popup.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        popup.style.display = 'flex';
-        popup.style.justifyContent = 'center';
-        popup.style.alignItems = 'center';
-        popup.style.zIndex = '1000';
-
-        const contentBox = document.createElement('div');
-        contentBox.style.backgroundColor = 'white';
-        contentBox.style.padding = '20px';
-        contentBox.style.borderRadius = '8px';
-        contentBox.style.maxWidth = '80%';
-        contentBox.style.maxHeight = '80%';
-        contentBox.style.overflow = 'auto';
+    // Function to Toggle Diagnosis Display
+    function toggleDiagnosis(diagnosisContainerId) {
+        const container = document.getElementById(diagnosisContainerId);
+        const iconId = diagnosisContainerId.replace('diagnosis-', 'diagnosis-icon-');
+        const icon = document.getElementById(iconId);
         
-        const title = document.createElement('h3');
-        title.textContent = 'Patient Diagnosis';
-        title.style.marginBottom = '10px';
-        title.style.fontSize = '18px';
-        title.style.fontWeight = 'bold';
-        contentBox.appendChild(title);
-        
-        const text = document.createElement('p');
-        text.textContent = diagnosisText;
-        text.style.fontSize = '14px';
-        text.style.lineHeight = '1.5';
-        contentBox.appendChild(text);
-        
-        popup.appendChild(contentBox);
-
-        const closeButton = document.createElement('span');
-        closeButton.textContent = 'X';
-        closeButton.style.position = 'absolute';
-        closeButton.style.top = '10px';
-        closeButton.style.right = '20px';
-        closeButton.style.fontSize = '24px';
-        closeButton.style.color = '#fff';
-        closeButton.style.cursor = 'pointer';
-        closeButton.onclick = () => document.body.removeChild(popup);
-        popup.appendChild(closeButton);
-
-        document.body.appendChild(popup);
+        if (container.classList.contains('active')) {
+            container.classList.remove('active');
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        } else {
+            container.classList.add('active');
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
     }
 
-/// Function to Print Appointments with compact rows, darker highlight, and hidden tip
-function printAppointments() {
-    let printWindow = window.open("", "", "width=800,height=600");
-    
-    let printContent = "<html><head><title>Appointments for {{ date }}</title>";
-    printContent += "<style>";
-    printContent += "body { font-family: Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 10px; }"; // Reduce margins
-    printContent += "h2 { margin: 0 0 10px 0; font-size: 14px; }"; // Smaller header
-    printContent += "table { border-collapse: collapse; width: 100%; }";
-    printContent += "th, td { border: 1px solid #aaa; padding: 4px; text-align: left; font-size: 9px; line-height: 1.1; }"; // Smaller font and padding
-    printContent += "th { background-color: #f2f2f2; font-weight: bold; }";
-    printContent += "tr.new-appointment { background-color: #b0b0b0 !important; }"; // Darker gray background
-    printContent += ".legend { margin-top: 8px; font-size: 8px; text-align: center; }"; // Smaller legend
-    printContent += ".legend span { display: inline-block; background-color: #b0b0b0; padding: 2px 8px; border-radius: 2px; }"; // Darker gray for legend too
-    printContent += "#printTip { display: block; }"; // Show by default
-    printContent += "@media print {";
-    printContent += "  @page { margin: 0.5cm; }"; // Smaller page margins
-    printContent += "  tr.new-appointment { background-color: #b0b0b0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }"; // Force in print media
-    printContent += "  table { page-break-inside: auto; }";
-    printContent += "  tr { page-break-inside: avoid; page-break-after: auto; }";
-    printContent += "  #printTip { display: none !important; }"; // Hide when printing
-    printContent += "}";
-    printContent += "</style>";
-    printContent += "</head><body>";
-    
-    // Compact header
-    printContent += "<h2>Appointments for {{ workspace.owner_name }} - {{ date|date:'l' }}, {{ date }}</h2>";
-    
-    printContent += "<table>";
-    printContent += "<thead><tr><th>Time</th><th>Patient Name</th><th>Civil ID</th><th>Phone</th><th>Status</th><th>Referred From</th></tr></thead><tbody>";
+    // Function to Print Appointments with compact rows, darker highlight, and hidden tip
+    function printAppointments() {
+        let printWindow = window.open("", "", "width=800,height=600");
+        
+        let printContent = "<html><head><title>Appointments for {{ date }}</title>";
+        printContent += "<style>";
+        printContent += "body { font-family: Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 10px; }"; // Reduce margins
+        printContent += "h2 { margin: 0 0 10px 0; font-size: 14px; }"; // Smaller header
+        printContent += "table { border-collapse: collapse; width: 100%; }";
+        printContent += "th, td { border: 1px solid #aaa; padding: 4px; text-align: left; font-size: 9px; line-height: 1.1; }"; // Smaller font and padding
+        printContent += "th { background-color: #f2f2f2; font-weight: bold; }";
+        printContent += "tr.new-appointment { background-color: #b0b0b0 !important; }"; // Darker gray background
+        printContent += ".legend { margin-top: 8px; font-size: 8px; text-align: center; }"; // Smaller legend
+        printContent += ".legend span { display: inline-block; background-color: #b0b0b0; padding: 2px 8px; border-radius: 2px; }"; // Darker gray for legend too
+        printContent += "#printTip { display: block; }"; // Show by default
+        printContent += "@media print {";
+        printContent += "  @page { margin: 0.5cm; }"; // Smaller page margins
+        printContent += "  tr.new-appointment { background-color: #b0b0b0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }"; // Force in print media
+        printContent += "  table { page-break-inside: auto; }";
+        printContent += "  tr { page-break-inside: avoid; page-break-after: auto; }";
+        printContent += "  #printTip { display: none !important; }"; // Hide when printing
+        printContent += "}";
+        printContent += "</style>";
+        printContent += "</head><body>";
+        
+        // Compact header
+        printContent += "<h2>Appointments for {{ workspace.owner_name }} - {{ date|date:'l' }}, {{ date }}</h2>";
+        
+        printContent += "<table>";
+        printContent += "<thead><tr><th>Time</th><th>Patient Name</th><th>Civil ID</th><th>Phone</th><th>Status</th><th>Referred From</th></tr></thead><tbody>";
 
-    {% for time in timeslots %}
-        {% for appointment in appointments %}
-            {% if appointment.time|date:"H:i" == time %}
-                // Skip appointments with "Cancelled" status
-                {% if appointment.confirmed != "Cancelled" %}
-                    // Apply the new-appointment class directly to the tr element with darker background
-                    {% if appointment.appointment_type == 'New' %}
-                        printContent += "<tr class='new-appointment' style='background-color: #b0b0b0;'>";  // Inline style as backup with darker gray
-                    {% else %}
-                        printContent += "<tr>";
+        {% for time in timeslots %}
+            {% for appointment in appointments %}
+                {% if appointment.time|date:"H:i" == time %}
+                    // Skip appointments with "Cancelled" status
+                    {% if appointment.confirmed != "Cancelled" %}
+                        // Apply the new-appointment class directly to the tr element with darker background
+                        {% if appointment.appointment_type == 'New' %}
+                            printContent += "<tr class='new-appointment' style='background-color: #b0b0b0;'>";  // Inline style as backup with darker gray
+                        {% else %}
+                            printContent += "<tr>";
+                        {% endif %}
+                        
+                        printContent += "<td>" + "{{ time }}".trim() + "</td>";
+                        printContent += "<td>" + "{{ appointment.patient_name }}".trim() + "</td>";
+                        printContent += "<td>" + "{{ appointment.civil_id }}".trim() + "</td>";
+                        printContent += "<td>" + "{{ appointment.phone_number }}".trim() + "</td>";
+                        printContent += "<td>" + "{{ appointment.confirmed }}".trim() + "</td>";
+                        printContent += "<td>{% if appointment.booked_by %}{{ appointment.booked_by.full_name }}{% endif %}</td>";
+                        printContent += "</tr>";
                     {% endif %}
-                    
-                    printContent += "<td>" + "{{ time }}".trim() + "</td>";
-                    printContent += "<td>" + "{{ appointment.patient_name }}".trim() + "</td>";
-                    printContent += "<td>" + "{{ appointment.civil_id }}".trim() + "</td>";
-                    printContent += "<td>" + "{{ appointment.phone_number }}".trim() + "</td>";
-                    printContent += "<td>" + "{{ appointment.confirmed }}".trim() + "</td>";
-                    printContent += "<td>{% if appointment.booked_by %}{{ appointment.booked_by.full_name }}{% endif %}</td>";
-                    printContent += "</tr>";
                 {% endif %}
-            {% endif %}
+            {% endfor %}
         {% endfor %}
-    {% endfor %}
 
-    printContent += "</tbody></table>";
-    
-    // Compact legend with darker background
-    printContent += "<div class='legend'>";
-    printContent += "<span><strong>Note:</strong> Highlighted rows indicate new patient appointments</span>";
-    printContent += "</div>";
-    
-    // Print tip that will only be visible in the browser, not when printing
-    printContent += "<div id='printTip' style='position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background-color: #4a5568; color: white; padding: 8px 16px; border-radius: 4px; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 12px;'>";
-    printContent += "<strong>Print Tip:</strong> For best results, ensure 'Background graphics' is enabled in your print settings";
-    printContent += "</div>";
-    
-    printContent += "</body></html>";
-    
-    printWindow.document.open();
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    // Delay printing to ensure styles are applied
-    setTimeout(function() {
-        printWindow.focus();
-        printWindow.print();
-    }, 500);
-}
-
+        printContent += "</tbody></table>";
+        
+        // Compact legend with darker background
+        printContent += "<div class='legend'>";
+        printContent += "<span><strong>Note:</strong> Highlighted rows indicate new patient appointments</span>";
+        printContent += "</div>";
+        
+        // Print tip that will only be visible in the browser, not when printing
+        printContent += "<div id='printTip' style='position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background-color: #4a5568; color: white; padding: 8px 16px; border-radius: 4px; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 12px;'>";
+        printContent += "<strong>Print Tip:</strong> For best results, ensure 'Background graphics' is enabled in your print settings";
+        printContent += "</div>";
+        
+        printContent += "</body></html>";
+        
+        printWindow.document.open();
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        // Delay printing to ensure styles are applied
+        setTimeout(function() {
+            printWindow.focus();
+            printWindow.print();
+        }, 500);
+    }
 
     // Function to Toggle Confirmed Status (AJAX)
     function toggleConfirmed(appointmentId, currentStatus) {

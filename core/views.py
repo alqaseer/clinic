@@ -2071,6 +2071,7 @@ def system_referrals_stats(request):
     """
     View for displaying system referral statistics.
     Only accessible by workspace owners (admins).
+    Filters referrals by created_at date instead of appointment date.
     """
     user = request.user
     
@@ -2083,20 +2084,20 @@ def system_referrals_stats(request):
     selected_month = int(request.GET.get('month', today.month))
     selected_year = int(request.GET.get('year', today.year))
     
-    # Create date range for filtering
-    start_date = datetime(selected_year, selected_month, 1).date()
+    # Create date range for filtering based on created_at instead of appointment date
+    start_date = datetime(selected_year, selected_month, 1)
     
     # Calculate end date (last day of the month)
     if selected_month == 12:
-        end_date = datetime(selected_year + 1, 1, 1).date() - timedelta(days=1)
+        end_date = datetime(selected_year + 1, 1, 1) - timedelta(seconds=1)
     else:
-        end_date = datetime(selected_year, selected_month + 1, 1).date() - timedelta(days=1)
+        end_date = datetime(selected_year, selected_month + 1, 1) - timedelta(seconds=1)
     
-    # Get all system referrals in the selected period
+    # Get all system referrals created in the selected period
     referrals = ClinicAppointment.objects.filter(
         system_referral=True,
-        date__gte=start_date,
-        date__lte=end_date
+        created_at__gte=start_date,
+        created_at__lte=end_date
     )
     
     # Calculate statistics
@@ -2150,20 +2151,24 @@ def system_referrals_stats(request):
     
     for dr_ref in doctor_referrals[:10]:  # Limit to top 10
         if dr_ref['booked_by'] is not None:  # Exclude referrals with no doctor
-            doctor = Doctor.objects.get(id=dr_ref['booked_by'])
-            doctor_stats.append({
-                'doctor_name': doctor.full_name,
-                'count': dr_ref['count'],
-                'percentage': round((dr_ref['count'] / total_referrals) * 100 if total_referrals > 0 else 0)
-            })
+            try:
+                doctor = Doctor.objects.get(id=dr_ref['booked_by'])
+                doctor_stats.append({
+                    'doctor_name': doctor.full_name,
+                    'count': dr_ref['count'],
+                    'percentage': round((dr_ref['count'] / total_referrals) * 100 if total_referrals > 0 else 0)
+                })
+            except Doctor.DoesNotExist:
+                # Skip if doctor no longer exists
+                continue
     
     # Prepare month and year options for the filters
     months = [(i, calendar.month_name[i]) for i in range(1, 13)]
     
     # Generate list of years starting from the earliest appointment year to current year
-    earliest_date = ClinicAppointment.objects.filter(system_referral=True).order_by('date').first()
-    if earliest_date:
-        start_year = earliest_date.date.year
+    earliest_referral = ClinicAppointment.objects.filter(system_referral=True).order_by('created_at').first()
+    if earliest_referral and earliest_referral.created_at:
+        start_year = earliest_referral.created_at.year
     else:
         start_year = today.year
         
@@ -2187,3 +2192,4 @@ def system_referrals_stats(request):
     }
     
     return render(request, 'system_referrals_stats.html', context)
+

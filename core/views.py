@@ -2174,6 +2174,12 @@ def system_referrals_stats(request):
         
     years = list(range(start_year, today.year + 1))
     
+    # Add month name to context
+    month_names = [
+        "", "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    
     context = {
         'selected_month': selected_month,
         'selected_year': selected_year,
@@ -2189,7 +2195,9 @@ def system_referrals_stats(request):
         'specialities_data': specialities_data,
         'clinics_labels': clinics_labels,
         'clinics_data': clinics_data,
+        'month_name': month_names[selected_month],  # Add month name to context
     }
     
     return render(request, 'system_referrals_stats.html', context)
+
 

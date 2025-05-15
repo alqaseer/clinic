@@ -1,5 +1,4 @@
 {% load static %}
-{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,8 +32,6 @@
         }
     </style>
 </head>
-
-
 <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-6">
         <div class="mb-8">
@@ -67,9 +64,26 @@
                 </form>
             </div>
 
+            <!-- Information message about what's being displayed -->
+            <div class="mb-6 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700">
+                            Found <span class="font-medium">{{ total_referrals }}</span> system referrals created in 
+                            <span class="font-medium">{{ month_name }} {{ selected_year }}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Overview Stats Card -->
             <div class="mb-6 bg-white p-6 rounded-lg shadow">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
                         <h3 class="text-lg font-medium text-gray-800 mb-2">Total Referrals This Month</h3>
                         <p class="text-3xl font-bold text-blue-600">{{ total_referrals }}</p>
@@ -79,68 +93,76 @@
                         <p class="text-3xl font-bold text-green-600">{{ new_referrals }}</p>
                         <p class="text-sm text-gray-500 mt-1">appointment_type = "New"</p>
                     </div>
-                    <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
-                        <h3 class="text-lg font-medium text-gray-800 mb-2">Follow-Up Referrals</h3>
-                        <p class="text-3xl font-bold text-purple-600">{{ followup_referrals }}</p>
-                        <p class="text-sm text-gray-500 mt-1">appointment_type = "Follow-Up"</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <!-- Specialities Chart -->
+            <div class="mb-6">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Referrals by Speciality</h3>
+                    <div class="h-80">
+                        <canvas id="specialitiesChart"></canvas>
                     </div>
                 </div>
             </div>
 
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <!-- Specialities Chart -->
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="text-lg font-medium text-gray-800 mb-4">Referrals by Speciality</h3>
-                <div class="h-80">
-                    <canvas id="specialitiesChart"></canvas>
-                </div>
-            </div>
-
             <!-- Clinics Chart -->
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="text-lg font-medium text-gray-800 mb-4">Referrals by Clinic</h3>
-                <div class="h-80">
-                    <canvas id="clinicsChart"></canvas>
+            <div class="mb-6">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Referrals by Clinic</h3>
+                    <div class="h-80">
+                        <canvas id="clinicsChart"></canvas>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Top Referring Doctors Table -->
-        <div class="bg-white p-4 rounded-lg shadow mb-6">
-            <h3 class="text-lg font-medium text-gray-800 mb-4">Top 10 Referring Doctors</h3>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor Name</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrals</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for doctor in top_doctors %}
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ forloop.counter }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ doctor.doctor_name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ doctor.count }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <div class="flex items-center">
-                                    <span class="mr-2">{{ doctor.percentage }}%</span>
-                                    <div class="w-24 bg-gray-200 rounded-full h-2.5">
-                                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ doctor.percentage }}%"></div>
+            <!-- Top Referring Doctors Table -->
+            <div class="bg-white p-4 rounded-lg shadow mb-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Top 10 Referring Doctors</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrals</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for doctor in top_doctors %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ forloop.counter }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ doctor.doctor_name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ doctor.count }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <div class="flex items-center">
+                                        <span class="mr-2">{{ doctor.percentage }}%</span>
+                                        <div class="w-24 bg-gray-200 rounded-full h-2.5">
+                                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ doctor.percentage }}%"></div>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No referring doctors found for this period.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No referring doctors found for this period.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Back to Dashboard Button -->
+            <div class="mb-6">
+                <a href="{% url 'system_referrals_list' %}" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all inline-flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to Referrals List
+                </a>
             </div>
         </div>
     </div>

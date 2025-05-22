@@ -270,13 +270,37 @@ def waiting_list(request, workspace_name):
     if request.user.workspace != workspace and request.user != workspace.admin:
         return redirect('login')
 
+    # Get status filter from request
+    status_filter = request.GET.get('status', 'all')
+    
+    # Base queryset - cases where date is empty
     cases = SurgicalBooking.objects.filter(
         workspace=workspace, 
         date__isnull=True,  # Date is empty (null)
-        status__in=['booked', 'waiting', 'past']  # Exclude 'deleted' cases
-    ).order_by('created_at')  # Arrange by creation date, newest first
+    )
+    
+    # Apply status filter
+    if status_filter == 'all':
+        cases = cases.filter(status__in=['waiting', 'sent_for_anesthesia', 'ready'])
+    else:
+        cases = cases.filter(status=status_filter)
+    
+    cases = cases.order_by('created_at')  # Arrange by creation date
 
-    return render(request, 'waiting_list.html', {'cases': cases, 'workspace': workspace})
+    # Status choices for the dropdown
+    status_choices = [
+        ('all', 'All'),
+        ('waiting', 'Waiting'),
+        ('sent_for_anesthesia', 'Sent for Anesthesia'),
+        ('ready', 'Ready'),
+    ]
+
+    return render(request, 'waiting_list.html', {
+        'cases': cases, 
+        'workspace': workspace,
+        'status_choices': status_choices,
+        'selected_status': status_filter
+    })
 
 
 @login_required
@@ -329,10 +353,9 @@ def add_surgical_booking(request, workspace_name):
         if form.is_valid():
             booking = form.save(commit=False)
             booking.workspace = workspace  # Assign the booking to the current workspace
-            if booking.date:
-                booking.status = 'booked'
-            else:
-                booking.status = 'waiting'
+            
+            # Note: Remove the automatic status assignment since user can now choose
+            # The status will be set based on the form selection
             booking.save()
 
             # Add new ActionLog entry

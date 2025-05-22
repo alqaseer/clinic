@@ -10,6 +10,16 @@
             + New Case
         </a>
     </div>
+    
+    <!-- Status Filter Dropdown -->
+    <div class="mb-4">
+        <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Status:</label>
+        <select id="statusFilter" onchange="filterByStatus()" class="block w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+            {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
     <div class="overflow-x-auto">
         <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
             <thead class="bg-gray-50 border-b">
@@ -19,6 +29,7 @@
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Diagnosis</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Side</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Procedure</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Status</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Created On</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
                     <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Photo</th>
@@ -33,6 +44,17 @@
                     <td class="px-4 py-2 text-sm text-gray-700">{{ case.diagnosis }}</td>
                     <td class="px-4 py-2 text-sm text-gray-700">{{ case.side }}</td>
                     <td class="px-4 py-2 text-sm text-gray-700">{{ case.procedure }}</td>
+                    <td class="px-4 py-2 text-sm">
+                        {% if case.status == 'waiting' %}
+                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">Waiting</span>
+                        {% elif case.status == 'sent_for_anesthesia' %}
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">Sent for Anesthesia</span>
+                        {% elif case.status == 'ready' %}
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Ready</span>
+                        {% else %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">{{ case.get_status_display }}</span>
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-2 text-sm text-gray-700">{{ case.created_at|date:"M d, Y" }}</td>
                     <td class="px-4 py-2 text-sm text-gray-700">{{ case.notes }}</td>
                     <td class="px-4 py-2 text-center">
@@ -63,7 +85,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="px-4 py-2 text-center text-sm text-gray-500">
+                    <td colspan="10" class="px-4 py-2 text-center text-sm text-gray-500">
                         <div class="py-8">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -123,6 +145,19 @@
         .catch(error => {
             alert("Network error. Please try again.");
         });
+    }
+
+    function filterByStatus() {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const currentUrl = new URL(window.location.href);
+        
+        if (statusFilter === 'all') {
+            currentUrl.searchParams.delete('status');
+        } else {
+            currentUrl.searchParams.set('status', statusFilter);
+        }
+        
+        window.location.href = currentUrl.toString();
     }
 
     function showPhotoModal(imageUrl, patientName) {

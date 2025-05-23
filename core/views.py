@@ -261,6 +261,8 @@ def booked_cases(request, workspace_name):
     return render(request, 'booked_cases.html', {'cases': cases, 'workspace': workspace})
 
 
+
+@login_required
 @login_required
 def waiting_list(request, workspace_name):
     """View for cases where date is empty and status is NOT deleted, arranged by creation date."""
@@ -270,36 +272,16 @@ def waiting_list(request, workspace_name):
     if request.user.workspace != workspace and request.user != workspace.admin:
         return redirect('login')
 
-    # Get status filter from request
-    status_filter = request.GET.get('status', 'all')
-    
-    # Base queryset - cases where date is empty
+    # Base queryset - cases where date is empty and status is NOT deleted
     cases = SurgicalBooking.objects.filter(
         workspace=workspace, 
         date__isnull=True,  # Date is empty (null)
-    )
-    
-    # Apply status filter
-    if status_filter == 'all':
-        cases = cases.filter(status__in=['waiting', 'sent_for_anesthesia', 'ready'])
-    else:
-        cases = cases.filter(status=status_filter)
-    
-    cases = cases.order_by('created_at')  # Arrange by creation date
-
-    # Status choices for the dropdown
-    status_choices = [
-        ('all', 'All'),
-        ('waiting', 'Waiting'),
-        ('sent_for_anesthesia', 'Sent for Anesthesia'),
-        ('ready', 'Ready'),
-    ]
+        status__in=['waiting', 'booked', 'past']  # All statuses except 'deleted'
+    ).order_by('created_at')  # Arrange by creation date
 
     return render(request, 'waiting_list.html', {
         'cases': cases, 
         'workspace': workspace,
-        'status_choices': status_choices,
-        'selected_status': status_filter
     })
 
 

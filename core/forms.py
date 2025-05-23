@@ -44,7 +44,7 @@ class CustomUserCreationForm(forms.ModelForm):
 class SurgicalBookingForm(forms.ModelForm):
     class Meta:
         model = SurgicalBooking
-        fields = ['name', 'phone', 'civil_id', 'diagnosis', 'procedure', 'side', 'date', 'status', 'notes', 'photo_attachment']
+        fields = ['name', 'phone', 'civil_id', 'diagnosis', 'procedure', 'side', 'date', 'notes', 'photo_attachment']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),  # Use a date picker
         }

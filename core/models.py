@@ -57,16 +57,7 @@ class SurgicalBooking(models.Model):
         (LEFT, 'Left'),
         (NA, 'Not Applicable'),
     ]
-    # Status choices
-    WAITING = 'waiting'
-    SENT_FOR_ANESTHESIA = 'sent_for_anesthesia'
-    READY = 'ready'
-    STATUS_CHOICES = [
-        (WAITING, 'Waiting'),
-        (SENT_FOR_ANESTHESIA, 'Sent for Anesthesia'),
-        (READY, 'Ready'),
-    ]
-
+  
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='surgical_bookings')
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=8)
@@ -86,11 +77,7 @@ class SurgicalBooking(models.Model):
         ],
         default='waiting'
     )
-    status = models.CharField(
-    max_length=20,
-    choices=STATUS_CHOICES,
-    default=WAITING  # This equals 'waiting'
-    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     photo_attachment = models.ImageField(upload_to="surgical_attachments/", blank=True, null=True)
 

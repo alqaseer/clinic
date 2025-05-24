@@ -20,11 +20,40 @@
             },
         }
     </script>
+    <style>
+        /* Custom CSS for proper mobile viewport handling */
+        .mobile-safe-height {
+            min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height for modern browsers */
+        }
+        
+        @supports (height: 100dvh) {
+            .mobile-safe-height {
+                min-height: 100dvh;
+            }
+        }
+        
+        /* Ensure proper scrolling on mobile */
+        @media (max-width: 768px) {
+            .main-container {
+                min-height: 100vh;
+                min-height: 100dvh;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .main-content {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-white to-gray-50 text-gray-800 font-sf">
 
     <!-- Main Container -->
-    <div class="flex h-screen">
+    <div class="flex md:h-screen main-container mobile-safe-height">
 
         <!-- Sidebar (Desktop) -->
         <aside class="bg-white/80 backdrop-blur-lg w-72 hidden md:flex flex-col shadow-xl">
@@ -178,8 +207,8 @@
         
 
         <!-- Main Content -->
-        <main class="flex-1 bg-gradient-to-br from-gray-50 via-white to-gray-50 p-6 overflow-y-auto pt-16 md:pt-6">
-            <div class="max-w-7xl mx-auto">
+        <main class="flex-1 bg-gradient-to-br from-gray-50 via-white to-gray-50 p-6 overflow-y-auto pt-16 md:pt-6 main-content">
+            <div class="max-w-7xl mx-auto pb-6">
                 {% block content %}
                 {% endblock %}
             </div>

@@ -57,6 +57,15 @@ class SurgicalBooking(models.Model):
         (LEFT, 'Left'),
         (NA, 'Not Applicable'),
     ]
+    
+    WAITING = 'waiting'
+    SENT_FOR_ANESTHESIA = 'sent_for_anesthesia'
+    READY = 'ready'
+    READINESS_CHOICES = [
+        (WAITING, 'Waiting'),
+        (SENT_FOR_ANESTHESIA, 'Sent for Anesthesia'),
+        (READY, 'Ready'),
+    ]
   
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='surgical_bookings')
     name = models.CharField(max_length=255)
@@ -76,6 +85,11 @@ class SurgicalBooking(models.Model):
             ('deleted', 'Deleted')
         ],
         default='waiting'
+    )
+    readiness = models.CharField(
+        max_length=50,
+        choices=READINESS_CHOICES,
+        default=WAITING
     )
     
     created_at = models.DateTimeField(auto_now_add=True)

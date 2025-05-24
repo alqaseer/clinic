@@ -263,7 +263,6 @@ def booked_cases(request, workspace_name):
 
 
 @login_required
-@login_required
 def waiting_list(request, workspace_name):
     """View for cases where date is empty and status is NOT deleted, arranged by creation date."""
     workspace = get_object_or_404(Workspace, name=workspace_name)
@@ -277,7 +276,15 @@ def waiting_list(request, workspace_name):
         workspace=workspace, 
         date__isnull=True,  # Date is empty (null)
         status__in=['waiting', 'booked', 'past']  # All statuses except 'deleted'
-    ).order_by('created_at')  # Arrange by creation date
+    )
+    
+    # Filter by readiness if specified
+    readiness_filter = request.GET.get('readiness')
+    if readiness_filter and readiness_filter != 'all':
+        cases = cases.filter(readiness=readiness_filter)
+    
+    # Order by creation date
+    cases = cases.order_by('created_at')
 
     return render(request, 'waiting_list.html', {
         'cases': cases, 

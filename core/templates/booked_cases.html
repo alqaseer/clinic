@@ -4,75 +4,136 @@
 
 {% block content %}
 <div class="container mx-auto px-4">
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 class="text-xl font-semibold text-gray-800">Booked Cases (Upcoming)</h2>
-        <a href="{% url 'add_surgical_booking' workspace.name %}" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+        <a href="{% url 'add_surgical_booking' workspace.name %}" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors duration-200 text-center">
             + New Case
         </a>
     </div>
     
-    <div class="overflow-x-auto">
+    <div class="space-y-6">
         {% regroup cases by date as grouped_cases %}
         
         {% for group in grouped_cases %}
             <!-- Group Header: Show the weekday name and date -->
-            <div class="bg-gray-100 px-4 py-2 rounded-md text-lg font-semibold text-gray-700 mt-6">
+            <div class="bg-gray-100 px-4 py-2 rounded-md text-lg font-semibold text-gray-700">
                 {{ group.grouper|date:"l, M d, Y" }}  <!-- Example: Monday, Jan 29, 2025 -->
             </div>
 
-            <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg mt-2">
-                <thead class="bg-gray-50 border-b">
-                    <tr>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Patient Name</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Phone Number</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Diagnosis</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Side</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Procedure</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
-                        <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Photo</th>
-                        <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for case in group.list %}
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ case.name }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ case.phone }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ case.diagnosis }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ case.side }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ case.procedure }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ case.notes }}</td>
-                        <td class="px-4 py-2 text-center">
-                            {% if case.photo_attachment %}
-                                <button 
-                                    onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
-                                    class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
-                                >
-                                    View Photo
-                                </button>
-                            {% else %}
-                                <span class="text-gray-400 text-xs">No photo</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-2 text-center">
-                            <!-- Edit Button -->
-                            <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
-                               class="text-blue-500 hover:text-blue-600 font-medium px-2">
-                                ✏️ Edit
-                            </a>
+            <!-- Desktop Table View -->
+            <div class="hidden lg:block overflow-x-auto">
+                <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Patient Name</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Phone Number</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Diagnosis</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Side</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Procedure</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
+                            <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Photo</th>
+                            <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for case in group.list %}
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-2 text-sm text-gray-700">{{ case.name }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700">{{ case.phone }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700">{{ case.diagnosis }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700">{{ case.side }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700">{{ case.procedure }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700">{{ case.notes }}</td>
+                            <td class="px-4 py-2 text-center">
+                                {% if case.photo_attachment %}
+                                    <button 
+                                        onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
+                                        class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
+                                    >
+                                        View Photo
+                                    </button>
+                                {% else %}
+                                    <span class="text-gray-400 text-xs">No photo</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-center">
+                                <!-- Edit Button -->
+                                <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
+                                   class="text-blue-500 hover:text-blue-600 font-medium px-2">
+                                    ✏️ Edit
+                                </a>
 
-                            <!-- Delete Button -->
-                            <button onclick="deleteCase({{ case.id }})" 
-                                    class="text-red-500 hover:text-red-600 font-medium px-2">
-                                🗑 Delete
+                                <!-- Delete Button -->
+                                <button onclick="deleteCase({{ case.id }})" 
+                                        class="text-red-500 hover:text-red-600 font-medium px-2">
+                                    🗑 Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="lg:hidden space-y-4">
+                {% for case in group.list %}
+                <div class="bg-white border border-gray-200 shadow-md rounded-lg p-4">
+                    <!-- Patient Name and Photo -->
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">{{ case.name }}</h3>
+                            <p class="text-sm text-gray-600">{{ case.phone }}</p>
+                        </div>
+                        {% if case.photo_attachment %}
+                            <button 
+                                onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
+                                class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
+                            >
+                                📷 View
                             </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% endif %}
+                    </div>
+
+                    <!-- Case Details -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex">
+                            <span class="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Side:</span>
+                            <span class="text-sm text-gray-700">{{ case.side }}</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Diagnosis:</span>
+                            <span class="text-sm text-gray-700">{{ case.diagnosis }}</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Procedure:</span>
+                            <span class="text-sm text-gray-700">{{ case.procedure }}</span>
+                        </div>
+                        {% if case.notes %}
+                        <div class="flex">
+                            <span class="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Notes:</span>
+                            <span class="text-sm text-gray-700">{{ case.notes }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-3 pt-3 border-t border-gray-100">
+                        <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
+                           class="bg-blue-50 text-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-100 transition-colors duration-200">
+                            ✏️ Edit
+                        </a>
+                        <button onclick="deleteCase({{ case.id }})" 
+                                class="bg-red-50 text-red-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-100 transition-colors duration-200">
+                            🗑 Delete
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
         {% empty %}
-            <div class="bg-gray-50 rounded-lg p-8 text-center mt-6">
+            <div class="bg-gray-50 rounded-lg p-8 text-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -84,18 +145,18 @@
 </div>
 
 <!-- Photo Modal -->
-<div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden">
-    <div class="relative bg-white rounded-lg shadow-xl max-w-3xl max-h-full overflow-auto">
+<div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden p-4">
+    <div class="relative bg-white rounded-lg shadow-xl max-w-full max-h-full overflow-auto w-full max-w-3xl">
         <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
-            <h3 id="photoModalTitle" class="text-lg font-medium text-gray-900"></h3>
-            <button onclick="closePhotoModal()" class="text-gray-400 hover:text-gray-500">
+            <h3 id="photoModalTitle" class="text-lg font-medium text-gray-900 truncate pr-4"></h3>
+            <button onclick="closePhotoModal()" class="text-gray-400 hover:text-gray-500 flex-shrink-0">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
         </div>
         <div class="p-4">
-            <img id="photoModalImage" src="" alt="Patient photo attachment" class="max-w-full h-auto">
+            <img id="photoModalImage" src="" alt="Patient photo attachment" class="max-w-full h-auto rounded-lg">
         </div>
     </div>
 </div>
@@ -161,6 +222,20 @@
         if (event.key === 'Escape' && !document.getElementById('photoModal').classList.contains('hidden')) {
             closePhotoModal();
         }
+    });
+
+    // Handle device orientation changes
+    window.addEventListener('orientationchange', function() {
+        // Small delay to allow for orientation change to complete
+        setTimeout(function() {
+            // If modal is open, ensure it's still properly positioned
+            if (!document.getElementById('photoModal').classList.contains('hidden')) {
+                // Force a repaint to handle any layout issues
+                document.getElementById('photoModal').style.display = 'none';
+                document.getElementById('photoModal').offsetHeight; // Trigger reflow
+                document.getElementById('photoModal').style.display = 'flex';
+            }
+        }, 100);
     });
 </script>
 {% endblock %}

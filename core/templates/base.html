@@ -299,12 +299,22 @@
         <!-- Mobile Sidebar -->
         <div id="mobile-menu" class="glass-morphism w-80 fixed inset-y-0 z-40 transform -translate-x-full transition-transform duration-300 ease-out md:hidden shadow-2xl">
             <div class="h-full flex flex-col custom-scrollbar overflow-y-auto">
-                <!-- Close Button -->
-                <div class="flex justify-between items-center p-6 border-b border-apple-border/50">
-                    <h2 class="text-xl font-semibold text-gray-900">{{ workspace.name }}</h2>
-                    <button id="close-mobile-menu" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors focus-ring">
-                        <i class="fas fa-times text-gray-600 text-sm"></i>
-                    </button>
+                <!-- Mobile Header with title positioned below burger menu area -->
+                <div class="pt-20 pb-6 px-6 border-b border-apple-border/50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-apple-blue to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-stethoscope text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-gray-900">{{ workspace.name }}</h2>
+                                <p class="text-xs text-gray-500 font-medium">Surgical Workspace</p>
+                            </div>
+                        </div>
+                        <button id="close-mobile-menu" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors focus-ring">
+                            <i class="fas fa-times text-gray-600 text-sm"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Mobile Navigation (Same structure as desktop) -->

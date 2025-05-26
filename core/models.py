@@ -91,17 +91,17 @@ class SurgicalBooking(models.Model):
         choices=READINESS_CHOICES,
         default=WAITING
     )
-    status2 = models.CharField(
-    max_length=50,
-    choices=[
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ],
-    default='pending',
-    null=True,
-    blank=True
-)
+#     status2 = models.CharField(
+#     max_length=50,
+#     choices=[
+#         ('pending', 'Pending'),
+#         ('approved', 'Approved'),
+#         ('rejected', 'Rejected'),
+#     ],
+#     default='pending',
+#     null=True,
+#     blank=True
+# )
     created_at = models.DateTimeField(auto_now_add=True)
     photo_attachment = models.ImageField(upload_to="surgical_attachments/", blank=True, null=True)
 

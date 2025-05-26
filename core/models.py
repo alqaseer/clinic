@@ -170,3 +170,84 @@ class Doctor(models.Model):
     clerk = models.BooleanField(default=False)
     def __str__(self):
         return self.full_name
+
+
+#favorite section
+
+
+class FavoriteSection(models.Model):
+    """Sections to organize favorite patients (e.g., ACL patients, TKR revisions, etc.)"""
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='favorite_sections')
+    name = models.CharField(max_length=255)
+    color = models.CharField(max_length=7, default='#3B82F6')  # Hex color for visual distinction
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    order = models.PositiveIntegerField(default=0)  # For custom ordering
+    
+    class Meta:
+        unique_together = ['workspace', 'name']
+        ordering = ['order', 'name']
+    
+    def __str__(self):
+        return self.name
+
+
+class FavoritePatient(models.Model):
+    """Favorited patients with their basic information"""
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='favorite_patients')
+    civil_id = models.CharField(max_length=12)
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=15)
+    diagnosis = models.TextField(blank=True)
+    
+    # Source information (where the patient was favorited from)
+    SOURCE_CHOICES = [
+        ('clinic', 'Clinic Appointment'),
+        ('surgical', 'Surgical Booking'),
+        ('manual', 'Manual Entry'),
+    ]
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='manual')
+    source_id = models.PositiveIntegerField(null=True, blank=True)  # ID of the original record
+    
+    # Organization
+    section = models.ForeignKey(FavoriteSection, on_delete=models.SET_NULL, null=True, blank=True, related_name='patients')
+    
+    # Status and metadata
+    is_active = models.BooleanField(default=True)
+    favorited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    favorited_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['workspace', 'civil_id']
+        ordering = ['-favorited_at']
+    
+    def __str__(self):
+        return f"{self.name} ({self.civil_id}) - {self.workspace.name}"
+
+
+class FavoritePatientNote(models.Model):
+    """Progress notes for favorite patients"""
+    patient = models.ForeignKey(FavoritePatient, on_delete=models.CASCADE, related_name='notes')
+    content = models.TextField()  # Rich text content (HTML)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Note for {self.patient.name} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+
+class FavoritePatientAttachment(models.Model):
+    """File attachments for favorite patients (images, documents, etc.)"""
+    note = models.ForeignKey(FavoritePatientNote, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='favorite_patient_attachments/')
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=50)  # image, document, etc.
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Attachment: {self.filename}"

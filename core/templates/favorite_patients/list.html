@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Favorite Patients - {{ workspace.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Favorite Patients</h1>
+            <p class="text-gray-600">Manage your favorite patients and organize them by sections</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
+            <a href="{% url 'create_favorite_section' workspace.name %}" 
+               class="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <i class="fas fa-folder-plus mr-2"></i>
+                New Section
+            </a>
+            <a href="{% url 'add_favorite_patient' workspace.name %}" 
+               class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-user-plus mr-2"></i>
+                Add Patient
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <form method="GET" id="filterForm" class="flex flex-col gap-4">
+            <!-- Search -->
+            <div class="w-full">
+                <input type="text" 
+                       name="search" 
+                       value="{{ search_query }}"
+                       placeholder="Search by name, civil ID, or diagnosis..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                       onchange="document.getElementById('filterForm').submit();">
+            </div>
+            
+            <!-- Section Filter and Clear Button Row -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <select name="section" 
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        onchange="document.getElementById('filterForm').submit();">
+                    <option value="">All Sections</option>
+                    <option value="no_section" {% if current_section == 'no_section' %}selected{% endif %}>
+                        General (No Section)
+                    </option>
+                    {% for section in sections %}
+                        <option value="{{ section.id }}" 
+                                {% if current_section == section.id|stringformat:"s" %}selected{% endif %}>
+                            {{ section.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Clear Filters -->
+                {% if search_query or current_section %}
+                    <a href="{% url 'favorite_patients_list' workspace.name %}" 
+                       class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex-shrink-0 flex items-center justify-center">
+                        <i class="fas fa-times mr-2"></i>
+                        Clear
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Patients List -->
+    {% if patients %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Mobile Cards View -->
+            <div class="block sm:hidden">
+                {% for patient in patients %}
+                    <div onclick="window.location.href='{% url 'favorite_patient_detail' workspace.name patient.id %}'" 
+                         class="relative p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors active:bg-gray-100">
+                        
+                        <!-- Delete Button - Top Right -->
+                        <button onclick="event.stopPropagation(); deleteFavoritePatient({{ patient.id }}, '{{ patient.name|escapejs }}')"
+                                class="absolute top-3 right-3 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors z-10">
+                            <i class="fas fa-trash-alt text-sm"></i>
+                        </button>
+                        
+                        <!-- Patient Info -->
+                        <div class="pr-12">
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="text-base font-medium text-gray-900 truncate">{{ patient.name }}</h3>
+                            </div>
+                            
+                            <div class="space-y-1 text-sm text-gray-600">
+                                <div class="flex items-center">
+                                    <i class="fas fa-id-card text-gray-400 w-4 mr-2"></i>
+                                    <span>{{ patient.civil_id }}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-phone text-gray-400 w-4 mr-2"></i>
+                                    <span>{{ patient.phone }}</span>
+                                </div>
+                                {% if patient.diagnosis %}
+                                    <div class="flex items-start">
+                                        <i class="fas fa-stethoscope text-gray-400 w-4 mr-2 mt-0.5"></i>
+                                        <span class="line-clamp-2">{{ patient.diagnosis|truncatechars:100 }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Section and Source -->
+                            <div class="flex items-center justify-between mt-3">
+                                <div class="flex items-center space-x-2">
+                                    {% if patient.section %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
+                                              style="background-color: {{ patient.section.color }};">
+                                            {{ patient.section.name }}
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            General
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="text-xs text-gray-500">
+                                    {% if patient.source == 'clinic' %}
+                                        <i class="fas fa-calendar-alt text-green-500 mr-1"></i>
+                                        Clinic
+                                    {% elif patient.source == 'surgical' %}
+                                        <i class="fas fa-user-md text-blue-500 mr-1"></i>
+                                        Surgery
+                                    {% else %}
+                                        <i class="fas fa-edit text-gray-500 mr-1"></i>
+                                        Manual
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Desktop Table View -->
+            <div class="hidden sm:block overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Patient
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Contact
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Section
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Source
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Added
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for patient in patients %}
+                            <tr onclick="window.location.href='{% url 'favorite_patient_detail' workspace.name patient.id %}'" 
+                                class="hover:bg-gray-50 transition-colors cursor-pointer">
+                                <td class="px-6 py-4">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ patient.name }}</div>
+                                        <div class="text-sm text-gray-500">Civil ID: {{ patient.civil_id }}</div>
+                                        {% if patient.diagnosis %}
+                                            <div class="text-xs text-gray-400 mt-1 truncate max-w-xs">
+                                                {{ patient.diagnosis|truncatechars:50 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-phone text-gray-400 mr-2"></i>
+                                        {{ patient.phone }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if patient.section %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                                              style="background-color: {{ patient.section.color }};">
+                                            {{ patient.section.name }}
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            General
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    {% if patient.source == 'clinic' %}
+                                        <i class="fas fa-calendar-alt text-green-500 mr-1"></i>
+                                        Clinic
+                                    {% elif patient.source == 'surgical' %}
+                                        <i class="fas fa-user-md text-blue-500 mr-1"></i>
+                                        Surgery
+                                    {% else %}
+                                        <i class="fas fa-edit text-gray-500 mr-1"></i>
+                                        Manual
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    {{ patient.favorited_at|date:"M d, Y" }}
+                                </td>
+                                <td class="px-6 py-4 text-right text-sm font-medium">
+                                    <button onclick="event.stopPropagation(); deleteFavoritePatient({{ patient.id }}, '{{ patient.name|escapejs }}')"
+                                            class="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-full transition-colors" 
+                                            title="Remove from favorites">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <div class="max-w-md mx-auto">
+                <i class="fas fa-heart text-gray-300 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No favorite patients yet</h3>
+                <p class="text-gray-500 mb-6">
+                    {% if search_query or current_section %}
+                        No patients match your current filters. Try adjusting your search criteria.
+                    {% else %}
+                        Start building your favorite patients list by adding patients from your clinic appointments or surgical bookings.
+                    {% endif %}
+                </p>
+                {% if not search_query and not current_section %}
+                    <a href="{% url 'add_favorite_patient' workspace.name %}" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Add Your First Patient
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center mb-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">Remove Favorite Patient</h3>
+            </div>
+            <p class="text-gray-600 mb-6">
+                Are you sure you want to remove <strong id="patientNameToDelete"></strong> from your favorites? 
+                This action can be undone by re-adding the patient.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                <button onclick="closeDeleteModal()" 
+                        class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+                <button id="confirmDeleteButton" 
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    Remove Patient
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let patientToDelete = null;
+
+function deleteFavoritePatient(patientId, patientName) {
+    patientToDelete = patientId;
+    document.getElementById('patientNameToDelete').textContent = patientName;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    patientToDelete = null;
+}
+
+document.getElementById('confirmDeleteButton').addEventListener('click', function() {
+    if (patientToDelete) {
+        fetch(`{% url 'delete_favorite_patient' workspace.name 0 %}`.replace('0', patientToDelete), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while removing the patient.');
+        })
+        .finally(() => {
+            closeDeleteModal();
+        });
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+</script>
+
+{% endblock %}

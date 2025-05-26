@@ -69,6 +69,21 @@ urlpatterns = [
     path('patient-lookup/', views.patient_lookup, name='patient_lookup'),
 
 
-
+    #favoting patiants
+        # Favorite patients main list
+    path('<str:workspace_name>/favorites/', views.favorite_patients_list, name='favorite_patients_list'),
+    
+    # Patient detail and management
+    path('<str:workspace_name>/favorites/patient/<int:patient_id>/', views.favorite_patient_detail, name='favorite_patient_detail'),
+    path('<str:workspace_name>/favorites/add/', views.add_favorite_patient, name='add_favorite_patient'),
+    path('<str:workspace_name>/favorites/patient/<int:patient_id>/edit/', views.edit_favorite_patient, name='edit_favorite_patient'),
+    path('<str:workspace_name>/favorites/patient/<int:patient_id>/delete/', views.delete_favorite_patient, name='delete_favorite_patient'),
+    
+    # Sections management
+    path('<str:workspace_name>/favorites/sections/create/', views.create_favorite_section, name='create_favorite_section'),
+    
+    # Add to favorites from other sections
+    path('<str:workspace_name>/clinic/<int:appointment_id>/favorite/', views.favorite_from_clinic, name='favorite_from_clinic'),
+    path('<str:workspace_name>/surgical/<int:booking_id>/favorite/', views.favorite_from_surgical, name='favorite_from_surgical'),
 ]
 

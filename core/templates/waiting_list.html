@@ -3,6 +3,13 @@
 {% block title %}Waiting List{% endblock %}
 
 {% block content %}
+<style>
+    .favorite-star {
+        color: #fbbf24; /* Mario star gold/yellow color */
+        text-shadow: 0 0 3px rgba(251, 191, 36, 0.5);
+    }
+</style>
+
 <div class="container mx-auto px-4">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 class="text-xl font-semibold text-gray-800">Waiting List</h2>
@@ -37,6 +44,7 @@
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Created On</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
                     <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Photo</th>
+                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Favorite</th>
                     <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
                 </tr>
             </thead>
@@ -85,6 +93,22 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-2 text-center">
+                        <span id="favorite-btn-desktop-{{ case.id }}">
+                            {% if case.civil_id in favorited_civil_ids %}
+                                <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed">
+                                    <i class="fas fa-star favorite-star mr-1"></i>
+                                    Favorited
+                                </span>
+                            {% else %}
+                                <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
+                                        class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
+                                    <i class="fas fa-heart mr-1"></i>
+                                    Add to Favorite
+                                </button>
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2 text-center">
                         <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
                            class="text-blue-500 hover:text-blue-600 font-medium px-2">
                             ✏️ Edit
@@ -97,7 +121,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="10" class="px-4 py-2 text-center text-sm text-gray-500">
+                    <td colspan="11" class="px-4 py-2 text-center text-sm text-gray-500">
                         <div class="py-8">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -167,6 +191,24 @@
                 </div>
             </div>
             
+            <!-- Mobile Favorite Button -->
+            <div class="mb-3">
+                <span id="favorite-btn-mobile-{{ case.id }}">
+                    {% if case.civil_id in favorited_civil_ids %}
+                        <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed">
+                            <i class="fas fa-star favorite-star mr-1"></i>
+                            Favorited
+                        </span>
+                    {% else %}
+                        <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
+                                class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
+                            <i class="fas fa-heart mr-1"></i>
+                            Add to Favorite
+                        </button>
+                    {% endif %}
+                </span>
+            </div>
+            
             <div class="flex justify-between items-center pt-3 border-t border-gray-100">
                 <div>
                     {% if case.photo_attachment %}
@@ -204,6 +246,9 @@
     </div>
 </div>
 
+<!-- Notification Area -->
+<div id="notification-area" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
 <!-- Photo Modal -->
 <div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden p-4">
     <div class="relative bg-white rounded-lg shadow-xl max-w-full max-h-full overflow-auto w-full max-w-3xl">
@@ -221,8 +266,106 @@
     </div>
 </div>
 
-<!-- JavaScript for Delete, Photo Modal, and Filter Functionality -->
+<!-- JavaScript for Delete, Photo Modal, Filter, and Favorite Functionality -->
 <script>
+    // Function to add patient to favorites
+    function addToFavorites(type, id, patientName) {
+        let url = `{% url 'favorite_from_surgical' workspace.name 0 %}`.replace('0', id);
+        
+        const mobileBtn = document.getElementById(`favorite-btn-mobile-${id}`);
+        const desktopBtn = document.getElementById(`favorite-btn-desktop-${id}`);
+        
+        // Show loading state
+        if (mobileBtn) {
+            mobileBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
+        }
+        if (desktopBtn) {
+            desktopBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
+        }
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success state
+                const successHtml = '<span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
+                
+                if (mobileBtn) {
+                    mobileBtn.innerHTML = successHtml;
+                }
+                if (desktopBtn) {
+                    desktopBtn.innerHTML = successHtml;
+                }
+                
+                // Show success notification
+                showNotification(data.message, 'success');
+            } else {
+                // Restore original buttons on error
+                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
+                
+                if (mobileBtn) {
+                    mobileBtn.innerHTML = originalHtml;
+                }
+                if (desktopBtn) {
+                    desktopBtn.innerHTML = originalHtml;
+                }
+                
+                showNotification(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Restore original buttons on error
+            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
+            
+            if (mobileBtn) {
+                mobileBtn.innerHTML = originalHtml;
+            }
+            if (desktopBtn) {
+                desktopBtn.innerHTML = originalHtml;  
+            }
+            
+            showNotification('An error occurred while adding to favorites.', 'error');
+        });
+    }
+
+    function showNotification(message, type) {
+        const notificationArea = document.getElementById('notification-area');
+        const notification = document.createElement('div');
+        notification.className = `max-w-sm px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+            type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-3"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        notificationArea.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.add('opacity-100');
+        }, 100);
+        
+        // Remove after 4 seconds
+        setTimeout(() => {
+            notification.classList.add('opacity-0');
+            setTimeout(() => {
+                if (notificationArea.contains(notification)) {
+                    notificationArea.removeChild(notification);
+                }
+            }, 300);
+        }, 4000);
+    }
+
     function deleteCase(caseId) {
         if (!confirm("Are you sure you want to delete this case?")) {
             return;

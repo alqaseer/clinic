@@ -23,6 +23,11 @@
     .diagnosis-container.active {
         display: block;
     }
+
+    .favorite-star {
+        color: #fbbf24; /* Mario star gold/yellow color */
+        text-shadow: 0 0 3px rgba(251, 191, 36, 0.5);
+    }
 </style>
 <h1 class="text-xl font-semibold mb-4">Appointments for {{ workspace.owner_name }} - {{ date|date:"l" }}, {{ date }}</h1>
 
@@ -106,6 +111,23 @@
                                             <i class="fas fa-times-circle text-red-500 hover:text-red-600" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')"></i>
                                         {% endif %}
                                     </span>
+                                    
+                                    <!-- Mobile Favorite Button -->
+                                    <span id="favorite-btn-mobile-{{ appointment.id }}">
+                                        {% if appointment.civil_id in favorited_civil_ids %}
+                                            <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed">
+                                                <i class="fas fa-star favorite-star mr-1"></i>
+                                                Favorited
+                                            </span>
+                                        {% else %}
+                                            <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
+                                                    class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
+                                                <i class="fas fa-heart mr-1"></i>
+                                                Add to Favorite
+                                            </button>
+                                        {% endif %}
+                                    </span>
+                                    
                                     {% if appointment.diagnosis %}
                                         <a href="javascript:void(0);" 
                                            class="text-blue-600 hover:text-blue-700 transition-colors duration-200"
@@ -191,6 +213,23 @@
                                         <span class="text-gray-400 text-xs">{{ appointment.booked_by.full_name }}</span>
                                     {% endif %}
                                     
+                                    <span class="text-gray-400">|</span>
+                                    <!-- Desktop Favorite Button -->
+                                    <span id="favorite-btn-desktop-{{ appointment.id }}">
+                                        {% if appointment.civil_id in favorited_civil_ids %}
+                                            <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed">
+                                                <i class="fas fa-star favorite-star mr-1"></i>
+                                                Favorited
+                                            </span>
+                                        {% else %}
+                                            <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
+                                                    class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
+                                                <i class="fas fa-heart mr-1"></i>
+                                                Add to Favorite
+                                            </button>
+                                        {% endif %}
+                                    </span>
+                                    
                                     {% if appointment.diagnosis %}
                                         <span class="text-gray-400">|</span>
                                         <a href="javascript:void(0);" 
@@ -245,8 +284,109 @@
     </span>
 </div>
 
+<!-- Notification Area -->
+<div id="notification-area" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
 <!-- JavaScript Section -->
 <script>
+    // Function to add patient to favorites
+    function addToFavorites(type, id, patientName) {
+        let url = `{% url 'favorite_from_clinic' workspace.name 0 %}`.replace('0', id);
+        
+        const mobileBtn = document.getElementById(`favorite-btn-mobile-${id}`);
+        const desktopBtn = document.getElementById(`favorite-btn-desktop-${id}`);
+        
+        // Show loading state
+        if (mobileBtn) {
+            mobileBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
+        }
+        if (desktopBtn) {
+            desktopBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
+        }
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success state
+                const successHtml = '<span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
+                
+                if (mobileBtn) {
+                    mobileBtn.innerHTML = successHtml;
+                }
+                if (desktopBtn) {
+                    desktopBtn.innerHTML = successHtml;
+                }
+                
+                // Show success notification
+                showNotification(data.message, 'success');
+            } else {
+                // Restore original buttons on error
+                const originalHtml = `<button onclick="addToFavorites('clinic', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
+                
+                if (mobileBtn) {
+                    mobileBtn.innerHTML = originalHtml;
+                }
+                if (desktopBtn) {
+                    desktopBtn.innerHTML = originalHtml;
+                }
+                
+                showNotification(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Restore original buttons on error
+            const originalHtml = `<button onclick="addToFavorites('clinic', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
+            
+            if (mobileBtn) {
+                mobileBtn.innerHTML = originalHtml;
+            }
+            if (desktopBtn) {
+                desktopBtn.innerHTML = originalHtml;  
+            }
+            
+            showNotification('An error occurred while adding to favorites.', 'error');
+        });
+    }
+
+    function showNotification(message, type) {
+        const notificationArea = document.getElementById('notification-area');
+        const notification = document.createElement('div');
+        notification.className = `max-w-sm px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+            type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-3"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        notificationArea.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.add('opacity-100');
+        }, 100);
+        
+        // Remove after 4 seconds
+        setTimeout(() => {
+            notification.classList.add('opacity-0');
+            setTimeout(() => {
+                if (notificationArea.contains(notification)) {
+                    notificationArea.removeChild(notification);
+                }
+            }, 300);
+        }, 4000);
+    }
+
     // Function to Open Referral Image in Popup
     function openReferral(imageUrl) {
         const popup = document.createElement('div');

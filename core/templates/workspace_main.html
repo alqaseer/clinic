@@ -9,27 +9,27 @@
 
     <!-- Statistics Overview -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
-        <!-- Booked Cases -->
-        <div class="bg-white shadow-lg rounded-xl p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+        <!-- Booked Cases (Clickable) -->
+        <a href="{% url 'booked_cases' workspace.name %}" class="block bg-white shadow-lg rounded-xl p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group">
             <div class="flex items-center justify-between">
-                <h2 class="text-sm sm:text-base font-medium text-gray-600 truncate">Booked Cases</h2>
-                <div class="p-2 bg-blue-50 rounded-lg flex-shrink-0">
-                    <i class="fas fa-calendar-check text-blue-500"></i>
+                <h2 class="text-sm sm:text-base font-medium text-gray-600 truncate group-hover:text-blue-600 transition-colors">Booked Cases</h2>
+                <div class="p-2 bg-blue-50 rounded-lg flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                    <i class="fas fa-calendar-check text-blue-500 group-hover:text-blue-600"></i>
                 </div>
             </div>
-            <p class="text-3xl sm:text-4xl font-semibold text-gray-900 mt-4">{{ booked_cases_count }}</p>
-        </div>
+            <p class="text-3xl sm:text-4xl font-semibold text-gray-900 mt-4 group-hover:text-blue-600 transition-colors">{{ booked_cases_count }}</p>
+        </a>
 
-        <!-- Waiting List -->
-        <div class="bg-white shadow-lg rounded-xl p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+        <!-- Waiting List (Clickable) -->
+        <a href="{% url 'waiting_list' workspace.name %}" class="block bg-white shadow-lg rounded-xl p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group">
             <div class="flex items-center justify-between">
-                <h2 class="text-sm sm:text-base font-medium text-gray-600 truncate">Waiting List</h2>
-                <div class="p-2 bg-yellow-50 rounded-lg flex-shrink-0">
-                    <i class="fas fa-hourglass-half text-yellow-500"></i>
+                <h2 class="text-sm sm:text-base font-medium text-gray-600 truncate group-hover:text-yellow-600 transition-colors">Waiting List</h2>
+                <div class="p-2 bg-yellow-50 rounded-lg flex-shrink-0 group-hover:bg-yellow-100 transition-colors">
+                    <i class="fas fa-hourglass-half text-yellow-500 group-hover:text-yellow-600"></i>
                 </div>
             </div>
-            <p class="text-3xl sm:text-4xl font-semibold text-gray-900 mt-4">{{ waiting_list_count }}</p>
-        </div>
+            <p class="text-3xl sm:text-4xl font-semibold text-gray-900 mt-4 group-hover:text-yellow-600 transition-colors">{{ waiting_list_count }}</p>
+        </a>
     </div>
 
     <!-- Action Button -->

@@ -33,6 +33,8 @@ from django.views.generic import ListView
 from django.db.models import Q
 from django.views.decorators.http import require_GET
 import calendar
+import random
+from django.core.files.storage import default_storage
 
 def home(request):
     # If the user is logged in as a regular user, check for a workspace
@@ -258,7 +260,19 @@ def booked_cases(request, workspace_name):
         status__in=['booked', 'waiting', 'past']  # Exclude 'deleted' cases
     ).order_by('date')  # Arrange chronologically by date
 
-    return render(request, 'booked_cases.html', {'cases': cases, 'workspace': workspace})
+    # Get list of civil IDs that are already favorited in this workspace
+    favorited_civil_ids = list(
+        FavoritePatient.objects.filter(
+            workspace=workspace,
+            is_active=True
+        ).values_list('civil_id', flat=True)
+    )
+
+    return render(request, 'booked_cases.html', {
+        'cases': cases, 
+        'workspace': workspace,
+        'favorited_civil_ids': favorited_civil_ids,  # Add this for favorite functionality
+    })
 
 
 
@@ -286,9 +300,18 @@ def waiting_list(request, workspace_name):
     # Order by creation date
     cases = cases.order_by('created_at')
 
+    # Get list of civil IDs that are already favorited in this workspace
+    favorited_civil_ids = list(
+        FavoritePatient.objects.filter(
+            workspace=workspace,
+            is_active=True
+        ).values_list('civil_id', flat=True)
+    )
+
     return render(request, 'waiting_list.html', {
         'cases': cases, 
         'workspace': workspace,
+        'favorited_civil_ids': favorited_civil_ids,  # Add this for favorite functionality
     })
 
 
@@ -309,7 +332,19 @@ def past_cases(request, workspace_name):
         status__in=['booked', 'waiting', 'past']  # Exclude 'deleted' cases
     ).order_by('date')  # Arrange chronologically by date
 
-    return render(request, 'past_cases.html', {'cases': cases, 'workspace': workspace})
+    # Get list of civil IDs that are already favorited in this workspace
+    favorited_civil_ids = list(
+        FavoritePatient.objects.filter(
+            workspace=workspace,
+            is_active=True
+        ).values_list('civil_id', flat=True)
+    )
+
+    return render(request, 'past_cases.html', {
+        'cases': cases, 
+        'workspace': workspace,
+        'favorited_civil_ids': favorited_civil_ids,  # Add this for favorite functionality
+    })
 
 
 @login_required
@@ -486,6 +521,8 @@ def settings_page(request, workspace_name):
         },
     )
 
+from .models import FavoritePatient  # Add this import at the top
+
 @login_required
 def day_appointments(request, workspace_name, date):
     workspace = get_object_or_404(Workspace, name=workspace_name)
@@ -493,17 +530,26 @@ def day_appointments(request, workspace_name, date):
     
     # Get appointments for the selected day
     appointments = ClinicAppointment.objects.filter(workspace=workspace, date=date_obj)
-    timeplots = ["08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45","10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00","12:15","12:30"]
+    timeslots = ["08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45","10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00","12:15","12:30"]
     
     # Check if the day is locked
     is_locked = Lock.objects.filter(workspace=workspace, date=date_obj).exists()
     
+    # Get list of civil IDs that are already favorited in this workspace
+    favorited_civil_ids = list(
+        FavoritePatient.objects.filter(
+            workspace=workspace,
+            is_active=True
+        ).values_list('civil_id', flat=True)
+    )
+    
     context = {
-        "timeslots": timeplots,
+        "timeslots": timeslots,
         "workspace": workspace,
         "date": date_obj,
         "appointments": appointments,
-        "is_locked": is_locked,  # Add the lock status to the context
+        "is_locked": is_locked,
+        "favorited_civil_ids": favorited_civil_ids,  # Add this for favorite functionality
     }
     return render(request, "day_appointments.html", context)
 
@@ -2213,3 +2259,401 @@ def system_referrals_stats(request):
     return render(request, 'system_referrals_stats.html', context)
 
 
+#favorite_patients
+@login_required
+def favorite_patients_list(request, workspace_name):
+    """Main view for favorite patients list with filtering"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+    
+    # Get filter parameters
+    section_filter = request.GET.get('section')
+    search_query = request.GET.get('search', '')
+    
+    # Base queryset
+    patients = FavoritePatient.objects.filter(
+        workspace=workspace,
+        is_active=True
+    )
+    
+    # Apply filters
+    if section_filter:
+        if section_filter == 'no_section':
+            patients = patients.filter(section__isnull=True)
+        else:
+            patients = patients.filter(section_id=section_filter)
+    
+    if search_query:
+        patients = patients.filter(
+            Q(name__icontains=search_query) |
+            Q(civil_id__icontains=search_query) |
+            Q(diagnosis__icontains=search_query)
+        )
+    
+    # Get all sections for the dropdown
+    sections = FavoriteSection.objects.filter(workspace=workspace)
+    
+    context = {
+        'workspace': workspace,
+        'patients': patients,
+        'sections': sections,
+        'current_section': section_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'favorite_patients/list.html', context)
+
+@login_required
+def favorite_patient_detail(request, workspace_name, patient_id):
+    """Detailed view of a favorite patient with notes"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    patient = get_object_or_404(FavoritePatient, id=patient_id, workspace=workspace, is_active=True)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+    
+    # Get notes with attachments
+    notes = patient.notes.all()
+    
+    # Handle note form submission
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        attachments = request.FILES.getlist('attachments')
+        
+        # Validate that either content or attachments are provided
+        if not content and not attachments:
+            messages.error(request, "Please provide either note content or attachments.")
+            return redirect('favorite_patient_detail', workspace_name=workspace_name, patient_id=patient_id)
+        
+        # Create the note
+        note = FavoritePatientNote.objects.create(
+            patient=patient,
+            content=content,
+            added_by=request.user
+        )
+        
+        # Handle file attachments
+        for attachment_file in attachments:
+            if attachment_file:
+                # Determine file type
+                file_extension = os.path.splitext(attachment_file.name)[1].lower()
+                if file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+                    file_type = 'image'
+                elif file_extension in ['.pdf']:
+                    file_type = 'document'
+                elif file_extension in ['.doc', '.docx']:
+                    file_type = 'document'
+                else:
+                    file_type = 'other'
+                
+                # Create attachment
+                FavoritePatientAttachment.objects.create(
+                    note=note,
+                    file=attachment_file,
+                    filename=attachment_file.name,
+                    file_type=file_type
+                )
+        
+        # Log action
+        ActionLog.objects.create(
+            workspace=workspace,
+            user=request.user,
+            action_description=f"Added note for favorite patient {patient.name} (Civil ID: {patient.civil_id})"
+        )
+        
+        messages.success(request, "Note added successfully!")
+        return redirect('favorite_patient_detail', workspace_name=workspace_name, patient_id=patient_id)
+    
+    context = {
+        'workspace': workspace,
+        'patient': patient,
+        'notes': notes,
+    }
+    
+    return render(request, 'favorite_patients/detail.html', context)
+
+
+@login_required
+def create_favorite_section(request, workspace_name):
+    """Create a new favorite section"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+    
+    # Define a list of nice colors for sections
+    nice_colors = [
+        '#3B82F6',  # Blue
+        '#10B981',  # Emerald
+        '#8B5CF6',  # Violet
+        '#F59E0B',  # Amber
+        '#EF4444',  # Red
+        '#06B6D4',  # Cyan
+        '#84CC16',  # Lime
+        '#F97316',  # Orange
+        '#EC4899',  # Pink
+        '#6366F1',  # Indigo
+        '#14B8A6',  # Teal
+        '#A855F7',  # Purple
+        '#22C55E',  # Green
+        '#DC2626',  # Red-600
+        '#7C3AED',  # Violet-600
+        '#059669',  # Emerald-600
+        '#0284C7',  # Sky-600
+        '#CA8A04',  # Yellow-600
+    ]
+    
+    if request.method == 'POST':
+        form = FavoriteSectionForm(request.POST)
+        if form.is_valid():
+            section = form.save(commit=False)
+            section.workspace = workspace
+            section.created_by = request.user
+            
+            # Automatically assign a random color
+            # Get colors already used in this workspace
+            used_colors = list(
+                FavoriteSection.objects.filter(workspace=workspace)
+                .values_list('color', flat=True)
+            )
+            
+            # Filter out already used colors for better variety
+            available_colors = [color for color in nice_colors if color not in used_colors]
+            
+            # If all colors are used, fall back to the full list
+            if not available_colors:
+                available_colors = nice_colors
+            
+            # Assign random color automatically
+            section.color = random.choice(available_colors)
+            
+            section.save()
+            
+            # Log action
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Created favorite section: {section.name}"
+            )
+            
+            messages.success(request, f"Section '{section.name}' created successfully!")
+            return redirect('favorite_patients_list', workspace_name=workspace_name)
+    else:
+        form = FavoriteSectionForm()
+    
+    context = {
+        'workspace': workspace,
+        'form': form,
+    }
+    
+    return render(request, 'favorite_patients/create_section.html', context)
+
+@login_required
+def add_favorite_patient(request, workspace_name):
+    """Manually add a favorite patient"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        form = FavoritePatientForm(request.POST, workspace=workspace)
+        if form.is_valid():
+            patient = form.save(commit=False)
+            patient.workspace = workspace
+            patient.favorited_by = request.user
+            patient.source = 'manual'
+            
+            try:
+                patient.save()
+                
+                # Log action
+                ActionLog.objects.create(
+                    workspace=workspace,
+                    user=request.user,
+                    action_description=f"Added favorite patient: {patient.name} (Civil ID: {patient.civil_id})"
+                )
+                
+                messages.success(request, f"Patient '{patient.name}' added to favorites!")
+                return redirect('favorite_patients_list', workspace_name=workspace_name)
+            
+            except Exception as e:
+                if 'unique constraint' in str(e).lower():
+                    messages.error(request, "This patient is already in your favorites list.")
+                else:
+                    messages.error(request, "An error occurred while adding the patient.")
+    else:
+        form = FavoritePatientForm(workspace=workspace)
+    
+    context = {
+        'workspace': workspace,
+        'form': form,
+    }
+    
+    return render(request, 'favorite_patients/add_patient.html', context)
+
+@login_required
+@require_POST
+@csrf_protect
+def favorite_from_clinic(request, workspace_name, appointment_id):
+    """Add patient to favorites from clinic appointment"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    appointment = get_object_or_404(ClinicAppointment, id=appointment_id, workspace=workspace)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return JsonResponse({'success': False, 'message': 'Access denied'})
+    
+    # Check if patient already exists in favorites
+    existing = FavoritePatient.objects.filter(
+        workspace=workspace,
+        civil_id=appointment.civil_id
+    ).first()
+    
+    if existing:
+        if existing.is_active:
+            return JsonResponse({'success': False, 'message': 'Patient is already in favorites'})
+        else:
+            # Reactivate if was previously deleted
+            existing.is_active = True
+            existing.favorited_by = request.user
+            existing.save()
+            message = f"Patient '{existing.name}' reactivated in favorites!"
+    else:
+        # Create new favorite patient
+        favorite = FavoritePatient.objects.create(
+            workspace=workspace,
+            civil_id=appointment.civil_id,
+            name=appointment.patient_name,
+            phone=appointment.phone_number,
+            diagnosis=appointment.diagnosis or '',
+            source='clinic',
+            source_id=appointment.id,
+            favorited_by=request.user
+        )
+        message = f"Patient '{favorite.name}' added to favorites!"
+    
+    # Log action
+    ActionLog.objects.create(
+        workspace=workspace,
+        user=request.user,
+        action_description=f"Added clinic patient to favorites: {appointment.patient_name} (Civil ID: {appointment.civil_id})"
+    )
+    
+    return JsonResponse({'success': True, 'message': message})
+
+@login_required
+@require_POST
+@csrf_protect
+def favorite_from_surgical(request, workspace_name, booking_id):
+    """Add patient to favorites from surgical booking"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    booking = get_object_or_404(SurgicalBooking, id=booking_id, workspace=workspace)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return JsonResponse({'success': False, 'message': 'Access denied'})
+    
+    # Check if patient already exists in favorites
+    existing = FavoritePatient.objects.filter(
+        workspace=workspace,
+        civil_id=booking.civil_id
+    ).first()
+    
+    if existing:
+        if existing.is_active:
+            return JsonResponse({'success': False, 'message': 'Patient is already in favorites'})
+        else:
+            # Reactivate if was previously deleted
+            existing.is_active = True
+            existing.favorited_by = request.user
+            existing.save()
+            message = f"Patient '{existing.name}' reactivated in favorites!"
+    else:
+        # Create new favorite patient
+        favorite = FavoritePatient.objects.create(
+            workspace=workspace,
+            civil_id=booking.civil_id,
+            name=booking.name,
+            phone=booking.phone,
+            diagnosis=booking.diagnosis,
+            source='surgical',
+            source_id=booking.id,
+            favorited_by=request.user
+        )
+        message = f"Patient '{favorite.name}' added to favorites!"
+    
+    # Log action
+    ActionLog.objects.create(
+        workspace=workspace,
+        user=request.user,
+        action_description=f"Added surgical patient to favorites: {booking.name} (Civil ID: {booking.civil_id})"
+    )
+    
+    return JsonResponse({'success': True, 'message': message})
+
+@login_required
+@require_POST
+@csrf_protect
+def delete_favorite_patient(request, workspace_name, patient_id):
+    """Soft delete a favorite patient"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    patient = get_object_or_404(FavoritePatient, id=patient_id, workspace=workspace)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return JsonResponse({'success': False, 'message': 'Access denied'})
+    
+    # Soft delete
+    patient.is_active = False
+    patient.save()
+    
+    # Log action
+    ActionLog.objects.create(
+        workspace=workspace,
+        user=request.user,
+        action_description=f"Removed favorite patient: {patient.name} (Civil ID: {patient.civil_id})"
+    )
+    
+    return JsonResponse({'success': True, 'message': f"Patient '{patient.name}' removed from favorites"})
+
+@login_required
+def edit_favorite_patient(request, workspace_name, patient_id):
+    """Edit favorite patient details"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    patient = get_object_or_404(FavoritePatient, id=patient_id, workspace=workspace, is_active=True)
+    
+    # Ensure user belongs to workspace
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        form = FavoritePatientForm(request.POST, instance=patient, workspace=workspace)
+        if form.is_valid():
+            form.save()
+            
+            # Log action
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=f"Updated favorite patient: {patient.name} (Civil ID: {patient.civil_id})"
+            )
+            
+            messages.success(request, "Patient updated successfully!")
+            return redirect('favorite_patient_detail', workspace_name=workspace_name, patient_id=patient_id)
+    else:
+        form = FavoritePatientForm(instance=patient, workspace=workspace)
+    
+    context = {
+        'workspace': workspace,
+        'patient': patient,
+        'form': form,
+    }
+    
+    return render(request, 'favorite_patients/edit_patient.html', context)

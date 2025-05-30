@@ -11,16 +11,13 @@
     }
     
     .diagnosis-container {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border-left: 4px solid #3b82f6;
-        padding: 1rem;
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
-        border-radius: 0.75rem;
+        background: #f8fafc;
+        border-left: 3px solid #3b82f6;
+        padding: 0.875rem;
+        margin-top: 0.5rem;
+        border-radius: 0.5rem;
         display: none;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(10px);
-        animation: slideDown 0.3s ease-out;
+        animation: slideDown 0.2s ease-out;
     }
     
     .diagnosis-container.active {
@@ -28,173 +25,106 @@
     }
 
     .favorite-star {
-        color: #fbbf24;
-        text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
-        filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.3));
+        color: #f59e0b;
     }
 
     .glass-card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(229, 229, 234, 0.3);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        background: white;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     }
 
     .appointment-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
-        border: 1px solid rgba(229, 231, 235, 0.5);
-        backdrop-filter: blur(10px);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
         position: relative;
-        overflow: hidden;
-    }
-
-    .appointment-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.05) 100%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .appointment-card:hover::before {
-        opacity: 1;
     }
 
     .appointment-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-        border-color: rgba(59, 130, 246, 0.3);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-color: #d1d5db;
     }
 
     .appointment-card.new-appointment {
-        background: linear-gradient(135deg, rgba(254, 240, 138, 0.9) 0%, rgba(253, 224, 71, 0.8) 100%);
-        border-color: rgba(245, 158, 11, 0.4);
-        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1), 0 2px 4px -1px rgba(245, 158, 11, 0.06);
+        background: #fffbeb;
+        border-color: #f59e0b;
+        border-left-width: 4px;
     }
 
     .time-slot-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        background: #f9fafb;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
     }
 
     .action-button {
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
     }
 
-    .action-button::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        transition: width 0.3s ease, height 0.3s ease;
-    }
-
-    .action-button:hover::before {
-        width: 100px;
-        height: 100px;
+    .action-button:hover {
+        transform: translateY(-1px);
     }
 
     .floating-action-button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #3b82f6;
+        color: white;
     }
 
     .floating-action-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 30px rgba(102, 126, 234, 0.6);
+        background: #2563eb;
     }
 
     .status-badge {
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
         cursor: pointer;
-        position: relative;
     }
 
     .status-badge:hover {
-        transform: scale(1.1);
+        transform: scale(1.05);
     }
 
     .favorite-button {
-        background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
+        background: #ec4899;
+        color: white;
+        transition: all 0.15s ease;
     }
 
     .favorite-button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+        background: #db2777;
     }
 
     .favorite-button.favorited {
-        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        background: #f3f4f6;
         color: #6b7280;
     }
 
     @keyframes slideDown {
         from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateY(-8px);
         }
         to {
             opacity: 1;
             transform: translateY(0);
         }
-    }
-
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .animate-fade-in-up {
-        animation: fadeInUp 0.6s ease-out;
     }
 
     .lock-indicator {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        background: #f59e0b;
         color: white;
-        border-radius: 1rem;
-        padding: 0.75rem 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
-    }
-
-    .notification {
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        border-radius: 0.5rem;
+        padding: 1rem;
     }
 
     .legend-item {
-        background: linear-gradient(135deg, rgba(254, 240, 138, 0.9) 0%, rgba(253, 224, 71, 0.8) 100%);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
+        background: #fffbeb;
+        border: 1px solid #f59e0b;
+        color: #92400e;
     }
 
-    /* Better desktop alignment */
+    /* Minimalist desktop alignment */
     .appointment-row {
         display: flex;
         align-items: flex-start;
@@ -212,39 +142,79 @@
         align-items: center;
         gap: 0.5rem;
     }
+
+    /* Clean button styles */
+    .btn-primary {
+        background: #3b82f6;
+        color: white;
+        border: 1px solid #3b82f6;
+    }
+
+    .btn-primary:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+    }
+
+    .btn-success {
+        background: #10b981;
+        color: white;
+        border: 1px solid #10b981;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+        border-color: #059669;
+    }
+
+    .btn-danger {
+        background: #ef4444;
+        color: white;
+        border: 1px solid #ef4444;
+    }
+
+    .btn-danger:hover {
+        background: #dc2626;
+        border-color: #dc2626;
+    }
 </style>
 
 <div>
-    <!-- Enhanced Header with gradient background -->
-    <div class="glass-card rounded-2xl p-6 sm:p-8 mb-8">
-        <div class="flex flex-col space-y-4">
+    <!-- Clean Header -->
+    <div class="glass-card rounded-lg p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <!-- Title Section -->
-            <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-calendar-day text-white text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                        {% if workspace.owner_name %}{{ workspace.owner_name }}{% else %}{{ date|date:"l" }}{% endif %}
-                    </h1>
-                    <p class="text-gray-600 font-medium">{{ date|date:"l" }}, {{ date|date:"F j, Y" }}</p>
-                </div>
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">
+                    {% if workspace.owner_name %}{{ workspace.owner_name }}{% else %}{{ date|date:"l" }}{% endif %}
+                </h1>
+                <p class="text-sm text-gray-600 mt-1">{{ date|date:"l, F j, Y" }}</p>
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex flex-wrap items-center gap-4">
+            <div class="flex flex-wrap items-center gap-3">
                 {% if not is_locked or request.user == workspace.admin %}
                     <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" 
-                       class="floating-action-button action-button inline-flex items-center px-6 py-3 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                        <i class="fas fa-plus mr-2"></i>
+                       class="floating-action-button action-button inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
+                        <i class="fas fa-plus mr-2 text-sm"></i>
                         Add Appointment
                     </a>
                 {% endif %}
 
                 <button onclick="printAppointments()" 
-                        class="action-button inline-flex items-center px-6 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 font-semibold rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-lg hover:shadow-xl">
-                    <i class="fas fa-print mr-2"></i>
-                    Print List
+                        class="btn-secondary action-button inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-print mr-2 text-sm"></i>
+                    Print
                 </button>
                 
                 {% if request.user == workspace.admin %}
@@ -252,18 +222,18 @@
                         <form action="{% url 'delete_lock' workspace.name date|date:'Y-m-d' %}" method="post" class="inline">
                             {% csrf_token %}
                             <button type="submit" 
-                                    class="action-button inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl">
-                                <i class="fas fa-unlock mr-2"></i>
-                                Unlock Day
+                                    class="btn-success action-button inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
+                                <i class="fas fa-unlock mr-2 text-sm"></i>
+                                Unlock
                             </button>
                         </form>
                     {% else %}
                         <form action="{% url 'create_lock' workspace.name date|date:'Y-m-d' %}" method="post" class="inline">
                             {% csrf_token %}
                             <button type="submit" 
-                                    class="action-button inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-xl">
-                                <i class="fas fa-lock mr-2"></i>
-                                Lock Day
+                                    class="btn-danger action-button inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
+                                <i class="fas fa-lock mr-2 text-sm"></i>
+                                Lock
                             </button>
                         </form>
                     {% endif %}
@@ -272,21 +242,21 @@
         </div>
     </div>
 
-    <!-- Lock Status Alert -->
+    <!-- Clean Lock Status Alert -->
     {% if is_locked %}
-        <div class="lock-indicator rounded-2xl p-4 mb-8">
+        <div class="lock-indicator rounded-lg p-4 mb-6">
             <div class="flex items-center">
-                <i class="fas fa-lock text-xl mr-3"></i>
+                <i class="fas fa-lock mr-3"></i>
                 <div>
-                    <p class="font-bold text-lg">Day is Locked</p>
-                    <p class="text-sm opacity-90">Only the workspace administrator can add new patients to this day.</p>
+                    <p class="font-medium">Day is Locked</p>
+                    <p class="text-sm opacity-90">Only administrators can add new appointments.</p>
                 </div>
             </div>
         </div>
     {% endif %}
 
-    <!-- Enhanced Appointments Display -->
-    <div class="glass-card rounded-2xl overflow-hidden">
+    <!-- Clean Appointments Display -->
+    <div class="glass-card rounded-lg overflow-hidden">
         <!-- MOBILE VIEW -->
         <div class="block sm:hidden">
             {% for time in timeslots %}
@@ -344,13 +314,13 @@
                                             <!-- Favorite Button -->
                                             <span id="favorite-btn-mobile-{{ appointment.id }}">
                                                 {% if appointment.civil_id in favorited_civil_ids %}
-                                                    <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded-md">
+                                                    <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded">
                                                         <i class="fas fa-star favorite-star mr-1 text-xs"></i>
                                                         Favorited
                                                     </span>
                                                 {% else %}
                                                     <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
-                                                            class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium text-white rounded-md transition-all duration-300">
+                                                            class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
                                                         <i class="fas fa-heart mr-1 text-xs"></i>
                                                         Favorite
                                                     </button>
@@ -359,23 +329,23 @@
                                             
                                             {% if appointment.diagnosis %}
                                                 <button onclick="toggleDiagnosis('mobile-diagnosis-{{ appointment.id }}')"
-                                                       class="action-button inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-md hover:bg-blue-200 transition-all duration-200">
-                                                   <i id="mobile-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1 text-xs"></i>
+                                                       class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
+                                                   <i id="mobile-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>
                                                    Diagnosis
                                                 </button>
                                             {% endif %}
                                             
                                             {% if appointment.referral_letter %}
                                                 <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
-                                                       class="action-button inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-md hover:bg-purple-200 transition-all duration-200">
-                                                   <i class="fas fa-file-medical mr-1 text-xs"></i>
+                                                       class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100">
+                                                   <i class="fas fa-file-medical mr-1"></i>
                                                    Referral
                                                 </button>
                                             {% endif %}
                                             
                                             <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                               class="action-button inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-200 transition-all duration-200">
-                                               <i class="fas fa-edit mr-1 text-xs"></i>
+                                               class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs font-medium rounded hover:bg-gray-100">
+                                               <i class="fas fa-edit mr-1"></i>
                                                Edit
                                             </a>
                                         </div>
@@ -384,8 +354,8 @@
                                         {% if appointment.diagnosis %}
                                         <div id="mobile-diagnosis-{{ appointment.id }}" class="diagnosis-container">
                                             <div class="flex items-start space-x-2">
-                                                <i class="fas fa-stethoscope text-blue-500 mt-0.5 text-sm"></i>
-                                                <span class="text-gray-700 leading-relaxed text-sm">{{ appointment.diagnosis }}</span>
+                                                <i class="fas fa-stethoscope text-blue-500 mt-0.5"></i>
+                                                <span class="text-gray-700 text-sm">{{ appointment.diagnosis }}</span>
                                             </div>
                                         </div>
                                         {% endif %}
@@ -408,70 +378,66 @@
             <table class="w-full">
                 <thead>
                     <tr class="time-slot-header">
-                        <th class="px-8 py-4 text-left text-sm font-bold uppercase tracking-wider w-32">Time Slot</th>
-                        <th class="px-8 py-4 text-left text-sm font-bold uppercase tracking-wider">Patients</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointments</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-200">
                     {% for time in timeslots %}
-                    <tr class="border-b border-gray-100 hover:bg-gray-50/50 transition-colors duration-200">
-                        <td class="px-8 py-6 whitespace-nowrap align-top">
-                            <div class="text-lg font-bold text-gray-900">{{ time }}</div>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ time }}
                         </td>
-                        <td class="px-8 py-6">
-                            <div class="space-y-4">
+                        <td class="px-6 py-4">
+                            <div class="space-y-3">
                                 {% for appointment in appointments %}
                                     {% if appointment.time|time:"H:i" == time %}
-                                        <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-xl p-4">
+                                        <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-4">
                                             <div class="appointment-row">
                                                 <div class="appointment-main-content">
-                                                    <h4 class="text-lg font-bold text-gray-900 mb-2">{{ appointment.patient_name }}</h4>
-                                                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                                    <h4 class="text-base font-medium text-gray-900">{{ appointment.patient_name }}</h4>
+                                                    <div class="flex items-center space-x-3 text-sm text-gray-600 mt-1">
                                                         <span>{{ appointment.civil_id }}</span>
-                                                        <span>•</span>
                                                         <span>{{ appointment.phone_number }}</span>
-                                                        <span>•</span>
-                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-amber-100 text-amber-800{% else %}bg-blue-100 text-blue-800{% endif %}">
                                                             {{ appointment.appointment_type }}
                                                         </span>
                                                         {% if appointment.booked_by %}
-                                                            <span>•</span>
-                                                            <span class="text-xs">by {{ appointment.booked_by.full_name }}</span>
+                                                            <span class="text-xs text-gray-500">by {{ appointment.booked_by.full_name }}</span>
                                                         {% endif %}
                                                     </div>
                                                 </div>
 
                                                 <div class="appointment-actions">
-                                                    <!-- Status Badge -->
+                                                    <!-- Clean Status Badge -->
                                                     <span id="confirmed-status-desktop-{{ appointment.id }}" class="status-badge">
                                                         {% if appointment.confirmed == "Unknown" %}
-                                                            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')">
-                                                                <i class="fas fa-question text-yellow-600"></i>
+                                                            <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')">
+                                                                <i class="fas fa-question text-amber-600 text-xs"></i>
                                                             </div>
                                                         {% elif appointment.confirmed == "Confirmed" %}
-                                                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')">
-                                                                <i class="fas fa-check text-green-600"></i>
+                                                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')">
+                                                                <i class="fas fa-check text-green-600 text-xs"></i>
                                                             </div>
                                                         {% elif appointment.confirmed == "Cancelled" %}
-                                                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')">
-                                                                <i class="fas fa-times text-red-600"></i>
+                                                            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')">
+                                                                <i class="fas fa-times text-red-600 text-xs"></i>
                                                             </div>
                                                         {% endif %}
                                                     </span>
 
-                                                    <!-- Action Buttons Group -->
+                                                    <!-- Clean Action Buttons -->
                                                     <div class="flex items-center space-x-2">
-                                                        <!-- Favorite Button -->
                                                         <span id="favorite-btn-desktop-{{ appointment.id }}">
                                                             {% if appointment.civil_id in favorited_civil_ids %}
-                                                                <span class="favorite-button favorited inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg">
-                                                                    <i class="fas fa-star favorite-star mr-1.5"></i>
+                                                                <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                    <i class="fas fa-star favorite-star mr-1"></i>
                                                                     Favorited
                                                                 </span>
                                                             {% else %}
                                                                 <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
-                                                                        class="favorite-button inline-flex items-center px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-all duration-300">
-                                                                    <i class="fas fa-heart mr-1.5"></i>
+                                                                        class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                    <i class="fas fa-heart mr-1"></i>
                                                                     Favorite
                                                                 </button>
                                                             {% endif %}
@@ -479,43 +445,43 @@
                                                         
                                                         {% if appointment.diagnosis %}
                                                             <button onclick="toggleDiagnosis('desktop-diagnosis-{{ appointment.id }}')"
-                                                                   class="action-button inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200 transition-all duration-200">
-                                                               <i id="desktop-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1.5"></i>
+                                                                   class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
+                                                               <i id="desktop-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>
                                                                Diagnosis
                                                             </button>
                                                         {% endif %}
                                                         
                                                         {% if appointment.referral_letter %}
                                                             <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
-                                                                   class="action-button inline-flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-lg hover:bg-purple-200 transition-all duration-200">
-                                                               <i class="fas fa-file-medical mr-1.5"></i>
+                                                                   class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100">
+                                                               <i class="fas fa-file-medical mr-1"></i>
                                                                Referral
                                                             </button>
                                                         {% endif %}
                                                         
                                                         <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                                           class="action-button inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition-all duration-200">
-                                                           <i class="fas fa-edit mr-1.5"></i>
+                                                           class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs font-medium rounded hover:bg-gray-100">
+                                                           <i class="fas fa-edit mr-1"></i>
                                                            Edit
                                                         </a>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Diagnosis Container -->
+                                            <!-- Clean Diagnosis Container -->
                                             {% if appointment.diagnosis %}
                                             <div id="desktop-diagnosis-{{ appointment.id }}" class="diagnosis-container">
-                                                <div class="flex items-start space-x-3">
-                                                    <i class="fas fa-stethoscope text-blue-500 mt-1"></i>
-                                                    <span class="text-gray-700 leading-relaxed">{{ appointment.diagnosis }}</span>
+                                                <div class="flex items-start space-x-2">
+                                                    <i class="fas fa-stethoscope text-blue-500 mt-0.5"></i>
+                                                    <span class="text-gray-700 text-sm">{{ appointment.diagnosis }}</span>
                                                 </div>
                                             </div>
                                             {% endif %}
                                         </div>
                                     {% endif %}
                                 {% empty %}
-                                    <div class="text-center py-6 text-gray-400">
-                                        <i class="fas fa-clock text-lg mb-1"></i>
+                                    <div class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-clock text-lg mb-2"></i>
                                         <p class="text-sm">No appointments scheduled</p>
                                     </div>
                                 {% endfor %}
@@ -528,16 +494,16 @@
         </div>
     </div>
 
-    <!-- Enhanced Legend -->
-    <div class="mt-8 flex justify-center">
-        <div class="legend-item inline-flex items-center px-6 py-3 rounded-xl shadow-lg">
-            <i class="fas fa-lightbulb mr-3 text-amber-600"></i>
-            <span class="font-semibold text-gray-800">Highlighted appointments indicate new patients</span>
+    <!-- Clean Legend -->
+    <div class="mt-6 flex justify-center">
+        <div class="legend-item inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium">
+            <i class="fas fa-lightbulb mr-2"></i>
+            New patient appointments are highlighted
         </div>
     </div>
 </div>
 
-<!-- Enhanced Notification Area -->
+<!-- Notification Area -->
 <div id="notification-area" class="fixed top-4 right-4 z-50 space-y-3"></div>
 
 <!-- JavaScript Section -->
@@ -818,11 +784,11 @@
                 if (desktopIcon) {
                     desktopIcon.innerHTML = "";
                     if (data.new_status === "Unknown") {
-                        desktopIcon.innerHTML = `<div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"><i class="fas fa-question text-yellow-600"></i></div>`;
+                        desktopIcon.innerHTML = `<div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed(${appointmentId}, 'Unknown')"><i class="fas fa-question text-amber-600 text-xs"></i></div>`;
                     } else if (data.new_status === "Confirmed") {
-                        desktopIcon.innerHTML = `<div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"><i class="fas fa-check text-green-600"></i></div>`;
+                        desktopIcon.innerHTML = `<div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed(${appointmentId}, 'Confirmed')"><i class="fas fa-check text-green-600 text-xs"></i></div>`;
                     } else if (data.new_status === "Cancelled") {
-                        desktopIcon.innerHTML = `<div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"><i class="fas fa-times text-red-600"></i></div>`;
+                        desktopIcon.innerHTML = `<div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed(${appointmentId}, 'Cancelled')"><i class="fas fa-times text-red-600 text-xs"></i></div>`;
                     }
                 }
             } else {

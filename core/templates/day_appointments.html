@@ -259,17 +259,22 @@
     <div class="glass-card rounded-lg overflow-hidden">
         <!-- MOBILE VIEW -->
         <div class="block sm:hidden">
-            {% for time in timeslots %}
-                <div class="border-b border-gray-200 last:border-b-0">
-                    <!-- Time Header -->
-                    <div class="time-slot-header px-4 py-3">
-                        <h3 class="text-base font-bold">{{ time }}</h3>
-                    </div>
-                    
-                    <!-- Appointments for this time -->
-                    <div class="p-3 space-y-3">
-                        {% for appointment in appointments %}
-                            {% if appointment.time|time:"H:i" == time %}
+            {% regroup appointments by time|time:"H:i" as appointments_by_time %}
+            
+            {% if appointments_by_time %}
+                {% for time_group in appointments_by_time %}
+                    <div class="border-b border-gray-200 last:border-b-0">
+                        <!-- Time Header -->
+                        <div class="time-slot-header px-4 py-3">
+                            <div class="flex items-center space-x-2">
+                                <i class="far fa-clock text-gray-500"></i>
+                                <h3 class="text-base font-bold">{{ time_group.grouper }}</h3>
+                            </div>
+                        </div>
+                        
+                        <!-- Appointments for this time -->
+                        <div class="p-3 space-y-3">
+                            {% for appointment in time_group.list %}
                                 <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-3">
                                     <!-- Patient Info -->
                                     <div class="space-y-2">
@@ -361,16 +366,16 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                            {% endif %}
-                        {% empty %}
-                            <div class="text-center py-4 text-gray-400">
-                                <i class="fas fa-clock text-base mb-1"></i>
-                                <p class="text-xs">No appointments scheduled</p>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
                     </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-12 text-gray-400">
+                    <i class="fas fa-calendar-times text-2xl mb-3"></i>
+                    <p class="text-sm">No appointments scheduled for today</p>
                 </div>
-            {% endfor %}
+            {% endif %}
         </div>
 
         <!-- DESKTOP VIEW -->

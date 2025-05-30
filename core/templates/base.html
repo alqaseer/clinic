@@ -26,9 +26,9 @@
                         'xs': '2px',
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.5s ease-out',
-                        'slide-up': 'slideUp 0.3s ease-out',
-                        'scale-in': 'scaleIn 0.2s ease-out',
+                        'fade-in': 'fadeIn 0.2s ease-out',
+                        'slide-up': 'slideUp 0.15s ease-out',
+                        'scale-in': 'scaleIn 0.1s ease-out',
                     }
                 },
             },
@@ -160,7 +160,7 @@
             <!-- Navigation -->
             <nav class="flex-1 p-6 space-y-8 custom-scrollbar overflow-y-auto">
                 <!-- Dashboard -->
-                <div class="animate-slide-up">
+                <div>
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Overview</h3>
                     <ul class="space-y-1">
                         <li>
@@ -175,7 +175,7 @@
                 </div>
 
                 <!-- Clinic Appointments -->
-                <div class="animate-slide-up" style="animation-delay: 0.1s;">
+                <div>
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Appointments</h3>
                     <ul class="space-y-1">
                         <li>
@@ -198,7 +198,7 @@
                 </div>
 
                 <!-- Surgical List -->
-                <div class="animate-slide-up" style="animation-delay: 0.2s;">
+                <div>
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Surgery</h3>
                     <ul class="space-y-1">
                         <li>
@@ -245,7 +245,7 @@
                 </div>
 
                 <!-- Favorites -->
-                <div class="animate-slide-up" style="animation-delay: 0.25s;">
+                <div>
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Favorites</h3>
                     <ul class="space-y-1">
                         <li>
@@ -261,7 +261,7 @@
 
                 <!-- Settings (Only if user is the admin) -->
                 {% if request.user == workspace.admin %}
-                <div class="animate-slide-up" style="animation-delay: 0.3s;">
+                <div>
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Administration</h3>
                     <ul class="space-y-1">
                         <li>
@@ -294,7 +294,7 @@
             </nav>
 
             <!-- User Profile & Logout -->
-            <div class="p-6 border-t border-apple-border/50 animate-fade-in">
+            <div class="p-6 border-t border-apple-border/50">
                 <div class="flex items-center space-x-3 mb-4 p-3 bg-white/50 rounded-xl">
                     <div class="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center">
                         <i class="fas fa-user text-gray-600 text-sm"></i>

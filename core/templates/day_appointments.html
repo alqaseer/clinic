@@ -214,7 +214,7 @@
     }
 </style>
 
-<div class="animate-fade-in-up">
+<div>
     <!-- Enhanced Header with gradient background -->
     <div class="glass-card rounded-2xl p-6 sm:p-8 mb-8">
         <div class="flex flex-col space-y-4">
@@ -274,7 +274,7 @@
 
     <!-- Lock Status Alert -->
     {% if is_locked %}
-        <div class="lock-indicator rounded-2xl p-4 mb-8 animate-fade-in-up" style="animation-delay: 0.2s;">
+        <div class="lock-indicator rounded-2xl p-4 mb-8">
             <div class="flex items-center">
                 <i class="fas fa-lock text-xl mr-3"></i>
                 <div>
@@ -286,7 +286,7 @@
     {% endif %}
 
     <!-- Enhanced Appointments Display -->
-    <div class="glass-card rounded-2xl overflow-hidden animate-fade-in-up" style="animation-delay: 0.4s;">
+    <div class="glass-card rounded-2xl overflow-hidden">
         <!-- MOBILE VIEW -->
         <div class="block sm:hidden">
             {% for time in timeslots %}
@@ -529,7 +529,7 @@
     </div>
 
     <!-- Enhanced Legend -->
-    <div class="mt-8 flex justify-center animate-fade-in-up" style="animation-delay: 0.6s;">
+    <div class="mt-8 flex justify-center">
         <div class="legend-item inline-flex items-center px-6 py-3 rounded-xl shadow-lg">
             <i class="fas fa-lightbulb mr-3 text-amber-600"></i>
             <span class="font-semibold text-gray-800">Highlighted appointments indicate new patients</span>

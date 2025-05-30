@@ -48,10 +48,6 @@
         margin-top: 4px;
     }
 
-    .animate-slide-in {
-        animation: slideIn 0.6s ease-out;
-    }
-
     @keyframes slideIn {
         from {
             opacity: 0;
@@ -84,7 +80,7 @@
     }
 </style>
 
-<div class="max-w-6xl mx-auto animate-slide-in">
+<div class="max-w-6xl mx-auto">
     <!-- Header Section -->
     <div class="glass-card rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
@@ -271,8 +267,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const calendarDays = document.querySelectorAll('.calendar-day');
         calendarDays.forEach((day, index) => {
-            day.style.animationDelay = `${index * 0.01}s`;
-            day.classList.add('animate-slide-in');
+            // Removed animation delay and slide-in class
         });
     });
 </script>

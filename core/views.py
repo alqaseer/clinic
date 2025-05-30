@@ -421,6 +421,16 @@ def calendar_view(request, workspace_name):
     # Convert queryset into a dictionary {date: count}
     booked_cases_dict = {item["date"]: item["count"] for item in booked_cases}
 
+    # Get all locks for the month
+    locks = Lock.objects.filter(
+        workspace=workspace,
+        date__year=current_year,
+        date__month=current_month
+    ).values_list("date", flat=True)
+
+    # Convert locks queryset into a set for faster lookup
+    locked_dates = set(locks)
+
     # Generate calendar days
     days = []
     for day in range(1, days_in_month + 1):
@@ -430,12 +440,16 @@ def calendar_view(request, workspace_name):
         print(f"{day_name} {date} {is_open}")
         # Get booked cases from dictionary (default to 0 if not found)
         booked_cases_count = booked_cases_dict.get(date, 0)
+        
+        # Check if this date is locked
+        is_locked = date in locked_dates
 
         days.append({
             "date": date,
             "is_open": is_open,
             "booked_cases_count": booked_cases_count,
             "is_fully_booked": booked_cases_count >= total_slots_per_day,
+            "is_locked": is_locked,
         })
 
     # Calculate navigation

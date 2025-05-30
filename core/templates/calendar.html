@@ -3,58 +3,278 @@
 {% block title %}Calendar - {{ workspace.name }}{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-xl font-semibold">{{ month_name }} {{ current_year }}</h1>
-    <div class="flex space-x-2">
-        <a href="?month={{ prev_month }}&year={{ prev_year }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
-            &lt; Previous
-        </a>
-        <a href="?month={{ next_month }}&year={{ next_year }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
-            Next &gt;
-        </a>
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(229, 229, 234, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .calendar-day {
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .calendar-day::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1));
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .calendar-day:hover::before {
+        opacity: 1;
+    }
+
+    .calendar-day:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .day-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .animate-slide-in {
+        animation: slideIn 0.6s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .floating-header {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+
+    @media (max-width: 640px) {
+        .calendar-grid {
+            font-size: 0.75rem;
+        }
+        
+        .calendar-day {
+            min-height: 60px;
+            padding: 8px 4px;
+        }
+    }
+</style>
+
+<div class="max-w-6xl mx-auto animate-slide-in">
+    <!-- Header Section -->
+    <div class="glass-card rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+            <!-- Calendar Title -->
+            <div class="flex items-center space-x-4">
+                <div class="floating-header w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-calendar-alt text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">{{ month_name }} {{ current_year }}</h1>
+                    <p class="text-gray-600 text-sm">Surgical booking calendar</p>
+                </div>
+            </div>
+            
+            <!-- Navigation Controls -->
+            <div class="flex items-center space-x-3">
+                <a href="?month={{ prev_month }}&year={{ prev_year }}" 
+                   class="flex items-center px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-200 shadow-sm hover:shadow-md group">
+                    <i class="fas fa-chevron-left mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                    <span class="hidden sm:inline">Previous</span>
+                    <span class="sm:hidden">Prev</span>
+                </a>
+                
+                <button onclick="goToToday()" 
+                        class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg">
+                    <span class="hidden sm:inline">Today</span>
+                    <i class="fas fa-dot-circle sm:hidden"></i>
+                </button>
+                
+                <a href="?month={{ next_month }}&year={{ next_year }}" 
+                   class="flex items-center px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-200 shadow-sm hover:shadow-md group">
+                    <span class="hidden sm:inline">Next</span>
+                    <span class="sm:hidden">Next</span>
+                    <i class="fas fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="glass-card rounded-xl p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm">
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-green-200 rounded border border-green-300"></div>
+                <span class="text-gray-700 font-medium">Available</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-red-200 rounded border border-red-300"></div>
+                <span class="text-gray-700 font-medium">Fully Booked</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-orange-200 rounded border border-orange-300"></div>
+                <span class="text-gray-700 font-medium">Locked</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-gray-200 rounded border border-gray-300"></div>
+                <span class="text-gray-700 font-medium">Closed</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-gray-300 rounded border border-gray-400"></div>
+                <span class="text-gray-700 font-medium">Past Days</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="glass-card rounded-2xl overflow-hidden shadow-xl">
+        <div class="calendar-grid grid grid-cols-7 text-center font-medium">
+            <!-- Days of the Week Header -->
+            {% for day in days_of_week %}
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 py-3 sm:py-4 border-b border-gray-200">
+                <span class="text-gray-700 font-semibold text-sm sm:text-base">
+                    <span class="hidden sm:inline">{{ day }}</span>
+                    <span class="sm:hidden">{{ day|slice:":3" }}</span>
+                </span>
+            </div>
+            {% endfor %}
+
+            <!-- Empty slots for days before month start -->
+            {% for _ in blank_slots %}
+            <div class="bg-gray-50 py-4 sm:py-6 border-b border-r border-gray-100"></div>
+            {% endfor %}
+
+            <!-- Calendar Days -->
+            {% for day in days %}
+            <a href="{% url 'day_appointments' workspace.name day.date|date:'Y-m-d' %}" 
+               class="calendar-day block border-b border-r border-gray-100 relative group
+                      {% if day.date < today %}
+                          bg-gray-200 text-gray-500
+                      {% elif day.is_locked %}
+                          bg-orange-200 text-orange-900 hover:bg-orange-300
+                      {% elif not day.is_open %}
+                          bg-gray-100 text-gray-600
+                      {% elif day.is_fully_booked %}
+                          bg-red-200 text-red-900 hover:bg-red-300
+                      {% else %}
+                          bg-green-200 text-green-900 hover:bg-green-300
+                      {% endif %}">
+                
+                <div class="p-2 sm:p-4 min-h-[60px] sm:min-h-[80px] flex flex-col justify-between">
+                    <!-- Day Number -->
+                    <div class="flex justify-between items-start">
+                        <time datetime="{{ day.date|date:'Y-m-d' }}" 
+                              class="text-lg sm:text-xl font-bold
+                                     {% if day.date == today %}
+                                         bg-blue-500 text-white w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm sm:text-base
+                                     {% endif %}">
+                            {{ day.date.day }}
+                        </time>
+                        
+                        <!-- Status Indicator -->
+                        {% if day.date >= today %}
+                            {% if day.is_locked %}
+                                <i class="fas fa-lock text-orange-700 text-xs"></i>
+                            {% elif day.is_open %}
+                                {% if day.is_fully_booked %}
+                                    <i class="fas fa-exclamation-circle text-red-700 text-xs"></i>
+                                {% else %}
+                                    <i class="fas fa-check-circle text-green-700 text-xs"></i>
+                                {% endif %}
+                            {% else %}
+                                <i class="fas fa-times-circle text-gray-500 text-xs"></i>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Day Information -->
+                    <div class="mt-1 sm:mt-2">
+                        {% if day.is_locked %}
+                            <span class="day-badge bg-orange-300 text-orange-900">
+                                {{ day.booked_cases_count }} 
+                                <i class="fas fa-user text-xs ml-1"></i>
+                            </span>
+                        {% elif day.is_open %}
+                            <span class="day-badge 
+                                       {% if day.is_fully_booked %}
+                                           bg-red-300 text-red-900
+                                       {% else %}
+                                           bg-green-300 text-green-900
+                                       {% endif %}">
+                                {{ day.booked_cases_count }} 
+                                <i class="fas fa-user text-xs ml-1"></i>
+                            </span>
+                        {% else %}
+                            <span class="day-badge bg-gray-300 text-gray-700">
+                                {{ day.booked_cases_count }} 
+                                <i class="fas fa-user text-xs ml-1"></i>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Hover Effect Overlay -->
+                {% if day.date >= today %}
+                <div class="absolute inset-0 bg-gradient-to-br from-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
-<div class="grid grid-cols-7 gap-px border border-gray-300 bg-gray-200 text-center text-sm font-medium">
-    <!-- Days of the Week Header starting from Sunday -->
-    {% for day in days_of_week %}
-    <div class="bg-gray-100 py-2">{{ day }}</div>
-    {% endfor %}
+<script>
+    function goToToday() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        window.location.href = `?month=${month}&year=${year}`;
+    }
 
-    <!-- Calendar Days -->
-    {% for _ in blank_slots %}
-    <div class="bg-gray-200 py-4"></div>
-    {% endfor %}
+    // Add keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') {
+            document.querySelector('a[href*="month={{ prev_month }}"]').click();
+        } else if (e.key === 'ArrowRight') {
+            document.querySelector('a[href*="month={{ next_month }}"]').click();
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            goToToday();
+        }
+    });
 
-    {% for day in days %}
-    <a href="{% url 'day_appointments' workspace.name day.date|date:'Y-m-d' %}" class="block">
-        <div class="relative py-4 text-gray-900 
-                    {% if day.date < today %} bg-gray-300 text-gray-500 
-                    {% elif not day.is_open %} bg-gray-200 text-gray-400 
-                    {% elif day.is_fully_booked %} bg-red-100 
-                    {% else %} bg-green-100 {% endif %} hover:bg-gray-400 transition">
-            <time datetime="{{ day.date|date:'Y-m-d' }}" class="block font-medium">
-                {{ day.date.day }}
-            </time>
-
-            {% if day.is_open %}
-                {% if day.booked_cases_count > 0 %}
-                    <span class="text-xs text-gray-700">
-                        {{ day.booked_cases_count }} Booked
-                    </span>
-                {% else %}
-                    <span class="text-xs text-gray-500">No Patients</span>
-                {% endif %}
-            {% else %}
-                {% if day.booked_cases_count > 0 %}
-                    <span class="text-xs text-gray-700">{{ day.booked_cases_count }} Booked</span>
-                {% else %}
-                    <span class="text-xs text-gray-500">Closed</span>
-                {% endif %}
-            {% endif %}
-        </div>
-    </a>
-    {% endfor %}
-</div>
+    // Add smooth scrolling and animations
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarDays = document.querySelectorAll('.calendar-day');
+        calendarDays.forEach((day, index) => {
+            day.style.animationDelay = `${index * 0.01}s`;
+            day.classList.add('animate-slide-in');
+        });
+    });
+</script>
 
 {% endblock %}

@@ -76,7 +76,7 @@
                                 <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
                                         class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
                                     <i class="fas fa-heart mr-1"></i>
-                                    Add to Favorite
+                                    Favorite
                                 </button>
                             {% endif %}
                         </span>
@@ -177,7 +177,7 @@
                         <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
                                 class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
                             <i class="fas fa-heart mr-1"></i>
-                            Add to Favorite
+                            Favorite
                         </button>
                     {% endif %}
                 </span>
@@ -266,7 +266,7 @@
                 showNotification(data.message, 'success');
             } else {
                 // Restore original buttons on error
-                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
+                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
                 
                 if (mobileBtn) {
                     mobileBtn.innerHTML = originalHtml;
@@ -281,7 +281,7 @@
         .catch(error => {
             console.error('Error:', error);
             // Restore original buttons on error
-            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
+            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
             
             if (mobileBtn) {
                 mobileBtn.innerHTML = originalHtml;
@@ -339,7 +339,7 @@
             body: JSON.stringify({ status: "deleted" })
         })
         .then(response => response.json())
-        .then(data => {
+        .then data => {
             if (data.success) {
                 alert("Case deleted successfully.");
                 location.reload();

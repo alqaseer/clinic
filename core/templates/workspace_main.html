@@ -1,67 +1,261 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-    <!-- Welcome Header -->
-    <h1 class="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight break-words">
-        Welcome to {{ workspace.name }}
-    </h1>
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(229, 229, 234, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .glass-card:hover {
+        background: rgba(255, 255, 255, 0.95);
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+    
+    .animate-slide-up {
+        animation: slideUp 0.6s ease-out;
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.8s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .floating-element {
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .gradient-text {
+        background: linear-gradient(135deg, #007AFF, #32D74B);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+</style>
 
-    <!-- Statistics Overview -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
-        <!-- Booked Cases (Clickable) -->
-        <a href="{% url 'booked_cases' workspace.name %}" class="block bg-white shadow-lg rounded-xl p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group">
-            <div class="flex items-center justify-between">
-                <h2 class="text-sm sm:text-base font-medium text-gray-600 truncate group-hover:text-blue-600 transition-colors">Booked Cases</h2>
-                <div class="p-2 bg-blue-50 rounded-lg flex-shrink-0 group-hover:bg-blue-100 transition-colors">
-                    <i class="fas fa-calendar-check text-blue-500 group-hover:text-blue-600"></i>
-                </div>
-            </div>
-            <p class="text-3xl sm:text-4xl font-semibold text-gray-900 mt-4 group-hover:text-blue-600 transition-colors">{{ booked_cases_count }}</p>
-        </a>
-
-        <!-- Waiting List (Clickable) -->
-        <a href="{% url 'waiting_list' workspace.name %}" class="block bg-white shadow-lg rounded-xl p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group">
-            <div class="flex items-center justify-between">
-                <h2 class="text-sm sm:text-base font-medium text-gray-600 truncate group-hover:text-yellow-600 transition-colors">Waiting List</h2>
-                <div class="p-2 bg-yellow-50 rounded-lg flex-shrink-0 group-hover:bg-yellow-100 transition-colors">
-                    <i class="fas fa-hourglass-half text-yellow-500 group-hover:text-yellow-600"></i>
-                </div>
-            </div>
-            <p class="text-3xl sm:text-4xl font-semibold text-gray-900 mt-4 group-hover:text-yellow-600 transition-colors">{{ waiting_list_count }}</p>
-        </a>
-    </div>
-
-    <!-- Action Button -->
-    <div class="mt-6 sm:mt-8">
-        <a href="{% url 'add_surgical_booking' workspace.name %}" 
-           class="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-base sm:text-lg font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg">
-            <i class="fas fa-plus mr-2"></i>
-            <span class="whitespace-nowrap">Book a Surgery</span>
-        </a>
-    </div>
-
-    <!-- Users List -->
-    <div class="mt-8 sm:mt-10 bg-white shadow-lg rounded-xl border border-gray-100">
-        <div class="p-4 sm:p-6 border-b border-gray-100">
-            <h2 class="text-base sm:text-lg font-medium text-gray-900">Users in Workspace</h2>
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 animate-fade-in">
+    <!-- Welcome Header with Enhanced Design -->
+    <div class="text-center mb-8 sm:mb-12">
+        <div class="floating-element inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-4 shadow-lg">
+            <i class="fas fa-stethoscope text-white text-2xl"></i>
         </div>
-        <div class="p-4 sm:p-6">
-            <ul class="divide-y divide-gray-100">
-                {% for user in users %}
-                    <li class="py-3 sm:py-4 flex items-center justify-between">
-                        <div class="flex items-center min-w-0">
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span class="text-blue-600 font-medium text-sm sm:text-base">{{ user.username|make_list|first|upper }}</span>
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight break-words mb-2">
+            Welcome to <span class="gradient-text">{{ workspace.name }}</span>
+        </h1>
+        <p class="text-gray-600 text-lg">Your surgical workspace dashboard</p>
+    </div>
+
+    <!-- Statistics Overview with Enhanced Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
+        <!-- Booked Cases Card -->
+        <a href="{% url 'booked_cases' workspace.name %}" 
+           class="glass-card stat-card rounded-2xl p-6 sm:p-8 group cursor-pointer animate-slide-up"
+           style="--gradient-start: #007AFF; --gradient-end: #0051D5; animation-delay: 0.1s;">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-sm sm:text-base font-semibold text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
+                        Booked Cases
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-1">Active surgical bookings</p>
+                </div>
+                <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl group-hover:from-blue-100 group-hover:to-blue-200 transition-all duration-300 group-hover:scale-110">
+                    <i class="fas fa-calendar-check text-blue-500 text-xl group-hover:text-blue-600"></i>
+                </div>
+            </div>
+            <div class="flex items-end justify-between">
+                <p class="text-4xl sm:text-5xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
+                    {{ booked_cases_count }}
+                </p>
+                <div class="flex items-center text-green-600 text-sm font-medium">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span>Booked</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Waiting List Card -->
+        <a href="{% url 'waiting_list' workspace.name %}" 
+           class="glass-card stat-card rounded-2xl p-6 sm:p-8 group cursor-pointer animate-slide-up"
+           style="--gradient-start: #FF9F0A; --gradient-end: #FF8C00; animation-delay: 0.2s;">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-sm sm:text-base font-semibold text-gray-600 group-hover:text-orange-600 transition-colors duration-300">
+                        Waiting List
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-1">Patients awaiting surgery</p>
+                </div>
+                <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl group-hover:from-orange-100 group-hover:to-orange-200 transition-all duration-300 group-hover:scale-110">
+                    <i class="fas fa-hourglass-half text-orange-500 text-xl group-hover:text-orange-600"></i>
+                </div>
+            </div>
+            <div class="flex items-end justify-between">
+                <p class="text-4xl sm:text-5xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors duration-300">
+                    {{ waiting_list_count }}
+                </p>
+                <div class="flex items-center text-orange-600 text-sm font-medium">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>Pending</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Quick Actions Card -->
+        <div class="glass-card stat-card rounded-2xl p-6 sm:p-8 group animate-slide-up"
+             style="--gradient-start: #32D74B; --gradient-end: #28A745; animation-delay: 0.3s;">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-sm sm:text-base font-semibold text-gray-600 group-hover:text-green-600 transition-colors duration-300">
+                        Quick Actions
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-1">Workspace shortcuts</p>
+                </div>
+                <div class="p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl group-hover:from-green-100 group-hover:to-green-200 transition-all duration-300">
+                    <i class="fas fa-rocket text-green-500 text-xl group-hover:text-green-600"></i>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <a href="{% url 'add_surgical_booking' workspace.name %}" 
+                   class="flex items-center p-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg group/button">
+                    <i class="fas fa-plus mr-3"></i>
+                    <span class="font-medium">Book Surgery</span>
+                    <i class="fas fa-arrow-right ml-auto group-hover/button:translate-x-1 transition-transform"></i>
+                </a>
+                <a href="{% url 'calendar' workspace.name %}" 
+                   class="flex items-center p-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:border-blue-300 hover:text-blue-600 transition-all duration-200 group/button">
+                    <i class="fas fa-calendar mr-3"></i>
+                    <span class="font-medium">View Calendar</span>
+                    <i class="fas fa-arrow-right ml-auto group-hover/button:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Section with Enhanced Design -->
+    <div class="glass-card rounded-2xl overflow-hidden animate-slide-up" style="animation-delay: 0.4s;">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-6 sm:p-8 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Workspace Team</h2>
+                    <p class="text-gray-600">Users with access to {{ workspace.name }}</p>
+                </div>
+                <div class="p-3 bg-white rounded-2xl shadow-md">
+                    <i class="fas fa-users text-indigo-500 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6 sm:p-8">
+            {% if users %}
+                <div class="grid gap-4">
+                    {% for user in users %}
+                        <div class="flex items-center justify-between p-4 bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-all duration-200 group">
+                            <div class="flex items-center min-w-0">
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                    <span class="text-white font-bold text-lg">{{ user.username|make_list|first|upper }}</span>
+                                </div>
+                                <div class="ml-4">
+                                    <span class="text-base font-semibold text-gray-900 block">{{ user.username }}</span>
+                                    <span class="text-sm text-gray-500">{{ user.email|default:"No email provided" }}</span>
+                                </div>
                             </div>
-                            <span class="ml-3 sm:ml-4 text-xs sm:text-sm font-medium text-gray-900 truncate">{{ user.username }}</span>
+                            <div class="flex items-center space-x-3">
+                                <span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                                    {{ user.get_role_display|default:"Member" }}
+                                </span>
+                                <div class="w-3 h-3 bg-green-400 rounded-full shadow-sm"></div>
+                            </div>
                         </div>
-                        <span class="text-xs sm:text-sm text-gray-500 font-medium ml-2 flex-shrink-0">{{ user.get_role_display }}</span>
-                    </li>
-                {% empty %}
-                    <li class="py-3 sm:py-4 text-xs sm:text-sm text-gray-500">No users found.</li>
-                {% endfor %}
-            </ul>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-plus text-gray-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+                    <p class="text-gray-500">Invite team members to collaborate on this workspace.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Additional Quick Stats -->
+    <div class="mt-8 sm:mt-12 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="glass-card rounded-xl p-4 text-center group hover:scale-105 transition-transform">
+            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-user-md text-blue-600 text-sm"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-900">{{ users|length }}</p>
+            <p class="text-xs text-gray-500">Team Members</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-4 text-center group hover:scale-105 transition-transform">
+            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-check-circle text-green-600 text-sm"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-900">{{ booked_cases_count }}</p>
+            <p class="text-xs text-gray-500">Booked Cases</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-4 text-center group hover:scale-105 transition-transform">
+            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-clock text-orange-600 text-sm"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-900">{{ waiting_list_count }}</p>
+            <p class="text-xs text-gray-500">Waiting</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-4 text-center group hover:scale-105 transition-transform">
+            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-chart-line text-purple-600 text-sm"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-900">{{ booked_cases_count|add:waiting_list_count }}</p>
+            <p class="text-xs text-gray-500">Total Cases</p>
         </div>
     </div>
 </div>

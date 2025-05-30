@@ -15,17 +15,20 @@
         transition: all 0.15s ease;
         position: relative;
         border: 1px solid #e5e7eb;
+        aspect-ratio: 1/1; /* Force square cells */
     }
 
     .calendar-day:hover {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         border-color: #d1d5db;
     }
-
+    
     .day-badge {
-        display: inline-block;
-        padding: 2px 6px;
-        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1px 4px;
+        border-radius: 4px;
         font-size: 0.7rem;
         font-weight: 500;
         margin-top: 2px;
@@ -34,6 +37,29 @@
     .floating-header {
         animation: none;
     }
+    
+    .calendar-cell-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        width: 100%;
+    }
+    
+    .day-number {
+        font-weight: 600;
+    }
+    
+    .day-number.today {
+        background-color: #3b82f6;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
     @media (max-width: 640px) {
         .calendar-grid {
@@ -41,8 +67,26 @@
         }
         
         .calendar-day {
-            min-height: 60px;
-            padding: 8px 4px;
+            padding: 0;
+        }
+        
+        .calendar-cell-content {
+            padding: 6px 4px;
+        }
+        
+        .day-number {
+            font-size: 14px;
+        }
+        
+        .day-number.today {
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+        }
+        
+        .day-badge {
+            padding: 1px 2px;
+            font-size: 0.65rem;
         }
     }
 
@@ -120,13 +164,13 @@
 
             <!-- Empty slots for days before month start -->
             {% for _ in blank_slots %}
-            <div class="bg-gray-50 py-4 sm:py-6 border-b border-r border-gray-100"></div>
+            <div class="bg-gray-50 border-b border-r border-gray-100"></div>
             {% endfor %}
 
             <!-- Calendar Days -->
             {% for day in days %}
             <a href="{% url 'day_appointments' workspace.name day.date|date:'Y-m-d' %}" 
-               class="calendar-day block relative
+               class="calendar-day
                       {% if day.date < today %}
                           bg-gray-100 text-gray-500
                       {% elif day.is_locked %}
@@ -139,31 +183,27 @@
                           bg-green-50 text-green-900 hover:bg-green-100
                       {% endif %}">
                 
-                <div class="p-3 sm:p-4 min-h-[60px] sm:min-h-[80px] flex flex-col justify-between">
+                <div class="calendar-cell-content">
                     <!-- Day Number and Lock Icon -->
                     <div class="flex justify-between items-start">
                         <time datetime="{{ day.date|date:'Y-m-d' }}" 
-                              class="text-base sm:text-lg font-medium
-                                     {% if day.date == today %}
-                                         bg-blue-500 text-white w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-sm
-                                     {% endif %}">
+                              class="day-number {% if day.date == today %}today{% endif %}">
                             {{ day.date.day }}
                         </time>
                         
-                        <!-- Lock Icon Only (with better mobile spacing) -->
+                        <!-- Lock Icon Only -->
                         {% if day.date >= today and day.is_locked %}
-                            <div class="flex-shrink-0 ml-2">
+                            <div class="flex-shrink-0">
                                 <i class="fas fa-lock text-orange-600 text-xs"></i>
                             </div>
                         {% endif %}
                     </div>
 
                     <!-- Day Information -->
-                    <div class="mt-1">
+                    <div class="text-center">
                         {% if day.is_locked %}
                             <span class="day-badge bg-orange-100 text-orange-800">
-                                {{ day.booked_cases_count }} 
-                                <i class="fas fa-user text-xs ml-1"></i>
+                                {{ day.booked_cases_count }}<i class="fas fa-user text-xs ml-1"></i>
                             </span>
                         {% elif day.is_open %}
                             <span class="day-badge 
@@ -172,13 +212,11 @@
                                        {% else %}
                                            bg-green-100 text-green-800
                                        {% endif %}">
-                                {{ day.booked_cases_count }} 
-                                <i class="fas fa-user text-xs ml-1"></i>
+                                {{ day.booked_cases_count }}<i class="fas fa-user text-xs ml-1"></i>
                             </span>
                         {% else %}
                             <span class="day-badge bg-gray-100 text-gray-600">
-                                {{ day.booked_cases_count }} 
-                                <i class="fas fa-user text-xs ml-1"></i>
+                                {{ day.booked_cases_count }}<i class="fas fa-user text-xs ml-1"></i>
                             </span>
                         {% endif %}
                     </div>

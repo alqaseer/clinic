@@ -21,6 +21,42 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+        
+        .glass-morphism.collapsed {
+            transform: translateY(-100%);
+        }
+        
+        .glass-morphism.collapsed .nav-buttons {
+            display: none;
+        }
+        
+        .glass-morphism.mini {
+            padding: 0.5rem 0;
+        }
+        
+        .glass-morphism.mini .nav-container {
+            padding: 0.5rem 1rem;
+        }
+        
+        .glass-morphism.mini .logo {
+            transform: scale(0.8);
+        }
+        
+        @media (max-width: 1024px) {
+            .glass-morphism.scrolled .nav-buttons {
+                display: none;
+            }
+            
+            .glass-morphism.scrolled {
+                padding: 0.5rem 0;
+            }
         }
         
         .product-card {
@@ -101,10 +137,10 @@
 <body class="bg-black text-white overflow-x-hidden">
 
     <!-- Navigation Bar -->
-    <nav class="fixed top-0 w-full z-50 glass-morphism">
-        <div class="max-w-7xl mx-auto px-4 py-4">
+    <nav class="glass-morphism" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 py-4 nav-container">
             <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
-                <a href="#" class="flex items-center space-x-3 group">
+                <a href="#" class="flex items-center space-x-3 group logo">
                     <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-600 rounded-xl flex items-center justify-center">
                         <i class="fas fa-hospital text-white text-lg"></i>
                     </div>
@@ -112,7 +148,7 @@
                 </a>
                 
                 <!-- Always visible navigation buttons -->
-                <div class="flex flex-col lg:flex-row items-center gap-3 w-full lg:w-auto max-w-sm lg:max-w-none">
+                <div class="flex flex-col lg:flex-row items-center gap-3 w-full lg:w-auto max-w-sm lg:max-w-none nav-buttons">
                     <a href="{% url 'refer' %}" class="nav-button w-full lg:w-auto px-6 py-3 lg:px-4 lg:py-2 text-center text-white rounded-xl lg:rounded-lg font-medium text-sm">
                         <i class="fas fa-clipboard-list mr-2 lg:mr-1"></i>
                         Referral Login
@@ -282,6 +318,54 @@
     </footer>
 
     <script>
+        // Navigation scroll behavior
+        let lastScrollTop = 0;
+        let isScrolling = false;
+        
+        window.addEventListener('scroll', function() {
+            if (!isScrolling) {
+                window.requestAnimationFrame(function() {
+                    const navbar = document.getElementById('navbar');
+                    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    // Only apply mobile behavior on smaller screens
+                    if (window.innerWidth < 1024) {
+                        if (currentScroll > 100) {
+                            navbar.classList.add('scrolled');
+                            
+                            // Hide nav when scrolling down, show when scrolling up
+                            if (currentScroll > lastScrollTop && currentScroll > 200) {
+                                navbar.classList.add('collapsed');
+                            } else {
+                                navbar.classList.remove('collapsed');
+                            }
+                        } else {
+                            navbar.classList.remove('scrolled', 'collapsed');
+                        }
+                    } else {
+                        // Desktop behavior - just add mini class for subtle size reduction
+                        if (currentScroll > 100) {
+                            navbar.classList.add('mini');
+                        } else {
+                            navbar.classList.remove('mini');
+                        }
+                    }
+                    
+                    lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+                    isScrolling = false;
+                });
+            }
+            isScrolling = true;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.innerWidth >= 1024) {
+                navbar.classList.remove('scrolled', 'collapsed');
+            }
+        });
+        
         // Scroll reveal animation
         const observerOptions = {
             threshold: 0.1,

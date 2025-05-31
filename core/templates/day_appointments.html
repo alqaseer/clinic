@@ -259,116 +259,124 @@
     <div class="glass-card rounded-lg overflow-hidden">
         <!-- MOBILE VIEW -->
         <div class="block sm:hidden">
-            {% regroup appointments by time|time:"H:i" as appointments_by_time %}
-            
-            {% if appointments_by_time %}
-                {% for time_group in appointments_by_time %}
-                    <div class="border-b border-gray-200 last:border-b-0">
-                        <!-- Time Header -->
-                        <div class="time-slot-header px-4 py-3">
-                            <div class="flex items-center space-x-2">
-                                <i class="far fa-clock text-gray-500"></i>
-                                <h3 class="text-base font-bold">{{ time_group.grouper }}</h3>
-                            </div>
-                        </div>
-                        
-                        <!-- Appointments for this time -->
-                        <div class="p-3 space-y-3">
-                            {% for appointment in time_group.list %}
-                                <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-3">
-                                    <!-- Patient Info -->
-                                    <div class="space-y-2">
-                                        <div class="flex items-start justify-between">
-                                            <div class="flex-1">
-                                                <h4 class="text-base font-bold text-gray-900">{{ appointment.patient_name }}</h4>
-                                                <p class="text-xs text-gray-600">ID: {{ appointment.civil_id }}</p>
-                                                <p class="text-xs text-gray-600">Phone: {{ appointment.phone_number }}</p>
-                                            </div>
-                                            <div class="flex items-center space-x-2 ml-2">
-                                                <!-- Status Badge -->
-                                                <span id="confirmed-status-mobile-{{ appointment.id }}" class="status-badge">
-                                                    {% if appointment.confirmed == "Unknown" %}
-                                                        <div class="w-7 h-7 bg-yellow-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')">
-                                                            <i class="fas fa-question text-yellow-600 text-xs"></i>
-                                                        </div>
-                                                    {% elif appointment.confirmed == "Confirmed" %}
-                                                        <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')">
-                                                            <i class="fas fa-check text-green-600 text-xs"></i>
-                                                        </div>
-                                                    {% elif appointment.confirmed == "Cancelled" %}
-                                                        <div class="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')">
-                                                            <i class="fas fa-times text-red-600 text-xs"></i>
-                                                        </div>
-                                                    {% endif %}
-                                                </span>
+            {% if appointments %}
+                {% for time in timeslots %}
+                    {% with has_appointments=False %}
+                        {% for appointment in appointments %}
+                            {% if appointment.time|time:"H:i" == time and not has_appointments %}
+                                {% with has_appointments=True %}
+                                    <div class="border-b border-gray-200 last:border-b-0">
+                                        <!-- Time Header -->
+                                        <div class="time-slot-header px-4 py-3">
+                                            <div class="flex items-center space-x-2">
+                                                <i class="far fa-clock text-gray-500"></i>
+                                                <h3 class="text-base font-bold">{{ time }}</h3>
                                             </div>
                                         </div>
+                                        
+                                        <!-- Appointments for this time -->
+                                        <div class="p-3 space-y-3">
+                                            {% for inner_appointment in appointments %}
+                                                {% if inner_appointment.time|time:"H:i" == time %}
+                                                    <div class="appointment-card {% if inner_appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-3">
+                                                        <!-- Patient Info -->
+                                                        <div class="space-y-2">
+                                                            <div class="flex items-start justify-between">
+                                                                <div class="flex-1">
+                                                                    <h4 class="text-base font-bold text-gray-900">{{ inner_appointment.patient_name }}</h4>
+                                                                    <p class="text-xs text-gray-600">ID: {{ inner_appointment.civil_id }}</p>
+                                                                    <p class="text-xs text-gray-600">Phone: {{ inner_appointment.phone_number }}</p>
+                                                                </div>
+                                                                <div class="flex items-center space-x-2 ml-2">
+                                                                    <!-- Status Badge -->
+                                                                    <span id="confirmed-status-mobile-{{ inner_appointment.id }}" class="status-badge">
+                                                                        {% if inner_appointment.confirmed == "Unknown" %}
+                                                                            <div class="w-7 h-7 bg-yellow-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ inner_appointment.id }}, 'Unknown')">
+                                                                                <i class="fas fa-question text-yellow-600 text-xs"></i>
+                                                                            </div>
+                                                                        {% elif inner_appointment.confirmed == "Confirmed" %}
+                                                                            <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ inner_appointment.id }}, 'Confirmed')">
+                                                                                <i class="fas fa-check text-green-600 text-xs"></i>
+                                                                            </div>
+                                                                        {% elif inner_appointment.confirmed == "Cancelled" %}
+                                                                            <div class="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ inner_appointment.id }}, 'Cancelled')">
+                                                                                <i class="fas fa-times text-red-600 text-xs"></i>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
 
-                                        <!-- Type and Doctor -->
-                                        <div class="flex items-center space-x-3 text-xs">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                                                {{ appointment.appointment_type }}
-                                            </span>
-                                            {% if appointment.booked_by %}
-                                                <span class="text-gray-500 text-xs">by {{ appointment.booked_by.full_name }}</span>
-                                            {% endif %}
-                                        </div>
+                                                            <!-- Type and Doctor -->
+                                                            <div class="flex items-center space-x-3 text-xs">
+                                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if inner_appointment.appointment_type == 'New' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                                    {{ inner_appointment.appointment_type }}
+                                                                </span>
+                                                                {% if inner_appointment.booked_by %}
+                                                                    <span class="text-gray-500 text-xs">by {{ inner_appointment.booked_by.full_name }}</span>
+                                                                {% endif %}
+                                                            </div>
 
-                                        <!-- Action Buttons -->
-                                        <div class="flex flex-wrap items-center gap-2 pt-1">
-                                            <!-- Favorite Button -->
-                                            <span id="favorite-btn-mobile-{{ appointment.id }}">
-                                                {% if appointment.civil_id in favorited_civil_ids %}
-                                                    <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded">
-                                                        <i class="fas fa-star favorite-star mr-1 text-xs"></i>
-                                                        Favorited
-                                                    </span>
-                                                {% else %}
-                                                    <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
-                                                            class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
-                                                        <i class="fas fa-heart mr-1 text-xs"></i>
-                                                        Favorite
-                                                    </button>
+                                                            <!-- Action Buttons -->
+                                                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                                                <!-- Favorite Button -->
+                                                                <span id="favorite-btn-mobile-{{ inner_appointment.id }}">
+                                                                    {% if inner_appointment.civil_id in favorited_civil_ids %}
+                                                                        <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                            <i class="fas fa-star favorite-star mr-1 text-xs"></i>
+                                                                            Favorited
+                                                                        </span>
+                                                                    {% else %}
+                                                                        <button onclick="addToFavorites('clinic', {{ inner_appointment.id }}, '{{ inner_appointment.patient_name|escapejs }}')"
+                                                                                class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                            <i class="fas fa-heart mr-1 text-xs"></i>
+                                                                            Favorite
+                                                                        </button>
+                                                                    {% endif %}
+                                                                </span>
+                                                                
+                                                                {% if inner_appointment.diagnosis %}
+                                                                    <button onclick="toggleDiagnosis('mobile-diagnosis-{{ inner_appointment.id }}')"
+                                                                           class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
+                                                                       <i id="mobile-diagnosis-icon-{{ inner_appointment.id }}" class="fas fa-chevron-down mr-1"></i>
+                                                                       Diagnosis
+                                                                    </button>
+                                                                {% endif %}
+                                                                
+                                                                {% if inner_appointment.referral_letter %}
+                                                                    <button onclick="openReferral('{{ inner_appointment.referral_letter.url }}')"
+                                                                           class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100">
+                                                                       <i class="fas fa-file-medical mr-1"></i>
+                                                                       Referral
+                                                                    </button>
+                                                                {% endif %}
+                                                                
+                                                                <a href="{% url 'edit_appointment' workspace.name inner_appointment.id %}" 
+                                                                   class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs font-medium rounded hover:bg-gray-100">
+                                                                   <i class="fas fa-edit mr-1"></i>
+                                                                   Edit
+                                                                </a>
+                                                            </div>
+
+                                                            <!-- Diagnosis Container -->
+                                                            {% if inner_appointment.diagnosis %}
+                                                            <div id="mobile-diagnosis-{{ inner_appointment.id }}" class="diagnosis-container">
+                                                                <div class="flex items-start space-x-2">
+                                                                    <i class="fas fa-stethoscope text-blue-500 mt-0.5"></i>
+                                                                    <span class="text-gray-700 text-sm">{{ inner_appointment.diagnosis }}</span>
+                                                                </div>
+                                                            </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
                                                 {% endif %}
-                                            </span>
-                                            
-                                            {% if appointment.diagnosis %}
-                                                <button onclick="toggleDiagnosis('mobile-diagnosis-{{ appointment.id }}')"
-                                                       class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
-                                                   <i id="mobile-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>
-                                                   Diagnosis
-                                                </button>
-                                            {% endif %}
-                                            
-                                            {% if appointment.referral_letter %}
-                                                <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
-                                                       class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100">
-                                                   <i class="fas fa-file-medical mr-1"></i>
-                                                   Referral
-                                                </button>
-                                            {% endif %}
-                                            
-                                            <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                               class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs font-medium rounded hover:bg-gray-100">
-                                               <i class="fas fa-edit mr-1"></i>
-                                               Edit
-                                            </a>
+                                            {% endfor %}
                                         </div>
-
-                                        <!-- Diagnosis Container -->
-                                        {% if appointment.diagnosis %}
-                                        <div id="mobile-diagnosis-{{ appointment.id }}" class="diagnosis-container">
-                                            <div class="flex items-start space-x-2">
-                                                <i class="fas fa-stethoscope text-blue-500 mt-0.5"></i>
-                                                <span class="text-gray-700 text-sm">{{ appointment.diagnosis }}</span>
-                                            </div>
-                                        </div>
-                                        {% endif %}
                                     </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
+                                {% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endwith %}
                 {% endfor %}
             {% else %}
                 <div class="text-center py-12 text-gray-400">

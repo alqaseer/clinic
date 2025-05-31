@@ -26,15 +26,26 @@
             left: 0;
             right: 0;
             z-index: 9999;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
         }
         
         .glass-morphism.collapsed {
             transform: translateY(-100%);
         }
         
-        .glass-morphism.collapsed .nav-buttons {
-            display: none;
+        .nav-buttons {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            max-height: 500px;
+            overflow: hidden;
+        }
+        
+        .glass-morphism.scrolled .nav-buttons {
+            opacity: 0;
+            max-height: 0;
+            margin: 0;
+            padding: 0;
         }
         
         .glass-morphism.mini {
@@ -47,13 +58,10 @@
         
         .glass-morphism.mini .logo {
             transform: scale(0.8);
+            transition: transform 0.3s ease;
         }
         
         @media (max-width: 1024px) {
-            .glass-morphism.scrolled .nav-buttons {
-                display: none;
-            }
-            
             .glass-morphism.scrolled {
                 padding: 0.5rem 0;
             }
@@ -321,41 +329,46 @@
         // Navigation scroll behavior
         let lastScrollTop = 0;
         let isScrolling = false;
+        let ticking = false;
+        
+        function updateNavbar() {
+            const navbar = document.getElementById('navbar');
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Only apply mobile behavior on smaller screens
+            if (window.innerWidth < 1024) {
+                if (currentScroll > 100) {
+                    navbar.classList.add('scrolled');
+                    
+                    // Hide nav when scrolling down, show when scrolling up
+                    if (currentScroll > lastScrollTop && currentScroll > 200) {
+                        navbar.classList.add('collapsed');
+                    } else {
+                        navbar.classList.remove('collapsed');
+                    }
+                } else {
+                    navbar.classList.remove('scrolled', 'collapsed');
+                }
+            } else {
+                // Desktop behavior - just add mini class for subtle size reduction
+                if (currentScroll > 100) {
+                    navbar.classList.add('mini');
+                } else {
+                    navbar.classList.remove('mini');
+                }
+                // Always remove mobile-specific classes on desktop
+                navbar.classList.remove('scrolled', 'collapsed');
+            }
+            
+            lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+            ticking = false;
+        }
         
         window.addEventListener('scroll', function() {
-            if (!isScrolling) {
-                window.requestAnimationFrame(function() {
-                    const navbar = document.getElementById('navbar');
-                    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-                    
-                    // Only apply mobile behavior on smaller screens
-                    if (window.innerWidth < 1024) {
-                        if (currentScroll > 100) {
-                            navbar.classList.add('scrolled');
-                            
-                            // Hide nav when scrolling down, show when scrolling up
-                            if (currentScroll > lastScrollTop && currentScroll > 200) {
-                                navbar.classList.add('collapsed');
-                            } else {
-                                navbar.classList.remove('collapsed');
-                            }
-                        } else {
-                            navbar.classList.remove('scrolled', 'collapsed');
-                        }
-                    } else {
-                        // Desktop behavior - just add mini class for subtle size reduction
-                        if (currentScroll > 100) {
-                            navbar.classList.add('mini');
-                        } else {
-                            navbar.classList.remove('mini');
-                        }
-                    }
-                    
-                    lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
-                    isScrolling = false;
-                });
+            if (!ticking) {
+                requestAnimationFrame(updateNavbar);
+                ticking = true;
             }
-            isScrolling = true;
         });
         
         // Handle window resize

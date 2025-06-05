@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Appointment{% endblock %}
+{% block title %}Add Appointment{% endblock %}
 
 {% block content %}
 <style>
@@ -17,7 +17,13 @@
     }
     
     .session-section.expanded {
-        max-height: none;
+        max-height: none; /* Remove height limit */
+    }
+    
+    .session-section.disabled {
+        opacity: 0.6;
+        background-color: #f9fafb;
+        border-color: #e5e7eb;
     }
     
     .session-header {
@@ -31,8 +37,14 @@
         background-color: #f3f4f6;
     }
     
+    .session-header.disabled {
+        cursor: not-allowed;
+        background-color: #f3f4f6 !important;
+    }
+    
     .session-content {
         transition: opacity 0.3s ease;
+        /* Remove scrolling - let content display naturally */
     }
     
     .session-section.collapsed .session-content {
@@ -43,6 +55,11 @@
     .session-section.expanded .session-content {
         opacity: 1;
         pointer-events: auto;
+    }
+    
+    .session-section.disabled .session-content {
+        opacity: 0.4;
+        pointer-events: none;
     }
     
     .expand-icon {
@@ -57,6 +74,18 @@
         transform: rotate(0deg);
     }
     
+    .time-slot-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f9fafb !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    .time-slot-disabled input {
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    
     .time-slot-busy {
         background-color: #fef2f2 !important;
         border-color: #fecaca !important;
@@ -68,6 +97,19 @@
         border-color: #fca5a5 !important;
     }
 
+    .lock-notice {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border: 1px solid #fecaca;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .lock-notice.owner-override {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-color: #f59e0b;
+    }
+
     /* iOS-specific fixes for date input */
     input[type="date"] {
         -webkit-appearance: none;
@@ -75,6 +117,7 @@
         appearance: none;
         min-height: 48px; /* Ensure consistent height on iOS */
         line-height: 1.5;
+        background-color: #f9fafb;
         background-image: none;
     }
     
@@ -144,9 +187,11 @@
 
 <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-        <h1 class="text-xl font-semibold text-white">Edit Appointment</h1>
+        <h1 class="text-xl font-semibold text-white">
+            Add Appointment for {{ selected_date|date:"l, j F Y" }}
+        </h1>
         <p class="text-blue-100 text-sm mt-1">
-            Day: {{ day_name }} • {{ selected_date|date:"l, j F Y" }}
+            Day: {{ day_name }}
             {% if has_am and has_pm %}
                 • Both AM and PM sessions configured
             {% elif has_am %}
@@ -159,28 +204,107 @@
         </p>
     </div>
 
+    <!-- Lock Status Notifications -->
+    {% if am_lock_exists or pm_lock_exists %}
+        <div class="p-4 border-b border-gray-200">
+            {% if am_lock_exists and pm_lock_exists %}
+                {% if is_workspace_owner %}
+                    <div class="lock-notice owner-override">
+                        <div class="flex items-center">
+                            <i class="fas fa-crown text-yellow-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-yellow-800">Both sessions are locked</p>
+                                <p class="text-sm text-yellow-700">As the workspace owner, you can still book appointments in locked sessions.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="lock-notice">
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-red-800">Both morning and afternoon sessions are locked</p>
+                                <p class="text-sm text-red-700">No new appointments can be added to either session.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% elif am_lock_exists %}
+                {% if is_workspace_owner %}
+                    <div class="lock-notice owner-override">
+                        <div class="flex items-center">
+                            <i class="fas fa-crown text-yellow-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-yellow-800">Morning session is locked</p>
+                                <p class="text-sm text-yellow-700">As the workspace owner, you can still book morning appointments.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="lock-notice">
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-red-800">Morning session is locked</p>
+                                <p class="text-sm text-red-700">No new morning appointments can be added. Afternoon slots may still be available.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% elif pm_lock_exists %}
+                {% if is_workspace_owner %}
+                    <div class="lock-notice owner-override">
+                        <div class="flex items-center">
+                            <i class="fas fa-crown text-yellow-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-yellow-800">Afternoon session is locked</p>
+                                <p class="text-sm text-yellow-700">As the workspace owner, you can still book afternoon appointments.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="lock-notice">
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-red-800">Afternoon session is locked</p>
+                                <p class="text-sm text-red-700">No new afternoon appointments can be added. Morning slots may still be available.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+
     <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
         {% csrf_token %}
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Patient Name -->
+            <!-- Phone Number - First Field -->
             <div>
-                <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
+                <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 <input
-                    type="text"
-                    name="patient_name"
-                    id="patient_name"
+                    type="tel"
+                    name="phone_number"
+                    id="phone_number"
                     class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value="{{ form.patient_name.value|default_if_none:'' }}"
+                    value="{{ form.phone_number.value|default_if_none:'' }}"
+                    minlength="8"
+                    maxlength="8"
+                    pattern="\d{8}"
+                    oninvalid="this.setCustomValidity('Phone number must be exactly 8 digits.')"
+                    oninput="this.setCustomValidity('')"
                     required
                 >
+                <p class="mt-1 text-sm text-gray-500">Phone number must be exactly 8 digits.</p>
             </div>
 
-            <!-- Civil ID -->
+            <!-- Civil ID - Second Field -->
             <div>
                 <label for="civil_id" class="block text-sm font-medium text-gray-700 mb-1">Civil ID</label>
                 <input
-                    type="text"
+                    type="tel"
                     name="civil_id"
                     id="civil_id"
                     class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -197,26 +321,20 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Phone Number -->
+            <!-- Patient Name - Third Field -->
             <div>
-                <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label for="patient_name" class="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
                 <input
                     type="text"
-                    name="phone_number"
-                    id="phone_number"
+                    name="patient_name"
+                    id="patient_name"
                     class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value="{{ form.phone_number.value|default_if_none:'' }}"
-                    minlength="8"
-                    maxlength="8"
-                    pattern="\d{8}"
-                    oninvalid="this.setCustomValidity('Phone number must be exactly 8 digits.')"
-                    oninput="this.setCustomValidity('')"
+                    value="{{ form.patient_name.value|default_if_none:'' }}"
                     required
                 >
-                <p class="mt-1 text-sm text-gray-500">Phone number must be exactly 8 digits.</p>
             </div>
 
-            <!-- Appointment Type Dropdown -->
+            <!-- Appointment Type - Fourth Field -->
             <div>
                 <label for="appointment_type" class="block text-sm font-medium text-gray-700 mb-1">Appointment Type</label>
                 <select
@@ -225,50 +343,59 @@
                     class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                 >
-                    <option value="New" {% if form.appointment_type.value == "New" %}selected{% endif %}>New</option>
-                    <option value="Follow-Up" {% if form.appointment_type.value == "Follow-Up" %}selected{% endif %}>Follow-Up</option>
+                    <option value="New">New</option>
+                    <option value="Follow-Up">Follow-Up</option>
                 </select>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Confirmed Status Dropdown -->
-            <div>
-                <label for="confirmed" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                    name="confirmed"
-                    id="confirmed"
-                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="Unknown" {% if form.confirmed.value == "Unknown" %}selected{% endif %}>Unknown</option>
-                    <option value="Confirmed" {% if form.confirmed.value == "Confirmed" %}selected{% endif %}>Confirmed</option>
-                    <option value="Cancelled" {% if form.confirmed.value == "Cancelled" %}selected{% endif %}>Cancelled</option>
-                </select>
-            </div>
-
-            <!-- Date Field -->
+            <!-- Date Field - moved to grid layout for consistency -->
             <div>
                 <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                    type="date"
-                    name="date"
-                    id="date"
-                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value="{{ form.date.value|date:'Y-m-d' }}"
-                    onchange="updateSessionData()"
-                    required
-                >
+                <div class="relative">
+                    <input
+                        type="date"
+                        name="date"
+                        id="date"
+                        class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value="{{ selected_date|date:'Y-m-d' }}"
+                        readonly
+                    >
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <!-- Hidden Field to Ensure Date is Submitted -->
+                    <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                </div>
             </div>
+            
+            <!-- Empty div to maintain grid layout but leave space -->
+            <div></div>
         </div>
 
         <!-- AM Session -->
-        <div class="session-section {% if am_collapsed %}collapsed{% else %}expanded{% endif %}" id="am-section">
-            <div class="session-header p-4 bg-gradient-to-r from-yellow-50 to-orange-50" onclick="toggleSession('am')">
+        <div class="session-section {% if am_collapsed %}collapsed{% else %}expanded{% endif %} {% if am_disabled %}disabled{% endif %}" id="am-section">
+            <div class="session-header p-4 bg-gradient-to-r from-yellow-50 to-orange-50 {% if am_disabled %}disabled{% endif %}" 
+                 onclick="{% if not am_disabled %}toggleSession('am'){% endif %}">
                 <div class="flex items-center justify-between session-header-content">
                     <div class="flex items-center space-x-3">
-                        <i class="fas fa-sun text-yellow-600"></i>
+                        {% if am_disabled %}
+                            <i class="fas fa-lock text-red-600"></i>
+                        {% else %}
+                            <i class="fas fa-sun text-yellow-600"></i>
+                        {% endif %}
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900">Morning Session (AM)</h3>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Morning Session (AM)
+                                {% if am_disabled and not is_workspace_owner %}
+                                    <span class="text-sm font-normal text-red-600">(Locked)</span>
+                                {% elif am_disabled and is_workspace_owner %}
+                                    <span class="text-sm font-normal text-yellow-600">(Locked - Owner Override)</span>
+                                {% endif %}
+                            </h3>
                             <p class="text-sm text-gray-600">8:00 AM - 12:15 PM • 15-minute slots</p>
                         </div>
                     </div>
@@ -278,29 +405,35 @@
                         {% else %}
                             <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge">Closed</span>
                         {% endif %}
-                        <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                        {% if not am_disabled %}
+                            <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             
             <div class="session-content p-4 bg-white">
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {% for time, count, rooms in am_slots %}
+                    {% for time, count, rooms, disabled in am_slots %}
                     <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
-                                  {% if count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-yellow-50 hover:border-yellow-300{% endif %}">
+                                  {% if disabled %}time-slot-disabled{% elif count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-yellow-50 hover:border-yellow-300{% endif %}">
                         <input
                             type="radio"
                             name="time"
                             value="{{ time }}"
                             class="hidden peer"
-                            {% if time == appointment.formatted_time %}checked{% endif %}
+                            {% if disabled %}disabled{% endif %}
                             required
                         >
                         <div class="peer-checked:bg-yellow-500 peer-checked:text-white peer-checked:border-yellow-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
                             <div class="font-medium">{{ time }}</div>
-                            <div class="text-xs mt-1 {% if count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
-                                {{ count }} Patient{{ count|pluralize }}
-                                {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                            <div class="text-xs mt-1 {% if disabled %}text-gray-400{% elif count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
+                                {% if disabled %}
+                                    Locked
+                                {% else %}
+                                    {{ count }} Patient{{ count|pluralize }}
+                                    {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                                {% endif %}
                             </div>
                         </div>
                     </label>
@@ -310,13 +443,25 @@
         </div>
 
         <!-- PM Session -->
-        <div class="session-section {% if pm_collapsed %}collapsed{% else %}expanded{% endif %}" id="pm-section">
-            <div class="session-header p-4 bg-gradient-to-r from-blue-50 to-indigo-50" onclick="toggleSession('pm')">
+        <div class="session-section {% if pm_collapsed %}collapsed{% else %}expanded{% endif %} {% if pm_disabled %}disabled{% endif %}" id="pm-section">
+            <div class="session-header p-4 bg-gradient-to-r from-blue-50 to-indigo-50 {% if pm_disabled %}disabled{% endif %}" 
+                 onclick="{% if not pm_disabled %}toggleSession('pm'){% endif %}">
                 <div class="flex items-center justify-between session-header-content">
                     <div class="flex items-center space-x-3">
-                        <i class="fas fa-moon text-blue-600"></i>
+                        {% if pm_disabled %}
+                            <i class="fas fa-lock text-red-600"></i>
+                        {% else %}
+                            <i class="fas fa-moon text-blue-600"></i>
+                        {% endif %}
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900">Afternoon Session (PM)</h3>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Afternoon Session (PM)
+                                {% if pm_disabled and not is_workspace_owner %}
+                                    <span class="text-sm font-normal text-red-600">(Locked)</span>
+                                {% elif pm_disabled and is_workspace_owner %}
+                                    <span class="text-sm font-normal text-yellow-600">(Locked - Owner Override)</span>
+                                {% endif %}
+                            </h3>
                             <p class="text-sm text-gray-600">2:00 PM - 5:30 PM • 15-minute slots</p>
                         </div>
                     </div>
@@ -326,29 +471,35 @@
                         {% else %}
                             <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge">Closed</span>
                         {% endif %}
-                        <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                        {% if not pm_disabled %}
+                            <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             
             <div class="session-content p-4 bg-white">
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {% for time, count, rooms in pm_slots %}
+                    {% for time, count, rooms, disabled in pm_slots %}
                     <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
-                                  {% if count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300{% endif %}">
+                                  {% if disabled %}time-slot-disabled{% elif count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300{% endif %}">
                         <input
                             type="radio"
                             name="time"
                             value="{{ time }}"
                             class="hidden peer"
-                            {% if time == appointment.time|time:"H:i" %}checked{% endif %}
+                            {% if disabled %}disabled{% endif %}
                             required
                         >
                         <div class="peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
                             <div class="font-medium">{{ time }}</div>
-                            <div class="text-xs mt-1 {% if count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
-                                {{ count }} Patient{{ count|pluralize }}
-                                {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                            <div class="text-xs mt-1 {% if disabled %}text-gray-400{% elif count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
+                                {% if disabled %}
+                                    Locked
+                                {% else %}
+                                    {{ count }} Patient{{ count|pluralize }}
+                                    {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                                {% endif %}
                             </div>
                         </div>
                     </label>
@@ -377,21 +528,12 @@
                     <p class="text-xs text-gray-500 mt-2">PNG, JPG, PDF up to 10MB</p>
                 </div>
             </div>
-            
-            {% if form.instance.referral_letter %}
-            <div class="mt-2 flex items-center">
-                <svg class="h-5 w-5 text-green-500 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
-                <span class="text-sm text-gray-600">Current file: <a href="{{ form.instance.referral_letter.url }}" target="_blank" class="text-blue-600 hover:underline">View</a></span>
-            </div>
-            {% endif %}
         </div>
 
         <!-- Submit Button -->
         <div class="mt-8">
             <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                Save Changes
+                Save Appointment
             </button>
         </div>
     </form>
@@ -411,160 +553,69 @@ function toggleSession(session) {
     }
 }
 
-function updateSessionData() {
-    const dateInput = document.getElementById('date');
-    const selectedDate = dateInput.value;
-    
-    if (!selectedDate) return;
-    
-    // Show loading state
-    const loadingOverlay = document.createElement('div');
-    loadingOverlay.id = 'loading-overlay';
-    loadingOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    loadingOverlay.innerHTML = `
-        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span class="text-gray-700">Updating session data...</span>
-        </div>
-    `;
-    document.body.appendChild(loadingOverlay);
-    
-    // Make AJAX request
-    const url = `/api/session-data/{{ workspace.name }}/?date=${selectedDate}&appointment_id={{ appointment.id }}`;
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateSessionSections(data);
-                updateHeaderInfo(data);
-            } else {
-                console.error('Error:', data.error);
-                alert('Error updating session data: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error updating session data. Please try again.');
-        })
-        .finally(() => {
-            // Remove loading overlay
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.remove();
-            }
-        });
-}
-
-function updateSessionSections(data) {
-    // Update AM section
-    const amSection = document.getElementById('am-section');
-    const pmSection = document.getElementById('pm-section');
-    
-    // Update collapse states
-    if (data.am_collapsed) {
-        amSection.classList.remove('expanded');
-        amSection.classList.add('collapsed');
-    } else {
-        amSection.classList.remove('collapsed');
-        amSection.classList.add('expanded');
-    }
-    
-    if (data.pm_collapsed) {
-        pmSection.classList.remove('expanded');
-        pmSection.classList.add('collapsed');
-    } else {
-        pmSection.classList.remove('collapsed');
-        pmSection.classList.add('expanded');
-    }
-    
-    // Update AM status badges
-    const amBadge = amSection.querySelector('.session-status-badge');
-    if (data.has_am) {
-        amBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge';
-        amBadge.textContent = 'Open';
-    } else {
-        amBadge.className = 'px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge';
-        amBadge.textContent = 'Closed';
-    }
-    
-    // Update PM status badges
-    const pmBadge = pmSection.querySelector('.session-status-badge');
-    if (data.has_pm) {
-        pmBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge';
-        pmBadge.textContent = 'Open';
-    } else {
-        pmBadge.className = 'px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge';
-        pmBadge.textContent = 'Closed';
-    }
-    
-    // Update AM time slots
-    const amGrid = amSection.querySelector('.grid');
-    amGrid.innerHTML = '';
-    data.am_slots.forEach(slot => {
-        const slotHTML = createTimeSlotHTML(slot, 'AM', data.rooms);
-        amGrid.insertAdjacentHTML('beforeend', slotHTML);
-    });
-    
-    // Update PM time slots
-    const pmGrid = pmSection.querySelector('.grid');
-    pmGrid.innerHTML = '';
-    data.pm_slots.forEach(slot => {
-        const slotHTML = createTimeSlotHTML(slot, 'PM', data.rooms);
-        pmGrid.insertAdjacentHTML('beforeend', slotHTML);
-    });
-}
-
-function createTimeSlotHTML(slot, session, rooms) {
-    const isFullClass = slot.is_full ? 'time-slot-busy' : 'bg-white border-gray-300 hover:bg-' + (session === 'AM' ? 'yellow' : 'blue') + '-50 hover:border-' + (session === 'AM' ? 'yellow' : 'blue') + '-300';
-    const checkedColor = session === 'AM' ? 'yellow' : 'blue';
-    const textColor = slot.is_full ? 'text-red-600' : 'text-gray-500';
-    
-    return `
-        <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200 ${isFullClass}">
-            <input
-                type="radio"
-                name="time"
-                value="${slot.time}"
-                class="hidden peer"
-                required
-            >
-            <div class="peer-checked:bg-${checkedColor}-500 peer-checked:text-white peer-checked:border-${checkedColor}-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
-                <div class="font-medium">${slot.time}</div>
-                <div class="text-xs mt-1 ${textColor} peer-checked:text-white">
-                    ${slot.count} Patient${slot.count !== 1 ? 's' : ''}
-                    ${slot.is_full ? '<br><span class="text-xs">Full</span>' : ''}
-                </div>
-            </div>
-        </label>
-    `;
-}
-
-function updateHeaderInfo(data) {
-    // Find the header info paragraph and update it
-    const headerP = document.querySelector('.text-blue-100');
-    let sessionInfo = '';
-    
-    if (data.has_am && data.has_pm) {
-        sessionInfo = '• Both AM and PM sessions configured';
-    } else if (data.has_am) {
-        sessionInfo = '• Morning session configured';
-    } else if (data.has_pm) {
-        sessionInfo = '• Afternoon session configured';
-    } else {
-        sessionInfo = '• No sessions configured (booking still allowed)';
-    }
-    
-    // Update the header text (keep the day name part, just update session info)
-    const currentText = headerP.textContent;
-    const dayPart = currentText.split('•')[0].trim();
-    headerP.textContent = `${dayPart} ${sessionInfo}`;
-}
-
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Set up any additional initialization if needed
+    const phoneInput = document.getElementById('phone_number');
+    const civilIdInput = document.getElementById('civil_id');
+    const patientNameInput = document.getElementById('patient_name');
+    
+    let dataFetched = false;
+    
+    // Function to lookup patient data
+    async function lookupPatient(phoneNumber = '', civilId = '') {
+        if (dataFetched) return; // Prevent lookup if data already fetched
+        
+        const params = new URLSearchParams();
+        
+        if (phoneNumber) params.append('phone_number', phoneNumber);
+        if (civilId) params.append('civil_id', civilId);
+        
+        try {
+            const response = await fetch(`/patient-lookup/?${params.toString()}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Auto-populate form fields
+                phoneInput.value = data.phone_number;
+                civilIdInput.value = data.civil_id;
+                patientNameInput.value = data.patient_name;
+                
+                // Mark data as fetched
+                dataFetched = true;
+                
+                // Disable further lookups by removing event listeners
+                phoneInput.removeEventListener('input', phoneInputHandler);
+                civilIdInput.removeEventListener('input', civilIdInputHandler);
+            }
+        } catch (error) {
+            console.error('Error fetching patient data:', error);
+        }
+    }
+    
+    // Event handler for phone number input
+    function phoneInputHandler(e) {
+        // Only allow digits
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Trigger lookup when reaching 8 digits
+        if (this.value.length === 8 && !dataFetched) {
+            lookupPatient(this.value, '');
+        }
+    }
+    
+    // Event handler for civil ID input
+    function civilIdInputHandler(e) {
+        // Only allow digits
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Trigger lookup when reaching 12 digits
+        if (this.value.length === 12 && !dataFetched) {
+            lookupPatient('', this.value);
+        }
+    }
+    
+    // Add input event listeners
+    phoneInput.addEventListener('input', phoneInputHandler);
+    civilIdInput.addEventListener('input', civilIdInputHandler);
 });
 </script>
-
 {% endblock %}

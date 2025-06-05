@@ -13,7 +13,7 @@
     }
     
     .session-section.collapsed {
-        max-height: 70px;
+        max-height: 85px; /* Increased height for mobile */
     }
     
     .session-section.expanded {
@@ -24,6 +24,7 @@
         cursor: pointer;
         transition: background-color 0.2s ease;
         border-radius: 0.375rem 0.375rem 0 0;
+        min-height: 80px; /* Ensure minimum height for mobile */
     }
     
     .session-header:hover {
@@ -65,6 +66,46 @@
     .time-slot-busy:hover {
         background-color: #fee2e2 !important;
         border-color: #fca5a5 !important;
+    }
+
+    /* Mobile responsive fixes */
+    @media (max-width: 640px) {
+        .session-section.collapsed {
+            max-height: 95px; /* Increased for mobile */
+        }
+        
+        .session-header {
+            min-height: 90px; /* Larger minimum height for mobile */
+            padding: 1rem 0.75rem; /* Adjusted padding for mobile */
+        }
+        
+        .session-header h3 {
+            font-size: 1rem; /* Slightly smaller on mobile */
+            line-height: 1.25;
+        }
+        
+        .session-header p {
+            font-size: 0.75rem; /* Smaller subtitle text */
+            line-height: 1.25;
+        }
+        
+        .session-status-badge {
+            font-size: 0.6875rem; /* Slightly smaller badge text */
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .session-header-content {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.5rem;
+        }
+        
+        .session-header-right {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.5rem;
+            align-self: flex-end;
+        }
     }
 </style>
 
@@ -190,7 +231,7 @@
         <!-- AM Session -->
         <div class="session-section {% if am_collapsed %}collapsed{% else %}expanded{% endif %}" id="am-section">
             <div class="session-header p-4 bg-gradient-to-r from-yellow-50 to-orange-50" onclick="toggleSession('am')">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between session-header-content">
                     <div class="flex items-center space-x-3">
                         <i class="fas fa-sun text-yellow-600"></i>
                         <div>
@@ -198,11 +239,11 @@
                             <p class="text-sm text-gray-600">8:00 AM - 12:15 PM • 15-minute slots</p>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 session-header-right">
                         {% if has_am %}
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge">Open</span>
                         {% else %}
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge">Closed</span>
                         {% endif %}
                         <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
                     </div>
@@ -238,7 +279,7 @@
         <!-- PM Session -->
         <div class="session-section {% if pm_collapsed %}collapsed{% else %}expanded{% endif %}" id="pm-section">
             <div class="session-header p-4 bg-gradient-to-r from-blue-50 to-indigo-50" onclick="toggleSession('pm')">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between session-header-content">
                     <div class="flex items-center space-x-3">
                         <i class="fas fa-moon text-blue-600"></i>
                         <div>
@@ -246,11 +287,11 @@
                             <p class="text-sm text-gray-600">2:00 PM - 5:30 PM • 15-minute slots</p>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 session-header-right">
                         {% if has_pm %}
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge">Open</span>
                         {% else %}
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge">Closed</span>
                         {% endif %}
                         <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
                     </div>
@@ -405,23 +446,23 @@ function updateSessionSections(data) {
     }
     
     // Update AM status badges
-    const amBadge = amSection.querySelector('.px-2.py-1');
+    const amBadge = amSection.querySelector('.session-status-badge');
     if (data.has_am) {
-        amBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded';
-        amBadge.textContent = 'Configured';
+        amBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge';
+        amBadge.textContent = 'Open';
     } else {
-        amBadge.className = 'px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded';
-        amBadge.textContent = 'Manual';
+        amBadge.className = 'px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge';
+        amBadge.textContent = 'Closed';
     }
     
     // Update PM status badges
-    const pmBadge = pmSection.querySelector('.px-2.py-1');
+    const pmBadge = pmSection.querySelector('.session-status-badge');
     if (data.has_pm) {
-        pmBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded';
-        pmBadge.textContent = 'Configured';
+        pmBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge';
+        pmBadge.textContent = 'Open';
     } else {
-        pmBadge.className = 'px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded';
-        pmBadge.textContent = 'Manual';
+        pmBadge.className = 'px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge';
+        pmBadge.textContent = 'Closed';
     }
     
     // Update AM time slots

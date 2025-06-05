@@ -159,6 +159,9 @@
 
     <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
         {% csrf_token %}
+        
+        <!-- Hidden field to preserve the original status -->
+        <input type="hidden" name="confirmed" value="{{ form.confirmed.value|default:'Unknown' }}">
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Patient Name -->
@@ -230,10 +233,6 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Confirmed Status Dropdown - REMOVED, using hidden field instead -->
-            <!-- Hidden field to preserve the original status -->
-            <input type="hidden" name="confirmed" value="{{ form.confirmed.value|default:'Unknown' }}">
-
             <!-- Date Field -->
             <div>
                 <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
@@ -248,8 +247,21 @@
                 >
             </div>
             
-            <!-- Empty div to maintain grid layout -->
-            <div></div>
+            <!-- Diagnosis Field (Optional) -->
+            <div>
+                <label for="diagnosis" class="block text-sm font-medium text-gray-700 mb-1">
+                    Diagnosis 
+                    <span class="text-gray-500 text-xs">(Optional)</span>
+                </label>
+                <textarea
+                    name="diagnosis"
+                    id="diagnosis"
+                    rows="3"
+                    class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    placeholder="Enter diagnosis, symptoms, or medical notes..."
+                >{{ form.diagnosis.value|default_if_none:'' }}</textarea>
+                <p class="mt-1 text-sm text-gray-500">Medical diagnosis or notes (optional).</p>
+            </div>
         </div>
 
         <!-- AM Session -->

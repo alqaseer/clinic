@@ -54,7 +54,7 @@ class SurgicalBookingForm(forms.ModelForm):
 class ClinicAppointmentForm(forms.ModelForm):
     class Meta:
         model = ClinicAppointment
-        fields = ["patient_name", "civil_id", "phone_number", "appointment_type", "date", "time", "referral_letter"]
+        fields = ["patient_name", "civil_id", "phone_number", "appointment_type", "date", "time", "diagnosis", "referral_letter"]
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
             "time": forms.TimeInput(attrs={"type": "time"}),

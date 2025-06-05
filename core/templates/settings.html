@@ -49,6 +49,61 @@
         outline: none;
     }
     
+    .session-input {
+        width: 80px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 14px;
+    }
+    
+    .session-input:disabled {
+        background: rgba(229, 229, 234, 0.3);
+        color: #9CA3AF;
+        cursor: not-allowed;
+    }
+    
+    .day-row {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-radius: 12px;
+        background: rgba(248, 249, 250, 0.5);
+        border: 1px solid rgba(229, 229, 234, 0.6);
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .day-row:hover {
+        background: rgba(248, 249, 250, 0.8);
+        border-color: rgba(0, 122, 255, 0.3);
+    }
+    
+    .day-label {
+        font-weight: 600;
+        color: #374151;
+        min-width: 100px;
+    }
+    
+    .session-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: 20px;
+    }
+    
+    .session-checkbox {
+        width: 18px;
+        height: 18px;
+        accent-color: #007AFF;
+    }
+    
+    .session-label {
+        font-weight: 500;
+        color: #6B7280;
+        min-width: 40px;
+    }
+    
     .animate-slide-in {
         animation: slideIn 0.6s ease-out;
     }
@@ -95,38 +150,81 @@
             <form method="POST" class="space-y-8">
                 {% csrf_token %}
 
-                <!-- Clinic Open Days Section -->
+                <!-- Clinic Session Schedule Section -->
                 <div class="space-y-4">
                     <div class="flex items-center space-x-3 mb-4">
                         <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                             <i class="fas fa-calendar-week text-white"></i>
                         </div>
                         <div>
-                            <h3 class="text-xl font-semibold text-gray-900">Clinic Operating Days</h3>
-                            <p class="text-gray-600 text-sm">Select the days your clinic is open</p>
+                            <h3 class="text-xl font-semibold text-gray-900">Session Schedule</h3>
+                            <p class="text-gray-600 text-sm">Configure your clinic's operating days and session limits</p>
                         </div>
                     </div>
                     
                     <div class="glass-card rounded-xl p-6">
-                        <label for="days_open" class="block text-sm font-medium text-gray-700 mb-3">
-                            <i class="fas fa-clock mr-2 text-green-600"></i>
-                            Operating Days
-                        </label>
-                        <select 
-                            name="days_open" 
-                            id="days_open" 
-                            multiple 
-                            class="custom-select block w-full rounded-lg text-gray-900 h-48 p-3">
-                            {% for day, label in days_of_week %}
-                            <option value="{{ day }}" {% if day in workspace.days_open %}selected{% endif %} class="py-2">
-                                {{ label }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <div class="mt-3 flex items-center space-x-2 text-gray-500 text-sm">
-                            <i class="fas fa-info-circle text-blue-500"></i>
-                            <span>Hold Ctrl (Cmd on Mac) to select multiple days</span>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                                <i class="fas fa-clock mr-2 text-green-600"></i>
+                                Operating Sessions
+                            </label>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <i class="fas fa-info-circle text-blue-500"></i>
+                                Check the sessions you want to enable and set the maximum appointments for each session
+                            </div>
                         </div>
+
+                        {% for day in days_data %}
+                        <div class="day-row">
+                            <div class="day-label">{{ day.label }}</div>
+                            
+                            <!-- AM Session -->
+                            <div class="session-group">
+                                <input 
+                                    type="checkbox" 
+                                    name="{{ day.lower_key }}_am_enabled" 
+                                    id="{{ day.lower_key }}_am_checkbox"
+                                    class="session-checkbox"
+                                    {% if day.am_enabled %}checked{% endif %}
+                                    onchange="toggleSessionInputs('{{ day.lower_key }}', 'am')"
+                                >
+                                <label for="{{ day.lower_key }}_am_checkbox" class="session-label">AM</label>
+                                <input 
+                                    type="number" 
+                                    name="{{ day.lower_key }}_am_max_total" 
+                                    id="{{ day.lower_key }}_am_max_total"
+                                    class="session-input custom-input"
+                                    placeholder="Max"
+                                    min="1"
+                                    value="{{ day.am_max_total }}"
+                                    {% if not day.am_enabled %}disabled{% endif %}
+                                >
+                            </div>
+                            
+                            <!-- PM Session -->
+                            <div class="session-group">
+                                <input 
+                                    type="checkbox" 
+                                    name="{{ day.lower_key }}_pm_enabled" 
+                                    id="{{ day.lower_key }}_pm_checkbox"
+                                    class="session-checkbox"
+                                    {% if day.pm_enabled %}checked{% endif %}
+                                    onchange="toggleSessionInputs('{{ day.lower_key }}', 'pm')"
+                                >
+                                <label for="{{ day.lower_key }}_pm_checkbox" class="session-label">PM</label>
+                                <input 
+                                    type="number" 
+                                    name="{{ day.lower_key }}_pm_max_total" 
+                                    id="{{ day.lower_key }}_pm_max_total"
+                                    class="session-input custom-input"
+                                    placeholder="Max"
+                                    min="1"
+                                    value="{{ day.pm_max_total }}"
+                                    {% if not day.pm_enabled %}disabled{% endif %}
+                                >
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
 
@@ -157,39 +255,6 @@
                             </option>
                             {% endfor %}
                         </select>
-                    </div>
-                </div>
-
-                <!-- Maximum Appointments Section -->
-                <div class="space-y-4">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-users text-white"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-semibold text-gray-900">Capacity Management</h3>
-                            <p class="text-gray-600 text-sm">Control your daily appointment limits</p>
-                        </div>
-                    </div>
-                    
-                    <div class="glass-card rounded-xl p-6">
-                        <label for="maximum" class="block text-sm font-medium text-gray-700 mb-3">
-                            <i class="fas fa-chart-line mr-2 text-purple-500"></i>
-                            Maximum Appointments Per Day
-                        </label>
-                        <input 
-                            type="number" 
-                            name="maximum" 
-                            id="maximum" 
-                            value="{{ workspace.maximum }}"
-                            min="1"
-                            step="1"
-                            class="custom-input block w-full rounded-lg text-gray-900 p-3 placeholder-gray-500"
-                            placeholder="Enter maximum daily appointments">
-                        <div class="mt-3 flex items-center space-x-2 text-gray-500 text-sm">
-                            <i class="fas fa-lock text-orange-500"></i>
-                            <span>Days automatically lock when this limit is reached</span>
-                        </div>
                     </div>
                 </div>
 
@@ -258,7 +323,7 @@
         </h3>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div class="text-center">
-                <div class="text-2xl font-bold text-green-600">{{ workspace.days_open|length }}</div>
+                <div class="text-2xl font-bold text-green-600">{{ active_days_count }}</div>
                 <div class="text-xs text-gray-500">Operating Days</div>
             </div>
             <div class="text-center">
@@ -266,14 +331,31 @@
                 <div class="text-xs text-gray-500">Room{{ workspace.rooms|pluralize }}</div>
             </div>
             <div class="text-center">
-                <div class="text-2xl font-bold text-purple-500">{{ workspace.maximum }}</div>
-                <div class="text-xs text-gray-500">Daily Limit</div>
+                <div class="text-2xl font-bold text-purple-500">{{ total_sessions_count }}</div>
+                <div class="text-xs text-gray-500">Active Sessions</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    function toggleSessionInputs(day, session) {
+        const checkbox = document.getElementById(`${day}_${session}_checkbox`);
+        const input = document.getElementById(`${day}_${session}_max_total`);
+        
+        if (checkbox.checked) {
+            input.disabled = false;
+            input.focus();
+            // Set default value if empty
+            if (!input.value) {
+                input.value = 20; // Default max total
+            }
+        } else {
+            input.disabled = true;
+            input.value = '';
+        }
+    }
+
     // Add smooth animations
     document.addEventListener('DOMContentLoaded', function() {
         const cards = document.querySelectorAll('.glass-card');

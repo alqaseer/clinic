@@ -3,9 +3,86 @@
 {% block title %}Edit Appointment{% endblock %}
 
 {% block content %}
+<style>
+    .session-section {
+        transition: all 0.3s ease;
+        overflow: hidden;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    
+    .session-section.collapsed {
+        max-height: 70px;
+    }
+    
+    .session-section.expanded {
+        max-height: none;
+    }
+    
+    .session-header {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-radius: 0.375rem 0.375rem 0 0;
+    }
+    
+    .session-header:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .session-content {
+        transition: opacity 0.3s ease;
+    }
+    
+    .session-section.collapsed .session-content {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    
+    .session-section.expanded .session-content {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    .expand-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .session-section.collapsed .expand-icon {
+        transform: rotate(-90deg);
+    }
+    
+    .session-section.expanded .expand-icon {
+        transform: rotate(0deg);
+    }
+    
+    .time-slot-busy {
+        background-color: #fef2f2 !important;
+        border-color: #fecaca !important;
+        color: #991b1b !important;
+    }
+    
+    .time-slot-busy:hover {
+        background-color: #fee2e2 !important;
+        border-color: #fca5a5 !important;
+    }
+</style>
+
 <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
         <h1 class="text-xl font-semibold text-white">Edit Appointment</h1>
+        <p class="text-blue-100 text-sm mt-1">
+            Day: {{ day_name }} • {{ selected_date|date:"l, j F Y" }}
+            {% if has_am and has_pm %}
+                • Both AM and PM sessions configured
+            {% elif has_am %}
+                • Morning session configured
+            {% elif has_pm %}
+                • Afternoon session configured
+            {% else %}
+                • No sessions configured (booking still allowed)
+            {% endif %}
+        </p>
     </div>
 
     <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
@@ -104,35 +181,105 @@
                     id="date"
                     class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value="{{ form.date.value|date:'Y-m-d' }}"
+                    onchange="updateSessionData()"
                     required
                 >
             </div>
         </div>
 
-        <!-- Time Slot Selection -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Select Time Slot</label>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
-                {% for time, count in time_slots %}
-                <label
-                    class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
-                           {% if count >= workspace.rooms %}bg-red-50 border-red-300 text-red-700{% else %}bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300{% endif %}">
-                    <input
-                        type="radio"
-                        name="time"
-                        value="{{ time }}"
-                        class="hidden peer"
-                        {% if time == form.time.value|time:"H:i" %}checked{% endif %}
-                        required
-                    >
-                    <div class="peer-checked:bg-blue-500 peer-checked:text-white rounded transition-colors duration-200 py-3 px-2 w-full h-full">
-                        <div class="font-medium">{{ time }}</div>
-                        <div class="text-xs mt-1 {% if count >= workspace.rooms %}text-red-500{% else %}text-gray-500{% endif %} peer-checked:text-white">
-                            {{ count }} Patients
+        <!-- AM Session -->
+        <div class="session-section {% if am_collapsed %}collapsed{% else %}expanded{% endif %}" id="am-section">
+            <div class="session-header p-4 bg-gradient-to-r from-yellow-50 to-orange-50" onclick="toggleSession('am')">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-sun text-yellow-600"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Morning Session (AM)</h3>
+                            <p class="text-sm text-gray-600">8:00 AM - 12:15 PM • 15-minute slots</p>
                         </div>
                     </div>
-                </label>
-                {% endfor %}
+                    <div class="flex items-center space-x-2">
+                        {% if has_am %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                        {% else %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                        {% endif %}
+                        <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="session-content p-4 bg-white">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {% for time, count, rooms in am_slots %}
+                    <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
+                                  {% if count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-yellow-50 hover:border-yellow-300{% endif %}">
+                        <input
+                            type="radio"
+                            name="time"
+                            value="{{ time }}"
+                            class="hidden peer"
+                            {% if time == appointment.formatted_time %}checked{% endif %}
+                            required
+                        >
+                        <div class="peer-checked:bg-yellow-500 peer-checked:text-white peer-checked:border-yellow-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
+                            <div class="font-medium">{{ time }}</div>
+                            <div class="text-xs mt-1 {% if count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
+                                {{ count }} Patient{{ count|pluralize }}
+                                {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- PM Session -->
+        <div class="session-section {% if pm_collapsed %}collapsed{% else %}expanded{% endif %}" id="pm-section">
+            <div class="session-header p-4 bg-gradient-to-r from-blue-50 to-indigo-50" onclick="toggleSession('pm')">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-moon text-blue-600"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Afternoon Session (PM)</h3>
+                            <p class="text-sm text-gray-600">2:00 PM - 5:30 PM • 15-minute slots</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if has_pm %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                        {% else %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                        {% endif %}
+                        <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="session-content p-4 bg-white">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {% for time, count, rooms in pm_slots %}
+                    <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
+                                  {% if count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300{% endif %}">
+                        <input
+                            type="radio"
+                            name="time"
+                            value="{{ time }}"
+                            class="hidden peer"
+                            {% if time == appointment.time|time:"H:i" %}checked{% endif %}
+                            required
+                        >
+                        <div class="peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
+                            <div class="font-medium">{{ time }}</div>
+                            <div class="text-xs mt-1 {% if count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
+                                {{ count }} Patient{{ count|pluralize }}
+                                {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
@@ -175,4 +322,175 @@
         </div>
     </form>
 </div>
+
+<script>
+function toggleSession(session) {
+    const section = document.getElementById(`${session}-section`);
+    const isCollapsed = section.classList.contains('collapsed');
+    
+    if (isCollapsed) {
+        section.classList.remove('collapsed');
+        section.classList.add('expanded');
+    } else {
+        section.classList.add('collapsed');
+        section.classList.remove('expanded');
+    }
+}
+
+function updateSessionData() {
+    const dateInput = document.getElementById('date');
+    const selectedDate = dateInput.value;
+    
+    if (!selectedDate) return;
+    
+    // Show loading state
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'loading-overlay';
+    loadingOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    loadingOverlay.innerHTML = `
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">Updating session data...</span>
+        </div>
+    `;
+    document.body.appendChild(loadingOverlay);
+    
+    // Make AJAX request
+    const url = `/api/session-data/{{ workspace.name }}/?date=${selectedDate}&appointment_id={{ appointment.id }}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateSessionSections(data);
+                updateHeaderInfo(data);
+            } else {
+                console.error('Error:', data.error);
+                alert('Error updating session data: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating session data. Please try again.');
+        })
+        .finally(() => {
+            // Remove loading overlay
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        });
+}
+
+function updateSessionSections(data) {
+    // Update AM section
+    const amSection = document.getElementById('am-section');
+    const pmSection = document.getElementById('pm-section');
+    
+    // Update collapse states
+    if (data.am_collapsed) {
+        amSection.classList.remove('expanded');
+        amSection.classList.add('collapsed');
+    } else {
+        amSection.classList.remove('collapsed');
+        amSection.classList.add('expanded');
+    }
+    
+    if (data.pm_collapsed) {
+        pmSection.classList.remove('expanded');
+        pmSection.classList.add('collapsed');
+    } else {
+        pmSection.classList.remove('collapsed');
+        pmSection.classList.add('expanded');
+    }
+    
+    // Update AM status badges
+    const amBadge = amSection.querySelector('.px-2.py-1');
+    if (data.has_am) {
+        amBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded';
+        amBadge.textContent = 'Configured';
+    } else {
+        amBadge.className = 'px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded';
+        amBadge.textContent = 'Manual';
+    }
+    
+    // Update PM status badges
+    const pmBadge = pmSection.querySelector('.px-2.py-1');
+    if (data.has_pm) {
+        pmBadge.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded';
+        pmBadge.textContent = 'Configured';
+    } else {
+        pmBadge.className = 'px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded';
+        pmBadge.textContent = 'Manual';
+    }
+    
+    // Update AM time slots
+    const amGrid = amSection.querySelector('.grid');
+    amGrid.innerHTML = '';
+    data.am_slots.forEach(slot => {
+        const slotHTML = createTimeSlotHTML(slot, 'AM', data.rooms);
+        amGrid.insertAdjacentHTML('beforeend', slotHTML);
+    });
+    
+    // Update PM time slots
+    const pmGrid = pmSection.querySelector('.grid');
+    pmGrid.innerHTML = '';
+    data.pm_slots.forEach(slot => {
+        const slotHTML = createTimeSlotHTML(slot, 'PM', data.rooms);
+        pmGrid.insertAdjacentHTML('beforeend', slotHTML);
+    });
+}
+
+function createTimeSlotHTML(slot, session, rooms) {
+    const isFullClass = slot.is_full ? 'time-slot-busy' : 'bg-white border-gray-300 hover:bg-' + (session === 'AM' ? 'yellow' : 'blue') + '-50 hover:border-' + (session === 'AM' ? 'yellow' : 'blue') + '-300';
+    const checkedColor = session === 'AM' ? 'yellow' : 'blue';
+    const textColor = slot.is_full ? 'text-red-600' : 'text-gray-500';
+    
+    return `
+        <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200 ${isFullClass}">
+            <input
+                type="radio"
+                name="time"
+                value="${slot.time}"
+                class="hidden peer"
+                required
+            >
+            <div class="peer-checked:bg-${checkedColor}-500 peer-checked:text-white peer-checked:border-${checkedColor}-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
+                <div class="font-medium">${slot.time}</div>
+                <div class="text-xs mt-1 ${textColor} peer-checked:text-white">
+                    ${slot.count} Patient${slot.count !== 1 ? 's' : ''}
+                    ${slot.is_full ? '<br><span class="text-xs">Full</span>' : ''}
+                </div>
+            </div>
+        </label>
+    `;
+}
+
+function updateHeaderInfo(data) {
+    // Find the header info paragraph and update it
+    const headerP = document.querySelector('.text-blue-100');
+    let sessionInfo = '';
+    
+    if (data.has_am && data.has_pm) {
+        sessionInfo = '• Both AM and PM sessions configured';
+    } else if (data.has_am) {
+        sessionInfo = '• Morning session configured';
+    } else if (data.has_pm) {
+        sessionInfo = '• Afternoon session configured';
+    } else {
+        sessionInfo = '• No sessions configured (booking still allowed)';
+    }
+    
+    // Update the header text (keep the day name part, just update session info)
+    const currentText = headerP.textContent;
+    const dayPart = currentText.split('•')[0].trim();
+    headerP.textContent = `${dayPart} ${sessionInfo}`;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up any additional initialization if needed
+});
+</script>
+
 {% endblock %}

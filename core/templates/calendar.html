@@ -22,15 +22,20 @@
         border-color: #d1d5db;
     }
     
-    .day-badge {
+    .session-badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 1px 4px;
-        border-radius: 4px;
+        padding: 2px 6px;
+        border-radius: 6px;
         font-size: 0.7rem;
         font-weight: 500;
         margin-top: 2px;
+        gap: 3px;
+    }
+
+    .session-icon {
+        font-size: 0.65rem;
     }
 
     .floating-header {
@@ -60,6 +65,12 @@
         justify-content: center;
     }
 
+    .lock-icons {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+    }
+
     /* Desktop styles */
     @media (min-width: 641px) {
         .calendar-day {
@@ -71,9 +82,14 @@
             padding: 8px;
         }
         
-        .day-badge {
+        .session-badge {
             margin-top: 4px;
             font-size: 0.75rem;
+            padding: 3px 7px;
+        }
+
+        .session-icon {
+            font-size: 0.7rem;
         }
     }
 
@@ -89,7 +105,12 @@
         }
         
         .calendar-cell-content {
-            padding: 6px 4px;
+            padding: 4px 2px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 2px;
         }
         
         .day-number {
@@ -102,9 +123,41 @@
             font-size: 12px;
         }
         
-        .day-badge {
-            padding: 1px 2px;
+        .session-badge {
+            padding: 1px 3px;
             font-size: 0.65rem;
+            max-width: 90%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .session-icon {
+            font-size: 0.55rem;
+        }
+
+        /* Mobile lock icons - position below day number */
+        .calendar-day .lock-icons {
+            position: static;
+            margin-top: 1px;
+            justify-content: center;
+        }
+
+        /* Mobile day header - center everything vertically */
+        .mobile-day-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+
+        /* Session badge container for mobile */
+        .mobile-session-container {
+            margin-top: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
         }
     }
 
@@ -194,7 +247,11 @@
                       {% elif day.is_locked %}
                           bg-orange-50 text-orange-900 hover:bg-orange-100
                       {% elif not day.is_open %}
-                          bg-gray-50 text-gray-600
+                          {% if day.has_any_appointments %}
+                              bg-blue-50 text-blue-900 hover:bg-blue-100
+                          {% else %}
+                              bg-gray-50 text-gray-600
+                          {% endif %}
                       {% elif day.is_fully_booked %}
                           bg-red-50 text-red-900 hover:bg-red-100
                       {% else %}
@@ -202,39 +259,77 @@
                       {% endif %}">
                 
                 <div class="calendar-cell-content">
-                    <!-- Day Number and Lock Icon -->
-                    <div class="flex justify-between items-start">
+                    <!-- Desktop Layout -->
+                    <div class="hidden sm:flex justify-between items-start">
                         <time datetime="{{ day.date|date:'Y-m-d' }}" 
                               class="day-number {% if day.date == today %}today{% endif %}">
                             {{ day.date.day }}
                         </time>
                         
-                        <!-- Lock Icon Only -->
+                        <!-- Session-Specific Lock Icons for Desktop -->
                         {% if day.date >= today and day.is_locked %}
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-lock text-orange-600 text-xs"></i>
+                            <div class="lock-icons">
+                                {% if day.am_locked %}
+                                    <i class="fas fa-lock text-yellow-600 text-xs" title="AM session locked"></i>
+                                {% endif %}
+                                {% if day.pm_locked %}
+                                    <i class="fas fa-lock text-blue-600 text-xs" title="PM session locked"></i>
+                                {% endif %}
                             </div>
                         {% endif %}
                     </div>
 
-                    <!-- Day Information -->
-                    <div class="text-center">
-                        {% if day.is_locked %}
-                            <span class="day-badge bg-orange-100 text-orange-800">
-                                {{ day.booked_cases_count }}<i class="fas fa-user text-xs ml-1"></i>
-                            </span>
-                        {% elif day.is_open %}
-                            <span class="day-badge 
-                                       {% if day.is_fully_booked %}
+                    <!-- Mobile Layout -->
+                    <div class="sm:hidden mobile-day-header">
+                        <time datetime="{{ day.date|date:'Y-m-d' }}" 
+                              class="day-number {% if day.date == today %}today{% endif %}">
+                            {{ day.date.day }}
+                        </time>
+                        
+                        <!-- Session-Specific Lock Icons for Mobile (below day number) -->
+                        {% if day.date >= today and day.is_locked %}
+                            <div class="lock-icons">
+                                {% if day.am_locked %}
+                                    <i class="fas fa-lock text-yellow-600 text-xs" title="AM session locked"></i>
+                                {% endif %}
+                                {% if day.pm_locked %}
+                                    <i class="fas fa-lock text-blue-600 text-xs" title="PM session locked"></i>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Session Information -->
+                    <div class="text-center sm:block mobile-session-container">
+                        {% if day.has_any_appointments or day.is_open %}
+                            <div class="session-badge 
+                                       {% if day.is_locked %}
+                                           bg-orange-100 text-orange-800
+                                       {% elif day.is_fully_booked %}
                                            bg-red-100 text-red-800
-                                       {% else %}
+                                       {% elif day.is_open %}
                                            bg-green-100 text-green-800
+                                       {% else %}
+                                           bg-blue-100 text-blue-800
                                        {% endif %}">
-                                {{ day.booked_cases_count }}<i class="fas fa-user text-xs ml-1"></i>
-                            </span>
+                                
+                                <!-- Show AM session if day is open or has AM appointments -->
+                                {% if day.has_am or day.has_am_appointments %}
+                                    <i class="fas fa-user session-icon"></i>
+                                    <span>{{ day.am_count }}</span>
+                                {% endif %}
+                                
+                                <!-- Show PM session if day is open or has PM appointments -->
+                                {% if day.has_pm or day.has_pm_appointments %}
+                                    {% if day.has_am or day.has_am_appointments %}<span class="mx-1">|</span>{% endif %}
+                                    <i class="fas fa-moon session-icon"></i>
+                                    <span>{{ day.pm_count }}</span>
+                                {% endif %}
+                            </div>
                         {% else %}
-                            <span class="day-badge bg-gray-100 text-gray-600">
-                                {{ day.booked_cases_count }}<i class="fas fa-user text-xs ml-1"></i>
+                            <span class="session-badge bg-gray-100 text-gray-600">
+                                <i class="fas fa-times session-icon"></i>
+                                <span>Closed</span>
                             </span>
                         {% endif %}
                     </div>
@@ -244,12 +339,16 @@
         </div>
     </div>
 
-    <!-- Clean Legend - Moved below calendar -->
+    <!-- Clean Legend - Updated with session-specific lock info -->
     <div class="glass-card rounded-lg p-4">
         <div class="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm">
             <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-green-200 rounded border border-green-300"></div>
-                <span class="text-gray-700">Available</span>
+                <span class="text-gray-700">Available (Open)</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-blue-200 rounded border border-blue-300"></div>
+                <span class="text-gray-700">Has Bookings (Closed Day)</span>
             </div>
             <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-red-200 rounded border border-red-300"></div>
@@ -257,15 +356,46 @@
             </div>
             <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-orange-200 rounded border border-orange-300"></div>
-                <span class="text-gray-700">Locked</span>
+                <span class="text-gray-700">Has Locks</span>
             </div>
             <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-gray-200 rounded border border-gray-300"></div>
-                <span class="text-gray-700">Closed</span>
+                <span class="text-gray-700">Closed (No Bookings)</span>
             </div>
             <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-gray-300 rounded border border-gray-400"></div>
                 <span class="text-gray-700">Past Days</span>
+            </div>
+        </div>
+        
+        <!-- Session Icons and Lock Legend -->
+        <div class="mt-3 pt-3 border-t border-gray-200">
+            <div class="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-user text-green-600"></i>
+                    <span class="text-gray-700">Morning (AM) appointments</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-moon text-blue-600"></i>
+                    <span class="text-gray-700">Afternoon (PM) appointments</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-lock text-yellow-600"></i>
+                    <span class="text-gray-700">AM session locked</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-lock text-blue-600"></i>
+                    <span class="text-gray-700">PM session locked</span>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm mt-2">
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-500">|</span>
+                    <span class="text-gray-700">Separates AM | PM counts</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-700">0 = Available session with no bookings</span>
+                </div>
             </div>
         </div>
     </div>

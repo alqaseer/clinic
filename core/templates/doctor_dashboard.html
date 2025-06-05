@@ -263,6 +263,20 @@
                         <div v-if="errors.diagnosis" class="mt-1 text-sm text-red-600">{{ errors.diagnosis }}</div>
                     </div>
                     
+                    <!-- AM Only Checkbox -->
+                    <div class="mb-6">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="am_only" v-model="amOnly" 
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="am_only" class="ml-2 block text-sm text-gray-700">
+                                Look only for AM slots (morning appointments)
+                            </label>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Check this box to search only for morning appointments (8:00 AM - 12:30 PM)
+                        </p>
+                    </div>
+                    
                     <!-- Submit Button -->
                     <button type="submit" 
                             :disabled="loading"
@@ -336,6 +350,9 @@
                             <div>
                                 <h4 class="text-sm font-medium text-gray-500">Appointment Date</h4>
                                 <p class="text-gray-900">{{ appointmentDetails.date }}</p>
+                                <p v-if="appointmentDetails.session" class="text-xs text-gray-500 mt-1">
+                                    {{ appointmentDetails.session }} Session
+                                </p>
                             </div>
                             <button @click="showChangeConfirmation" 
                                     :disabled="dateChangeLoading"
@@ -353,7 +370,10 @@
                             </svg>
                             <div>
                                 <p class="font-medium">Appointment date changed!</p>
-                                <p class="text-sm">Your appointment has been moved to the next available slot.</p>
+                                <p class="text-sm">
+                                    Your appointment has been moved to the next available slot
+                                    <span v-if="amOnly"> (AM sessions only)</span>.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -393,6 +413,7 @@
                 const speciality = ref('')
                 const diagnosis = ref('')
                 const isUrgent = ref(false)
+                const amOnly = ref(false) // New field for AM-only preference
                 const specialtyMessage = ref('') // New ref for specialty message
                 
                 // App state
@@ -410,7 +431,8 @@
                     clinicName: '',
                     date: '',
                     time: '',
-                    workspaceId: null
+                    workspaceId: null,
+                    session: '' // Add session info
                 })
                 
                 // Patient lookup state
@@ -530,7 +552,8 @@
                                 phone_number: phoneNumber.value,
                                 speciality: speciality.value,
                                 diagnosis: diagnosis.value,
-                                is_urgent: isUrgent.value
+                                is_urgent: isUrgent.value,
+                                am_only: amOnly.value // Include AM-only preference
                             })
                         })
                         
@@ -547,7 +570,8 @@
                                 clinicName: data.clinic_name,
                                 date: data.appointment_date,
                                 time: data.appointment_time,
-                                workspaceId: data.workspace_id
+                                workspaceId: data.workspace_id,
+                                session: data.session || '' // Include session info
                             }
                             console.log("After assignment:", appointmentDetails.value);
                             // Show appointment details view
@@ -596,6 +620,7 @@
                         // Get the CSRF token correctly
                         const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
                         console.log("CSRF Token:", csrfToken);
+                        console.log("AM Only preference:", amOnly.value);
                         
                         const response = await fetch('{% url "change_appointment_date" %}', {
                             method: 'POST',
@@ -605,7 +630,8 @@
                             },
                             body: JSON.stringify({
                                 appointment_id: appointmentId,
-                                workspace_id: workspaceId
+                                workspace_id: workspaceId,
+                                am_only: amOnly.value  // Include AM-only preference
                             })
                         });
                         
@@ -620,6 +646,9 @@
                         if (data.success) {
                             appointmentDetails.value.date = data.new_date;
                             appointmentDetails.value.time = data.new_time;
+                            if (data.new_session) {
+                                appointmentDetails.value.session = data.new_session;
+                            }
                             dateChanged.value = true;
                         } else {
                             alert(data.message || 'Failed to change appointment date');
@@ -682,6 +711,7 @@
                     speciality.value = '';
                     diagnosis.value = '';
                     isUrgent.value = false;
+                    amOnly.value = false; // Reset AM-only preference
                     specialtyMessage.value = ''; // Clear specialty message
                     errors.value = {};
                     showAppointmentDetails.value = false;
@@ -711,6 +741,7 @@
                     speciality,
                     diagnosis,
                     isUrgent,
+                    amOnly, // Expose AM-only preference
                     specialtyMessage, // Expose specialty message
                     errors,
                     loading,

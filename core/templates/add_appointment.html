@@ -3,12 +3,204 @@
 {% block title %}Add Appointment{% endblock %}
 
 {% block content %}
+<style>
+    .session-section {
+        transition: all 0.3s ease;
+        overflow: hidden;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    
+    .session-section.collapsed {
+        max-height: 70px;
+    }
+    
+    .session-section.expanded {
+        max-height: none; /* Remove height limit */
+    }
+    
+    .session-section.disabled {
+        opacity: 0.6;
+        background-color: #f9fafb;
+        border-color: #e5e7eb;
+    }
+    
+    .session-header {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-radius: 0.375rem 0.375rem 0 0;
+    }
+    
+    .session-header:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .session-header.disabled {
+        cursor: not-allowed;
+        background-color: #f3f4f6 !important;
+    }
+    
+    .session-content {
+        transition: opacity 0.3s ease;
+        /* Remove scrolling - let content display naturally */
+    }
+    
+    .session-section.collapsed .session-content {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    
+    .session-section.expanded .session-content {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    .session-section.disabled .session-content {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+    
+    .expand-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .session-section.collapsed .expand-icon {
+        transform: rotate(-90deg);
+    }
+    
+    .session-section.expanded .expand-icon {
+        transform: rotate(0deg);
+    }
+    
+    .time-slot-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f9fafb !important;
+        border-color: #e5e7eb !important;
+    }
+    
+    .time-slot-disabled input {
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    
+    .time-slot-busy {
+        background-color: #fef2f2 !important;
+        border-color: #fecaca !important;
+        color: #991b1b !important;
+    }
+    
+    .time-slot-busy:hover {
+        background-color: #fee2e2 !important;
+        border-color: #fca5a5 !important;
+    }
+
+    .lock-notice {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border: 1px solid #fecaca;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .lock-notice.owner-override {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-color: #f59e0b;
+    }
+</style>
+
 <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
         <h1 class="text-xl font-semibold text-white">
             Add Appointment for {{ selected_date|date:"l, j F Y" }}
         </h1>
+        <p class="text-blue-100 text-sm mt-1">
+            Day: {{ day_name }}
+            {% if has_am and has_pm %}
+                • Both AM and PM sessions configured
+            {% elif has_am %}
+                • Morning session configured
+            {% elif has_pm %}
+                • Afternoon session configured
+            {% else %}
+                • No sessions configured (booking still allowed)
+            {% endif %}
+        </p>
     </div>
+
+    <!-- Lock Status Notifications -->
+    {% if am_lock_exists or pm_lock_exists %}
+        <div class="p-4 border-b border-gray-200">
+            {% if am_lock_exists and pm_lock_exists %}
+                {% if is_workspace_owner %}
+                    <div class="lock-notice owner-override">
+                        <div class="flex items-center">
+                            <i class="fas fa-crown text-yellow-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-yellow-800">Both sessions are locked</p>
+                                <p class="text-sm text-yellow-700">As the workspace owner, you can still book appointments in locked sessions.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="lock-notice">
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-red-800">Both morning and afternoon sessions are locked</p>
+                                <p class="text-sm text-red-700">No new appointments can be added to either session.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% elif am_lock_exists %}
+                {% if is_workspace_owner %}
+                    <div class="lock-notice owner-override">
+                        <div class="flex items-center">
+                            <i class="fas fa-crown text-yellow-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-yellow-800">Morning session is locked</p>
+                                <p class="text-sm text-yellow-700">As the workspace owner, you can still book morning appointments.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="lock-notice">
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-red-800">Morning session is locked</p>
+                                <p class="text-sm text-red-700">No new morning appointments can be added. Afternoon slots may still be available.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% elif pm_lock_exists %}
+                {% if is_workspace_owner %}
+                    <div class="lock-notice owner-override">
+                        <div class="flex items-center">
+                            <i class="fas fa-crown text-yellow-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-yellow-800">Afternoon session is locked</p>
+                                <p class="text-sm text-yellow-700">As the workspace owner, you can still book afternoon appointments.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="lock-notice">
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>
+                            <div>
+                                <p class="font-medium text-red-800">Afternoon session is locked</p>
+                                <p class="text-sm text-red-700">No new afternoon appointments can be added. Morning slots may still be available.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
 
     <form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
         {% csrf_token %}
@@ -104,29 +296,135 @@
             </div>
         </div>
 
-        <!-- Time Slot Selection with Full Bubble Highlighting -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Select Time Slot</label>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
-                {% for time, count in time_slots %}
-                <label
-                    class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
-                           {% if count >= workspace.rooms %}bg-red-50 border-red-300 text-red-700{% else %}bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300{% endif %}">
-                    <input
-                        type="radio"
-                        name="time"
-                        value="{{ time }}"
-                        class="hidden peer"
-                        required
-                    >
-                    <div class="peer-checked:bg-blue-500 peer-checked:text-white rounded transition-colors duration-200 py-3 px-2 w-full h-full">
-                        <div class="font-medium">{{ time }}</div>
-                        <div class="text-xs mt-1 {% if count >= workspace.rooms %}text-red-500{% else %}text-gray-500{% endif %} peer-checked:text-white">
-                            {{ count }} Patients
+        <!-- AM Session -->
+        <div class="session-section {% if am_collapsed %}collapsed{% else %}expanded{% endif %} {% if am_disabled %}disabled{% endif %}" id="am-section">
+            <div class="session-header p-4 bg-gradient-to-r from-yellow-50 to-orange-50 {% if am_disabled %}disabled{% endif %}" 
+                 onclick="{% if not am_disabled %}toggleSession('am'){% endif %}">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        {% if am_disabled %}
+                            <i class="fas fa-lock text-red-600"></i>
+                        {% else %}
+                            <i class="fas fa-sun text-yellow-600"></i>
+                        {% endif %}
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Morning Session (AM)
+                                {% if am_disabled and not is_workspace_owner %}
+                                    <span class="text-sm font-normal text-red-600">(Locked)</span>
+                                {% elif am_disabled and is_workspace_owner %}
+                                    <span class="text-sm font-normal text-yellow-600">(Locked - Owner Override)</span>
+                                {% endif %}
+                            </h3>
+                            <p class="text-sm text-gray-600">8:00 AM - 12:15 PM • 15-minute slots</p>
                         </div>
                     </div>
-                </label>
-                {% endfor %}
+                    <div class="flex items-center space-x-2">
+                        {% if has_am %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                        {% else %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                        {% endif %}
+                        {% if not am_disabled %}
+                            <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="session-content p-4 bg-white">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {% for time, count, rooms, disabled in am_slots %}
+                    <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
+                                  {% if disabled %}time-slot-disabled{% elif count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-yellow-50 hover:border-yellow-300{% endif %}">
+                        <input
+                            type="radio"
+                            name="time"
+                            value="{{ time }}"
+                            class="hidden peer"
+                            {% if disabled %}disabled{% endif %}
+                            required
+                        >
+                        <div class="peer-checked:bg-yellow-500 peer-checked:text-white peer-checked:border-yellow-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
+                            <div class="font-medium">{{ time }}</div>
+                            <div class="text-xs mt-1 {% if disabled %}text-gray-400{% elif count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
+                                {% if disabled %}
+                                    Locked
+                                {% else %}
+                                    {{ count }} Patient{{ count|pluralize }}
+                                    {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- PM Session -->
+        <div class="session-section {% if pm_collapsed %}collapsed{% else %}expanded{% endif %} {% if pm_disabled %}disabled{% endif %}" id="pm-section">
+            <div class="session-header p-4 bg-gradient-to-r from-blue-50 to-indigo-50 {% if pm_disabled %}disabled{% endif %}" 
+                 onclick="{% if not pm_disabled %}toggleSession('pm'){% endif %}">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        {% if pm_disabled %}
+                            <i class="fas fa-lock text-red-600"></i>
+                        {% else %}
+                            <i class="fas fa-moon text-blue-600"></i>
+                        {% endif %}
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Afternoon Session (PM)
+                                {% if pm_disabled and not is_workspace_owner %}
+                                    <span class="text-sm font-normal text-red-600">(Locked)</span>
+                                {% elif pm_disabled and is_workspace_owner %}
+                                    <span class="text-sm font-normal text-yellow-600">(Locked - Owner Override)</span>
+                                {% endif %}
+                            </h3>
+                            <p class="text-sm text-gray-600">2:00 PM - 5:30 PM • 15-minute slots</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if has_pm %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                        {% else %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                        {% endif %}
+                        {% if not pm_disabled %}
+                            <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="session-content p-4 bg-white">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {% for time, count, rooms, disabled in pm_slots %}
+                    <label class="relative block text-center rounded-md shadow-sm cursor-pointer border transition-colors duration-200
+                                  {% if disabled %}time-slot-disabled{% elif count >= rooms %}time-slot-busy{% else %}bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300{% endif %}">
+                        <input
+                            type="radio"
+                            name="time"
+                            value="{{ time }}"
+                            class="hidden peer"
+                            {% if disabled %}disabled{% endif %}
+                            required
+                        >
+                        <div class="peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 rounded transition-colors duration-200 py-3 px-2 w-full h-full">
+                            <div class="font-medium">{{ time }}</div>
+                            <div class="text-xs mt-1 {% if disabled %}text-gray-400{% elif count >= rooms %}text-red-600{% else %}text-gray-500{% endif %} peer-checked:text-white">
+                                {% if disabled %}
+                                    Locked
+                                {% else %}
+                                    {{ count }} Patient{{ count|pluralize }}
+                                    {% if count >= rooms %}<br><span class="text-xs">Full</span>{% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
@@ -162,6 +460,19 @@
 </div>
 
 <script>
+function toggleSession(session) {
+    const section = document.getElementById(`${session}-section`);
+    const isCollapsed = section.classList.contains('collapsed');
+    
+    if (isCollapsed) {
+        section.classList.remove('collapsed');
+        section.classList.add('expanded');
+    } else {
+        section.classList.add('collapsed');
+        section.classList.remove('expanded');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const phoneInput = document.getElementById('phone_number');
     const civilIdInput = document.getElementById('civil_id');

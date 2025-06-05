@@ -85,5 +85,10 @@ urlpatterns = [
     # Add to favorites from other sections
     path('<str:workspace_name>/clinic/<int:appointment_id>/favorite/', views.favorite_from_clinic, name='favorite_from_clinic'),
     path('<str:workspace_name>/surgical/<int:booking_id>/favorite/', views.favorite_from_surgical, name='favorite_from_surgical'),
+
+    # AJAX for edit clinic booking
+    path('api/session-data/<str:workspace_name>/', views.get_session_data, name='get_session_data'),
+    # Session lock toggle URL
+    path('<str:workspace_name>/toggle-session-lock/', views.toggle_session_lock, name='toggle_session_lock'),
 ]
 

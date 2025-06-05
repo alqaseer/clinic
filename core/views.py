@@ -5,7 +5,7 @@ from .forms import *
 from .models import *
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from calendar import monthrange
 from django.contrib import messages
 import calendar
@@ -404,52 +404,125 @@ def calendar_view(request, workspace_name):
 
     # Get first day of month and number of days
     first_day, days_in_month = calendar.monthrange(current_year, current_month)
-    print(first_day)
     # Adjust first_day to make Sunday 0 instead of Monday 0
     first_day = (first_day + 1) % 7  # Convert from Monday=0 to Sunday=0
-    print(first_day)
-    # Total slots per day (rooms * 16 slots per room)
-    total_slots_per_day = workspace.rooms * 16
 
-    # Get all booked cases for the month
-    booked_cases = ClinicAppointment.objects.filter(
+    # Get all appointments for the month
+    appointments = ClinicAppointment.objects.filter(
         workspace=workspace,
         date__year=current_year,
         date__month=current_month
-    ).values("date").annotate(count=Count("id"))
+    )
 
-    # Convert queryset into a dictionary {date: count}
-    booked_cases_dict = {item["date"]: item["count"] for item in booked_cases}
+    # Helper function to determine if appointment is AM or PM based on time
+    def is_am_time(appointment):
+        if isinstance(appointment.time, int):
+            # Convert integer like 1400 to hours
+            hours = appointment.time // 100
+            return hours < 14
+        elif hasattr(appointment.time, 'hour'):
+            # It's a time object
+            return appointment.time.hour < 14
+        else:
+            # It's a string, parse it
+            try:
+                time_obj = datetime.strptime(str(appointment.time), "%H:%M").time()
+                return time_obj.hour < 14
+            except:
+                return True  # Default to AM if we can't parse
 
-    # Get all locks for the month
+    # Group appointments by date and session
+    appointments_by_date = {}
+    for appointment in appointments:
+        date = appointment.date
+        
+        # Determine session based on actual time, not the session field
+        if is_am_time(appointment):
+            session = 'AM'
+        else:
+            session = 'PM'
+        
+        if date not in appointments_by_date:
+            appointments_by_date[date] = {'AM': 0, 'PM': 0, 'total': 0}
+        
+        appointments_by_date[date][session] += 1
+        appointments_by_date[date]['total'] += 1
+
+    # Get all locks for the month with session information
     locks = Lock.objects.filter(
         workspace=workspace,
         date__year=current_year,
         date__month=current_month
-    ).values_list("date", flat=True)
+    )
 
-    # Convert locks queryset into a set for faster lookup
-    locked_dates = set(locks)
+    # Group locks by date and session
+    locks_by_date = {}
+    for lock in locks:
+        date = lock.date
+        if date not in locks_by_date:
+            locks_by_date[date] = {'AM': False, 'PM': False}
+        
+        # pm=False means AM lock, pm=True means PM lock
+        if lock.pm:
+            locks_by_date[date]['PM'] = True
+        else:
+            locks_by_date[date]['AM'] = True
 
     # Generate calendar days
     days = []
     for day in range(1, days_in_month + 1):
         date = datetime(current_year, current_month, day).date()
         day_name = date.strftime("%A")  # Gets the full day name (e.g., "Sunday")
-        is_open = workspace.is_day_open(day_name)  # Compare with exact day name from settings
-        print(f"{day_name} {date} {is_open}")
-        # Get booked cases from dictionary (default to 0 if not found)
-        booked_cases_count = booked_cases_dict.get(date, 0)
         
-        # Check if this date is locked
-        is_locked = date in locked_dates
+        # Check which sessions are available for this day
+        available_sessions = workspace.get_available_sessions(day_name)
+        has_am = 'AM' in available_sessions
+        has_pm = 'PM' in available_sessions
+        is_open = has_am or has_pm
+        
+        # Get appointment counts for this date
+        date_appointments = appointments_by_date.get(date, {'AM': 0, 'PM': 0, 'total': 0})
+        am_count = date_appointments['AM']
+        pm_count = date_appointments['PM']
+        total_count = date_appointments['total']
+        
+        # Check if there are actual appointments regardless of session configuration
+        has_am_appointments = am_count > 0
+        has_pm_appointments = pm_count > 0
+        has_any_appointments = total_count > 0
+        
+        # Calculate maximum capacity for the day
+        max_capacity = 0
+        if has_am:
+            max_capacity += workspace.get_session_maximum(day_name, 'AM', is_new_referral=False)
+        if has_pm:
+            max_capacity += workspace.get_session_maximum(day_name, 'PM', is_new_referral=False)
+        
+        # Check if fully booked (only if day is configured as open)
+        is_fully_booked = (total_count >= max_capacity if max_capacity > 0 and is_open else False)
+        
+        # Get lock information for this date
+        date_locks = locks_by_date.get(date, {'AM': False, 'PM': False})
+        am_locked = date_locks['AM']
+        pm_locked = date_locks['PM']
+        is_locked = am_locked or pm_locked  # Any session locked means day has locks
 
         days.append({
             "date": date,
             "is_open": is_open,
-            "booked_cases_count": booked_cases_count,
-            "is_fully_booked": booked_cases_count >= total_slots_per_day,
+            "has_am": has_am,
+            "has_pm": has_pm,
+            "am_count": am_count,
+            "pm_count": pm_count,
+            "total_count": total_count,
+            "max_capacity": max_capacity,
+            "is_fully_booked": is_fully_booked,
             "is_locked": is_locked,
+            "am_locked": am_locked,
+            "pm_locked": pm_locked,
+            "has_am_appointments": has_am_appointments,
+            "has_pm_appointments": has_pm_appointments,
+            "has_any_appointments": has_any_appointments,
         })
 
     # Calculate navigation
@@ -461,6 +534,7 @@ def calendar_view(request, workspace_name):
     # Create blank slots for calendar alignment
     blank_slots = list(range(first_day))
     today = timezone.now().date()  
+    
     context = {
         "workspace": workspace,
         "days": days,
@@ -473,8 +547,7 @@ def calendar_view(request, workspace_name):
         "next_year": next_year,
         "days_of_week": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
         "blank_slots": blank_slots,
-        "today": today,  # Pass today's date to the template
-
+        "today": today,
     }
     return render(request, "calendar.html", context)
 
@@ -483,36 +556,88 @@ def settings_page(request, workspace_name):
     workspace = get_object_or_404(Workspace, name=workspace_name)
 
     if request.method == "POST":
-        # Handle form submission
-        days_open = request.POST.getlist("days_open")
+        # Handle session-based form submission
         rooms = request.POST.get("rooms")
-        maximum = request.POST.get("maximum")  # Get the maximum value from the form
-
+        
+        # Process rooms
         if not rooms:
-            rooms = workspace.rooms  # Use the current number of rooms as the default value
+            rooms = workspace.rooms
         else:
             rooms = int(rooms)
+        
+        # Build new session configuration
+        new_session_config = {}
+        
+        days_of_week = [
+            "Sunday", "Monday", "Tuesday", "Wednesday", 
+            "Thursday", "Friday", "Saturday"
+        ]
+        
+        # Get existing session config to preserve max_new_referrals values
+        existing_config = workspace.session_config if workspace.session_config else {}
+        
+        for day in days_of_week:
+            day_key = day.lower()
             
-        if not maximum:
-            maximum = workspace.maximum  # Use the current maximum as the default value
-        else:
-            try:
-                maximum = int(maximum)
-                if maximum < 1:  # Ensure maximum is at least 1
-                    maximum = 1
-            except ValueError:
-                maximum = workspace.maximum  # If invalid input, keep current value
-
-        # Ensure days are stored in the correct format
-        days_open = [day for day in days_open]  # This ensures we store the full day names
-        workspace.days_open = days_open
+            # Check AM session
+            am_enabled = request.POST.get(f"{day_key}_am_enabled") == "on"
+            pm_enabled = request.POST.get(f"{day_key}_pm_enabled") == "on"
+            
+            if am_enabled or pm_enabled:
+                new_session_config[day] = {"sessions": {}}
+                
+                if am_enabled:
+                    am_max_total = request.POST.get(f"{day_key}_am_max_total")
+                    try:
+                        am_max_total = int(am_max_total) if am_max_total else 20
+                        if am_max_total < 1:
+                            am_max_total = 20
+                    except (ValueError, TypeError):
+                        am_max_total = 20
+                    
+                    # Preserve existing max_new_referrals or default to 15
+                    existing_am_max_new = existing_config.get(day, {}).get("sessions", {}).get("AM", {}).get("max_new_referrals")
+                    am_max_new_referrals = existing_am_max_new if existing_am_max_new is not None else 15
+                    
+                    new_session_config[day]["sessions"]["AM"] = {
+                        "max_total": am_max_total,
+                        "max_new_referrals": am_max_new_referrals
+                    }
+                
+                if pm_enabled:
+                    pm_max_total = request.POST.get(f"{day_key}_pm_max_total")
+                    try:
+                        pm_max_total = int(pm_max_total) if pm_max_total else 20
+                        if pm_max_total < 1:
+                            pm_max_total = 20
+                    except (ValueError, TypeError):
+                        pm_max_total = 20
+                    
+                    # Preserve existing max_new_referrals or default to 15
+                    existing_pm_max_new = existing_config.get(day, {}).get("sessions", {}).get("PM", {}).get("max_new_referrals")
+                    pm_max_new_referrals = existing_pm_max_new if existing_pm_max_new is not None else 15
+                    
+                    new_session_config[day]["sessions"]["PM"] = {
+                        "max_total": pm_max_total,
+                        "max_new_referrals": pm_max_new_referrals
+                    }
+        
+        # Save to workspace
+        workspace.session_config = new_session_config
         workspace.rooms = rooms
-        workspace.maximum = maximum  # Save the maximum value
         workspace.save()
-
-        # Redirect to the workspace main page
+        
+        # Log the action
+        ActionLog.objects.create(
+            workspace=workspace,
+            user=request.user,
+            action_description=f"Updated workspace settings and session configuration."
+        )
+        
+        messages.success(request, "Settings updated successfully!")
         return redirect("workspace_main", workspace_name=workspace_name)
 
+    # Prepare data for template
     days_of_week = [
         ("Sunday", "Sunday"),
         ("Monday", "Monday"),
@@ -522,20 +647,53 @@ def settings_page(request, workspace_name):
         ("Friday", "Friday"),
         ("Saturday", "Saturday"),
     ]
-
-    rooms_range = range(1, 6)  # Number of rooms, from 1 to 5
+    
+    rooms_range = range(1, 6)
+    
+    # Get session configuration
+    session_config = workspace.session_config if workspace.session_config else {}
+    
+    # Process session data for each day to avoid template filters
+    days_data = []
+    for day_key, day_label in days_of_week:
+        day_sessions = session_config.get(day_key, {}).get('sessions', {})
+        
+        # AM Session data
+        am_enabled = 'AM' in day_sessions
+        am_max_total = day_sessions.get('AM', {}).get('max_total', '') if am_enabled else ''
+        
+        # PM Session data  
+        pm_enabled = 'PM' in day_sessions
+        pm_max_total = day_sessions.get('PM', {}).get('max_total', '') if pm_enabled else ''
+        
+        days_data.append({
+            'key': day_key,
+            'label': day_label,
+            'lower_key': day_key.lower(),
+            'am_enabled': am_enabled,
+            'am_max_total': am_max_total,
+            'pm_enabled': pm_enabled,
+            'pm_max_total': pm_max_total,
+        })
+    
+    # Calculate stats for display
+    active_days_count = len(session_config)
+    total_sessions_count = sum(
+        len(day_data.get('sessions', {})) 
+        for day_data in session_config.values()
+    )
 
     return render(
         request,
         "settings.html",
         {
             "workspace": workspace,
-            "days_of_week": days_of_week,
+            "days_data": days_data,  # Pre-processed day data
             "rooms_range": rooms_range,
+            "active_days_count": active_days_count,
+            "total_sessions_count": total_sessions_count,
         },
     )
-
-from .models import FavoritePatient  # Add this import at the top
 
 @login_required
 def day_appointments(request, workspace_name, date):
@@ -544,10 +702,90 @@ def day_appointments(request, workspace_name, date):
     
     # Get appointments for the selected day
     appointments = ClinicAppointment.objects.filter(workspace=workspace, date=date_obj)
-    timeslots = ["08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45","10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00","12:15","12:30"]
     
-    # Check if the day is locked
-    is_locked = Lock.objects.filter(workspace=workspace, date=date_obj).exists()
+    # Define all possible time slots
+    all_am_slots = ["08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45","10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00","12:15","12:30"]
+    all_pm_slots = ["14:00","14:15","14:30","14:45","15:00","15:15","15:30","15:45","16:00","16:15","16:30","16:45","17:00","17:15","17:30"]
+    
+    # Helper function to check if appointment time is AM or PM
+    def is_am_time(appointment):
+        if isinstance(appointment.time, int):
+            # Convert integer like 1400 to hours
+            hours = appointment.time // 100
+            return hours < 14
+        elif hasattr(appointment.time, 'hour'):
+            # It's a time object
+            return appointment.time.hour < 14
+        else:
+            # It's a string, parse it
+            try:
+                time_obj = datetime.strptime(str(appointment.time), "%H:%M").time()
+                return time_obj.hour < 14
+            except:
+                return True  # Default to AM if we can't parse
+    
+    # Check if there are any AM appointments (before 14:00)
+    has_am_appointments = any(is_am_time(appt) for appt in appointments)
+    
+    # Check if there are any PM appointments (14:00 and after)
+    has_pm_appointments = any(not is_am_time(appt) for appt in appointments)
+    
+    # Determine which time slots to show based on appointments
+    timeslots = []
+    if has_am_appointments:
+        timeslots.extend(all_am_slots)
+    if has_pm_appointments:
+        timeslots.extend(all_pm_slots)
+    
+    # Get the day name for checking if sessions are open
+    day_name = date_obj.strftime('%A')
+    
+    # Check if AM and PM sessions are open for this day
+    is_am_open = workspace.is_session_open(day_name, 'AM')
+    is_pm_open = workspace.is_session_open(day_name, 'PM')
+    
+    # Check for session-specific locks
+    am_lock_exists = Lock.objects.filter(workspace=workspace, date=date_obj, pm=False).exists()
+    pm_lock_exists = Lock.objects.filter(workspace=workspace, date=date_obj, pm=True).exists()
+    
+    # Determine if "Add Appointment" button should be shown
+    show_add_appointment = True
+    
+    # If user is workspace admin, always show button
+    if request.user == workspace.admin:
+        show_add_appointment = True
+    else:
+        # Apply the business logic for non-admin users
+        if is_am_open and is_pm_open:
+            # Both sessions are open
+            if am_lock_exists and pm_lock_exists:
+                # Both sessions are locked - don't show button
+                show_add_appointment = False
+            else:
+                # At least one session is not locked - show button
+                show_add_appointment = True
+        elif is_am_open and not is_pm_open:
+            # Only AM is open
+            if am_lock_exists:
+                # AM is locked - don't show button
+                show_add_appointment = False
+            else:
+                # AM is not locked - show button
+                show_add_appointment = True
+        elif is_pm_open and not is_am_open:
+            # Only PM is open
+            if pm_lock_exists:
+                # PM is locked - don't show button
+                show_add_appointment = False
+            else:
+                # PM is not locked - show button
+                show_add_appointment = True
+        else:
+            # Neither session is open - always show button
+            show_add_appointment = True
+    
+    # Check if the day is locked (for display purposes - keeping original logic)
+    is_locked = am_lock_exists or pm_lock_exists
     
     # Get list of civil IDs that are already favorited in this workspace
     favorited_civil_ids = list(
@@ -563,10 +801,102 @@ def day_appointments(request, workspace_name, date):
         "date": date_obj,
         "appointments": appointments,
         "is_locked": is_locked,
-        "favorited_civil_ids": favorited_civil_ids,  # Add this for favorite functionality
+        "am_lock_exists": am_lock_exists,
+        "pm_lock_exists": pm_lock_exists,
+        "is_am_open": is_am_open,
+        "is_pm_open": is_pm_open,
+        "show_add_appointment": show_add_appointment,
+        "favorited_civil_ids": favorited_civil_ids,
+        "has_am_appointments": has_am_appointments,
+        "has_pm_appointments": has_pm_appointments,
+        "has_any_appointments": appointments.exists(),
     }
     return render(request, "day_appointments.html", context)
 
+@login_required
+@require_POST
+def toggle_session_lock(request, workspace_name):
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    
+    # Only allow workspace admin to toggle locks
+    if request.user != workspace.admin:
+        return JsonResponse({'success': False, 'message': 'Permission denied'})
+    
+    try:
+        data = json.loads(request.body)
+        session = data.get('session')  # 'AM' or 'PM'
+        action = data.get('action')    # 'create' or 'delete'
+        date_str = data.get('date')    # 'YYYY-MM-DD'
+        
+        if not all([session, action, date_str]):
+            return JsonResponse({'success': False, 'message': 'Missing required parameters'})
+        
+        if session not in ['AM', 'PM']:
+            return JsonResponse({'success': False, 'message': 'Invalid session'})
+        
+        if action not in ['create', 'delete']:
+            return JsonResponse({'success': False, 'message': 'Invalid action'})
+        
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Invalid date format'})
+        
+        # Determine the pm field value based on session
+        pm_value = True if session == 'PM' else False
+        
+        if action == 'create':
+            # Create the lock
+            lock, created = Lock.objects.get_or_create(
+                workspace=workspace,
+                date=date_obj,
+                pm=pm_value
+            )
+            
+            if created:
+                # Log the action
+                ActionLog.objects.create(
+                    workspace=workspace,
+                    user=request.user,
+                    action_description=f"Locked {session} session for {date_obj}"
+                )
+                
+                message = f"{session} session locked successfully"
+            else:
+                message = f"{session} session was already locked"
+                
+        else:  # action == 'delete'
+            # Delete the lock
+            deleted_count = Lock.objects.filter(
+                workspace=workspace,
+                date=date_obj,
+                pm=pm_value
+            ).delete()[0]
+            
+            if deleted_count > 0:
+                # Log the action
+                ActionLog.objects.create(
+                    workspace=workspace,
+                    user=request.user,
+                    action_description=f"Unlocked {session} session for {date_obj}"
+                )
+                
+                message = f"{session} session unlocked successfully"
+            else:
+                message = f"{session} session was not locked"
+        
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'session': session,
+            'action': action,
+            'date': date_str
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'An error occurred: {str(e)}'})
 
 @login_required
 def add_appointment(request, workspace_name):
@@ -597,29 +927,73 @@ def add_appointment(request, workspace_name):
     
     print("Final selected_date:", selected_date)  # Debugging output
 
-    # Generate time slots
-    morning_start = datetime.strptime("08:00", "%H:%M")
-    morning_end = datetime.strptime("12:15", "%H:%M")
+    # Get day name and check which sessions are available
+    day_name = selected_date.strftime("%A") if selected_date else ""
+    available_sessions = workspace.get_available_sessions(day_name) if selected_date else []
+    has_am = 'AM' in available_sessions
+    has_pm = 'PM' in available_sessions
 
-    def generate_time_slots(start, end):
+    # Check for session-specific locks
+    am_lock_exists = Lock.objects.filter(workspace=workspace, date=selected_date, pm=False).exists() if selected_date else False
+    pm_lock_exists = Lock.objects.filter(workspace=workspace, date=selected_date, pm=True).exists() if selected_date else False
+    
+    # Check if user is workspace owner (can override locks)
+    is_workspace_owner = request.user == workspace.admin
+    
+    # Determine if sessions should be disabled (locked and user is not owner)
+    am_disabled = am_lock_exists and not is_workspace_owner
+    pm_disabled = pm_lock_exists and not is_workspace_owner
+
+    # Generate AM time slots (8:00 AM to 12:15 PM)
+    def generate_time_slots(start_time, end_time):
         slots = []
+        start = datetime.strptime(start_time, "%H:%M")
+        end = datetime.strptime(end_time, "%H:%M")
         while start <= end:
             slots.append(start.strftime("%H:%M"))
             start += timedelta(minutes=15)
         return slots
 
-    time_slots = generate_time_slots(morning_start, morning_end)
+    am_time_slots = generate_time_slots("08:00", "12:15")
+    pm_time_slots = generate_time_slots("14:00", "17:30")  # 2:00 PM to 5:30 PM
 
     # Count booked patients for each time slot
-    time_slot_counts = {slot: 0 for slot in time_slots}
-    for slot in time_slots:
-        time_slot_counts[slot] = ClinicAppointment.objects.filter(
-            workspace=workspace,
-            date=selected_date,
-            time=slot
-        ).count()
+    am_slot_counts = {}
+    pm_slot_counts = {}
+    
+    if selected_date:
+        for slot in am_time_slots:
+            am_slot_counts[slot] = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=selected_date,
+                time=slot,
+                session='AM'
+            ).count()
 
-    time_slots = [(slot, time_slot_counts[slot]) for slot in time_slots]
+        for slot in pm_time_slots:
+            pm_slot_counts[slot] = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=selected_date,
+                time=slot,
+                session='PM'
+            ).count()
+
+    # Get session maximums
+    am_max = workspace.get_session_maximum(day_name, 'AM', is_new_referral=False) if has_am else 0
+    pm_max = workspace.get_session_maximum(day_name, 'PM', is_new_referral=False) if has_pm else 0
+
+    # Prepare slot data with disabled status
+    am_slots = [(slot, am_slot_counts.get(slot, 0), workspace.rooms, am_disabled) for slot in am_time_slots]
+    pm_slots = [(slot, pm_slot_counts.get(slot, 0), workspace.rooms, pm_disabled) for slot in pm_time_slots]
+
+    # Determine collapse behavior - always allow both sessions
+    # If PM is not open, collapse PM
+    # If AM is not open, collapse AM  
+    # If both open, show both expanded
+    # If none open, show both expanded
+    # Also collapse if session is locked for non-owners
+    am_collapsed = (not has_am and has_pm) or (am_disabled and not pm_disabled)
+    pm_collapsed = (not has_pm and has_am) or (pm_disabled and not am_disabled)
 
     if request.method == "POST":
         form = ClinicAppointmentForm(request.POST, request.FILES)
@@ -627,45 +1001,89 @@ def add_appointment(request, workspace_name):
             appointment = form.save(commit=False)
             appointment.workspace = workspace
             appointment.date = selected_date  # Assign the selected date before saving
+            
+            # Determine session based on time if not already set
+            selected_time = appointment.time
+            
+            # Convert time string to time object if needed
+            if isinstance(selected_time, str):
+                selected_time = datetime.strptime(selected_time, "%H:%M").time()
+            
+            if selected_time < time(14, 0):  # Use the `time` class directly
+                appointment.session = 'AM'
+                session_max = am_max
+                session_pm_value = False  # AM lock
+                session_disabled = am_disabled
+            else:
+                appointment.session = 'PM'
+                session_max = pm_max
+                session_pm_value = True   # PM lock
+                session_disabled = pm_disabled
+            
+            # Check if the user is trying to book in a locked session (and is not the owner)
+            if session_disabled:
+                messages.error(request, f"The {appointment.session} session is locked and cannot accept new appointments.")
+                return render(request, "add_appointment.html", {
+                    "form": form,
+                    "workspace": workspace,
+                    "am_slots": am_slots,
+                    "pm_slots": pm_slots,
+                    "selected_date": selected_date,
+                    "has_am": has_am,
+                    "has_pm": has_pm,
+                    "am_collapsed": am_collapsed,
+                    "pm_collapsed": pm_collapsed,
+                    "am_disabled": am_disabled,
+                    "pm_disabled": pm_disabled,
+                    "am_lock_exists": am_lock_exists,
+                    "pm_lock_exists": pm_lock_exists,
+                    "is_workspace_owner": is_workspace_owner,
+                    "day_name": day_name,
+                })
+            
             appointment.save()
 
-            # ✅ Add new ActionLog entry
+            # Add new ActionLog entry
             ActionLog.objects.create(
                 workspace=workspace,
                 user=request.user,
-                action_description=f"Added clinic appointment for {appointment.patient_name} (Civil ID: {appointment.civil_id}) on {appointment.date} at {appointment.time}."
+                action_description=f"Added clinic appointment for {appointment.patient_name} (Civil ID: {appointment.civil_id}) on {appointment.date} at {appointment.time} ({appointment.session} session)."
             )
 
-            # Check if the number of appointments for this day has reached the maximum
-            appointments_count = ClinicAppointment.objects.filter(
+            # Check if the session has reached its maximum capacity
+            session_appointments_count = ClinicAppointment.objects.filter(
                 workspace=workspace,
-                date=selected_date
+                date=selected_date,
+                session=appointment.session
             ).count()
             
-            # If the count equals the maximum and no lock exists, create a lock
-            if appointments_count == workspace.maximum:
-                # Check if a lock already exists for this day
+            # Check if this specific session should be locked
+            # Only lock if the session is configured (has a maximum > 0) and has reached that maximum
+            if session_max > 0 and session_appointments_count >= session_max:
+                # Check if a session-specific lock already exists
                 lock_exists = Lock.objects.filter(
                     workspace=workspace, 
-                    date=selected_date
+                    date=selected_date,
+                    pm=session_pm_value
                 ).exists()
                 
                 if not lock_exists:
-                    # Create a lock for this day
+                    # Create a session-specific lock
                     Lock.objects.create(
                         workspace=workspace,
-                        date=selected_date
+                        date=selected_date,
+                        pm=session_pm_value
                     )
                     
                     # Log the automatic locking
                     ActionLog.objects.create(
                         workspace=workspace,
                         user=request.user,
-                        action_description=f"Day {selected_date} automatically locked as it reached maximum capacity ({workspace.maximum} appointments)."
+                        action_description=f"Day {selected_date} {appointment.session} session automatically locked as it reached maximum capacity ({session_max} appointments)."
                     )
                     
                     # Add a message to inform the user
-                    messages.info(request, f"This day has reached its maximum capacity and has been automatically locked.")
+                    messages.info(request, f"The {appointment.session} session has reached its maximum capacity and has been automatically locked.")
 
             return redirect("day_appointments", workspace_name=workspace_name, date=appointment.date)
     else:
@@ -674,8 +1092,19 @@ def add_appointment(request, workspace_name):
     return render(request, "add_appointment.html", {
         "form": form,
         "workspace": workspace,
-        "time_slots": time_slots,
+        "am_slots": am_slots,
+        "pm_slots": pm_slots,
         "selected_date": selected_date,
+        "has_am": has_am,
+        "has_pm": has_pm,
+        "am_collapsed": am_collapsed,
+        "pm_collapsed": pm_collapsed,
+        "am_disabled": am_disabled,
+        "pm_disabled": pm_disabled,
+        "am_lock_exists": am_lock_exists,
+        "pm_lock_exists": pm_lock_exists,
+        "is_workspace_owner": is_workspace_owner,
+        "day_name": day_name,
     })
 
 @login_required
@@ -684,59 +1113,229 @@ def edit_appointment(request, workspace_name, appointment_id):
     appointment = get_object_or_404(ClinicAppointment, id=appointment_id)
 
     selected_date = appointment.date
-    morning_start = datetime.strptime("08:00", "%H:%M")
-    morning_end = datetime.strptime("12:15", "%H:%M")
+    day_name = selected_date.strftime("%A")
+    
+    # Get available sessions for this day
+    available_sessions = workspace.get_available_sessions(day_name)
+    has_am = 'AM' in available_sessions
+    has_pm = 'PM' in available_sessions
 
-    def generate_time_slots(start, end):
+    # Generate time slots for both sessions
+    def generate_time_slots(start_time, end_time):
         slots = []
+        start = datetime.strptime(start_time, "%H:%M")
+        end = datetime.strptime(end_time, "%H:%M")
         while start <= end:
             slots.append(start.strftime("%H:%M"))
             start += timedelta(minutes=15)
         return slots
 
-    time_slots = generate_time_slots(morning_start, morning_end)
+    am_time_slots = generate_time_slots("08:00", "12:15")
+    pm_time_slots = generate_time_slots("14:00", "17:30")
 
-    time_slot_counts = {}
-    for slot in time_slots:
+    # Helper function to convert appointment time to string format
+    def get_appointment_time_str(appointment):
+        if isinstance(appointment.time, int):
+            # Convert integer like 1400 to "14:00"
+            hours = appointment.time // 100
+            minutes = appointment.time % 100
+            return f"{hours:02d}:{minutes:02d}"
+        elif hasattr(appointment.time, 'strftime'):
+            # It's already a time object
+            return appointment.time.strftime("%H:%M")
+        else:
+            # It's already a string
+            return str(appointment.time)
+
+    appointment_time_str = get_appointment_time_str(appointment)
+
+    # Count appointments for each time slot (excluding current appointment)
+    am_slot_counts = {}
+    pm_slot_counts = {}
+    
+    for slot in am_time_slots:
         count = ClinicAppointment.objects.filter(
-            workspace=workspace, date=selected_date, time=slot
+            workspace=workspace,
+            date=selected_date,
+            time=slot,
+            session='AM'
         ).exclude(id=appointment.id).count()
-
-        # Ensure the patient's current appointment is counted in its slot
-        if slot == appointment.time.strftime("%H:%M"):
+        
+        # Include current appointment if it's in this slot
+        if slot == appointment_time_str and appointment.session == 'AM':
             count += 1
+            
+        am_slot_counts[slot] = count
 
-        time_slot_counts[slot] = count
+    for slot in pm_time_slots:
+        count = ClinicAppointment.objects.filter(
+            workspace=workspace,
+            date=selected_date,
+            time=slot,
+            session='PM'
+        ).exclude(id=appointment.id).count()
+        
+        # Include current appointment if it's in this slot
+        if slot == appointment_time_str and appointment.session == 'PM':
+            count += 1
+            
+        pm_slot_counts[slot] = count
 
-    time_slots = [(slot, time_slot_counts.get(slot, 0)) for slot in time_slots]
+    # Prepare slot data with room counts for red indication
+    am_slots = [(slot, am_slot_counts.get(slot, 0), workspace.rooms) for slot in am_time_slots]
+    pm_slots = [(slot, pm_slot_counts.get(slot, 0), workspace.rooms) for slot in pm_time_slots]
+
+    # Determine collapse behavior (same logic as add appointment)
+    am_collapsed = not has_am and has_pm
+    pm_collapsed = not has_pm and has_am
 
     if request.method == "POST":
         form = ClinicAppointmentForm(request.POST, request.FILES, instance=appointment)
         if form.is_valid():
             appointment = form.save(commit=False)
             appointment.workspace = workspace
+            
+            # Determine session based on time if not already set
+            selected_time = appointment.time
+            
+            # Convert to time object for comparison
+            if isinstance(selected_time, str):
+                selected_time_obj = datetime.strptime(selected_time, "%H:%M").time()
+            elif isinstance(selected_time, int):
+                # Convert integer to time object
+                hours = selected_time // 100
+                minutes = selected_time % 100
+                selected_time_obj = datetime.time(hours, minutes)
+            elif hasattr(selected_time, 'hour'):
+                # It's already a time object
+                selected_time_obj = selected_time
+            else:
+                # Fallback - assume it's a string representation
+                selected_time_obj = datetime.strptime(str(selected_time), "%H:%M").time()
+            
+            if selected_time_obj < time(14, 0):  # Before 2:00 PM
+                appointment.session = 'AM'
+            else:
+                appointment.session = 'PM'
+            
             appointment.save()
 
-            # ✅ Add new ActionLog entry
+            # Add new ActionLog entry
             ActionLog.objects.create(
                 workspace=workspace,
                 user=request.user,
-                action_description=f"Updated appointment for {appointment.patient_name} (Civil ID: {appointment.civil_id})"
+                action_description=f"Updated appointment for {appointment.patient_name} (Civil ID: {appointment.civil_id}) to {appointment.date} at {get_appointment_time_str(appointment)} ({appointment.session} session)."
             )
-
 
             return redirect("day_appointments", workspace_name=workspace_name, date=appointment.date)
     else:
         form = ClinicAppointmentForm(instance=appointment)
 
+    # Add formatted appointment time to context for template use
+    appointment.formatted_time = appointment_time_str
+
     return render(request, "edit_appointment.html", {
         "form": form,
         "workspace": workspace,
-        "time_slots": time_slots,
+        "am_slots": am_slots,
+        "pm_slots": pm_slots,
         "selected_date": selected_date,
+        "has_am": has_am,
+        "has_pm": has_pm,
+        "am_collapsed": am_collapsed,
+        "pm_collapsed": pm_collapsed,
+        "day_name": day_name,
+        "appointment": appointment,
     })
 
+@login_required
+def get_session_data(request, workspace_name):
+    """AJAX view to get session data for a specific date"""
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    date_str = request.GET.get('date')
+    appointment_id = request.GET.get('appointment_id')  # For edit mode
+    
+    if not date_str:
+        return JsonResponse({'error': 'Date parameter required'}, status=400)
+    
+    try:
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'error': 'Invalid date format'}, status=400)
+    
+    day_name = selected_date.strftime("%A")
+    
+    # Get available sessions for this day
+    available_sessions = workspace.get_available_sessions(day_name)
+    has_am = 'AM' in available_sessions
+    has_pm = 'PM' in available_sessions
+    
+    # Generate time slots
+    def generate_time_slots(start_time, end_time):
+        slots = []
+        start = datetime.strptime(start_time, "%H:%M")
+        end = datetime.strptime(end_time, "%H:%M")
+        while start <= end:
+            slots.append(start.strftime("%H:%M"))
+            start += timedelta(minutes=15)
+        return slots
 
+    am_time_slots = generate_time_slots("08:00", "12:15")
+    pm_time_slots = generate_time_slots("14:00", "17:30")
+
+    # Count appointments for each time slot
+    am_slot_counts = {}
+    pm_slot_counts = {}
+    
+    # Base query - exclude current appointment if editing
+    base_query = ClinicAppointment.objects.filter(workspace=workspace, date=selected_date)
+    if appointment_id:
+        base_query = base_query.exclude(id=appointment_id)
+    
+    for slot in am_time_slots:
+        am_slot_counts[slot] = base_query.filter(time=slot, session='AM').count()
+
+    for slot in pm_time_slots:
+        pm_slot_counts[slot] = base_query.filter(time=slot, session='PM').count()
+
+    # Prepare response data
+    am_slots = []
+    for slot in am_time_slots:
+        count = am_slot_counts.get(slot, 0)
+        am_slots.append({
+            'time': slot,
+            'count': count,
+            'is_full': count >= workspace.rooms
+        })
+
+    pm_slots = []
+    for slot in pm_time_slots:
+        count = pm_slot_counts.get(slot, 0)
+        pm_slots.append({
+            'time': slot,
+            'count': count,
+            'is_full': count >= workspace.rooms
+        })
+
+    # Determine collapse behavior
+    am_collapsed = not has_am and has_pm
+    pm_collapsed = not has_pm and has_am
+
+    return JsonResponse({
+        'success': True,
+        'day_name': day_name,
+        'has_am': has_am,
+        'has_pm': has_pm,
+        'am_collapsed': am_collapsed,
+        'pm_collapsed': pm_collapsed,
+        'am_slots': am_slots,
+        'pm_slots': pm_slots,
+        'rooms': workspace.rooms
+    })
 
 @csrf_exempt  # Allow AJAX requests
 @login_required
@@ -1144,34 +1743,69 @@ def manage_specialities(request):
                 speciality.workspaces.remove(workspace)
                 messages.success(request, f"Removed {workspace.name} from {speciality.name}")
         
-        # Check if it's a form for updating maximum_new_referrals
-        elif 'update_referrals' in request.POST:
+        # Check if it's a form for updating session maximum_new_referrals
+        elif 'update_session_referrals' in request.POST:
             workspace_id = request.POST.get('workspace_id')
+            day_name = request.POST.get('day_name')
+            session_name = request.POST.get('session_name')
+            new_max_referrals = request.POST.get('max_new_referrals')
+            
             workspace = get_object_or_404(Workspace, id=workspace_id)
             
-            form = WorkspaceReferralForm(request.POST)
-            if form.is_valid():
-                workspace.maximum_new_referrals = form.cleaned_data['maximum_new_referrals']
-                workspace.save()
-                messages.success(request, f"Updated maximum new referrals for {workspace.name}")
-            else:
+            try:
+                new_max_referrals = int(new_max_referrals)
+                if new_max_referrals >= 0:
+                    # Update the session configuration
+                    workspace.update_session_limits(day_name, session_name, max_new_referrals=new_max_referrals)
+                    messages.success(request, f"Updated maximum new referrals for {workspace.name} - {day_name} {session_name} session")
+                else:
+                    messages.error(request, "Maximum new referrals must be 0 or greater")
+            except (ValueError, TypeError):
                 messages.error(request, "Invalid value for maximum new referrals")
         
         return redirect('manage_specialities')
     
-    # For each speciality, create a dictionary of forms for its workspaces
-    workspace_forms = {}
+    # Prepare speciality data with workspace sessions
+    speciality_data = []
     for speciality in specialities:
-        workspace_forms[speciality.id] = {}
+        workspace_list = []
         for workspace in speciality.workspaces.all():
-            workspace_forms[speciality.id][workspace.id] = WorkspaceReferralForm(
-                initial={'maximum_new_referrals': workspace.maximum_new_referrals}
+            sessions = []
+            
+            # Get all configured sessions for this workspace
+            if workspace.session_config:
+                for day_name, day_data in workspace.session_config.items():
+                    day_sessions = day_data.get('sessions', {})
+                    for session_name, session_data in day_sessions.items():
+                        sessions.append({
+                            'day_name': day_name,
+                            'session_name': session_name,
+                            'max_total': session_data.get('max_total', 0),
+                            'max_new_referrals': session_data.get('max_new_referrals', 0),
+                        })
+            
+            # Sort by day order and then by session (AM before PM)
+            day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            session_order = ['AM', 'PM']
+            
+            sessions.sort(
+                key=lambda x: (day_order.index(x['day_name']) if x['day_name'] in day_order else 999,
+                              session_order.index(x['session_name']) if x['session_name'] in session_order else 999)
             )
+            
+            workspace_list.append({
+                'workspace': workspace,
+                'sessions': sessions
+            })
+        
+        speciality_data.append({
+            'speciality': speciality,
+            'workspaces': workspace_list
+        })
     
     context = {
-        'specialities': specialities,
+        'speciality_data': speciality_data,
         'all_workspaces': all_workspaces,
-        'workspace_forms': workspace_forms,
     }
     
     return render(request, 'manage_specialities_standalone.html', context)
@@ -1300,8 +1934,8 @@ def doctor_dashboard(request):
         'specialities': specialities
     })
 
-# Find next available appointment slot
-def find_available_appointment(speciality):
+# Find next available appointment slot with AM/PM session support
+def find_available_appointment(speciality, am_only=False):
     # Get all workspaces with this speciality
     workspaces = speciality.workspaces.all()
     
@@ -1311,8 +1945,8 @@ def find_available_appointment(speciality):
     # Get tomorrow's date
     tomorrow = timezone.now().date() + timedelta(days=1)
     
-    # Time slots (convert to datetime.time objects)
-    time_slots = [
+    # AM Time slots (8:00 AM to 12:30 PM)
+    am_time_slots = [
         datetime.strptime(time_str, "%H:%M").time() 
         for time_str in [
             "08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45",
@@ -1321,8 +1955,18 @@ def find_available_appointment(speciality):
         ]
     ]
     
-    # Default 8:00 AM slot for booking when no empty slots are found
-    default_slot = datetime.strptime("08:00", "%H:%M").time()
+    # PM Time slots (2:00 PM to 5:30 PM)
+    pm_time_slots = [
+        datetime.strptime(time_str, "%H:%M").time() 
+        for time_str in [
+            "14:00","14:15","14:30","14:45","15:00","15:15","15:30","15:45",
+            "16:00","16:15","16:30","16:45","17:00","17:15","17:30"
+        ]
+    ]
+    
+    # Default slots for booking when no empty slots are found
+    default_am_slot = datetime.strptime("08:00", "%H:%M").time()
+    default_pm_slot = datetime.strptime("14:00", "%H:%M").time()
     
     # Check up to 120 days ahead starting from tomorrow
     for day_offset in range(120):
@@ -1332,85 +1976,125 @@ def find_available_appointment(speciality):
         
         # Keep track of the best workspace for this day
         best_workspace = None
-        lowest_referral_count = float('inf')  # Start with infinity for comparison
+        lowest_referral_count = float('inf')
         best_slot = None
+        best_session = None
         
         # For tracking workspaces without available slots
         valid_workspaces_without_slots = []
         
         # Check all workspaces for this specific day
-        open_workspaces = []
         for workspace in workspaces:
             # Skip workspaces that aren't open on this day
             if not workspace.is_day_open(day_name):
                 print(f"Skipping workspace {workspace} - not open on {day_name}")
                 continue
             
-            # Check if the day is locked for this workspace
-            if Lock.objects.filter(workspace=workspace, date=check_date).exists():
-                print(f"Skipping workspace {workspace} on {check_date} - day is locked")
+            # Get available sessions for this day
+            available_sessions = workspace.get_available_sessions(day_name)
+            has_am = 'AM' in available_sessions
+            has_pm = 'PM' in available_sessions
+            
+            # If user wants AM only, skip if no AM session
+            if am_only and not has_am:
                 continue
-                
-            open_workspaces.append(workspace)
+            
+            # Check for session-specific locks
+            am_locked = Lock.objects.filter(workspace=workspace, date=check_date, pm=False).exists()
+            pm_locked = Lock.objects.filter(workspace=workspace, date=check_date, pm=True).exists()
+            
+            # Skip workspace entirely if all available sessions are locked
+            if has_am and has_pm:
+                if am_locked and pm_locked:
+                    print(f"Skipping workspace {workspace} on {check_date} - both sessions locked")
+                    continue
+            elif has_am and am_locked:
+                print(f"Skipping workspace {workspace} on {check_date} - AM session locked")
+                continue
+            elif has_pm and pm_locked:
+                print(f"Skipping workspace {workspace} on {check_date} - PM session locked")
+                continue
+            
             print(f"open workspaces {workspace}")
             
-            # Count existing appointments for this date in this workspace
-            total_appointments = ClinicAppointment.objects.filter(
-                workspace=workspace,
-                date=check_date
-            ).count()
-            print(f"count total appointment {total_appointments}")
-
-            # Count new referrals for this date in this workspace
-            new_referrals = ClinicAppointment.objects.filter(
-                workspace=workspace,
-                date=check_date,
-                appointment_type="New",
-                system_referral=True
-            ).count()
-            print(f"count new referrals {new_referrals}")
-
-            # Skip workspaces that have reached their limit
-            if (total_appointments >= workspace.maximum or 
-                new_referrals >= workspace.maximum_new_referrals):
-                print(f'skipping {workspace} ... total appointment = {total_appointments}>= workspace maximum = {workspace.maximum} OR new_referrals = {new_referrals} >= workspace.maximum_new_referrals = {workspace.maximum_new_referrals}')
-                continue
+            # Sessions to check (based on availability, locks, and user preference)
+            sessions_to_check = []
+            if has_am and not am_locked and (not am_only or am_only):
+                sessions_to_check.append(('AM', am_time_slots))
+            if has_pm and not pm_locked and not am_only:
+                sessions_to_check.append(('PM', pm_time_slots))
             
-            # Track this workspace as a valid one (meets all conditions)
-            valid_workspaces_without_slots.append((workspace, new_referrals))
-            
-            # If this workspace has fewer referrals than our current best, update our best
-            if new_referrals < lowest_referral_count:
-                # Find the first available time slot
-                occupied_times = ClinicAppointment.objects.filter(
+            # Check each available session
+            for session_name, time_slots in sessions_to_check:
+                # Count existing appointments for this session
+                total_appointments = ClinicAppointment.objects.filter(
                     workspace=workspace,
-                    date=check_date
-                ).values_list('time', flat=True)
+                    date=check_date,
+                    session=session_name
+                ).count()
                 
-                slot_found = False
-                for slot in time_slots:
-                    if slot not in occupied_times:
-                        # Found an available slot in this workspace
-                        best_workspace = workspace
-                        lowest_referral_count = new_referrals
-                        best_slot = slot
-                        slot_found = True
-                        break
+                # Count new referrals for this session
+                new_referrals = ClinicAppointment.objects.filter(
+                    workspace=workspace,
+                    date=check_date,
+                    session=session_name,
+                    appointment_type="New",
+                    system_referral=True
+                ).count()
+                
+                print(f"Session {session_name}: total={total_appointments}, new_referrals={new_referrals}")
+                
+                # Get session maximums
+                session_max_total = workspace.get_session_maximum(day_name, session_name, is_new_referral=False)
+                session_max_new = workspace.get_session_maximum(day_name, session_name, is_new_referral=True)
+                
+                # Skip sessions that have reached their limit
+                if (total_appointments >= session_max_total or 
+                    new_referrals >= session_max_new):
+                    print(f'Skipping {workspace} {session_name} session - limits reached')
+                    continue
+                
+                # Track this workspace+session as valid
+                valid_workspaces_without_slots.append((workspace, new_referrals, session_name))
+                
+                # If this session has fewer referrals than our current best, check for slots
+                if new_referrals < lowest_referral_count:
+                    # Find the first available time slot in this session
+                    occupied_times = ClinicAppointment.objects.filter(
+                        workspace=workspace,
+                        date=check_date,
+                        session=session_name
+                    ).values_list('time', flat=True)
+                    
+                    for slot in time_slots:
+                        if slot not in occupied_times:
+                            # Found an available slot in this session
+                            best_workspace = workspace
+                            lowest_referral_count = new_referrals
+                            best_slot = slot
+                            best_session = session_name
+                            break
+                    
+                    if best_slot:
+                        break  # Found a slot, no need to check other sessions
         
         # If we found a workspace with an available slot on this day, return it
-        if best_workspace and best_slot:
+        if best_workspace and best_slot and best_session:
             return best_workspace, check_date, best_slot
         
-        # If all conditions are met but no empty slot is found, book at 8:00 AM in the workspace with lowest referrals
+        # If all conditions are met but no empty slot is found, book at default time
         if valid_workspaces_without_slots:
-            # Sort workspaces by referral count to get the one with lowest referrals
+            # Sort by referral count to get the one with lowest referrals
             valid_workspaces_without_slots.sort(key=lambda x: x[1])
             best_workspace = valid_workspaces_without_slots[0][0]
+            best_session = valid_workspaces_without_slots[0][2]
+            
+            # Use appropriate default slot based on session
+            default_slot = default_am_slot if best_session == 'AM' else default_pm_slot
             return best_workspace, check_date, default_slot
     
     # No available slots found in any workspace within the time range
     return None, None, None
-
 
 # Doctor appointment booking
 @doctor_required
@@ -1430,6 +2114,7 @@ def book_appointment(request):
             speciality_id = data.get('speciality')
             diagnosis = data.get('diagnosis')
             is_urgent = data.get('is_urgent', False)
+            am_only = data.get('am_only', False)  # New field
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'message': 'Invalid JSON data'})
     else:
@@ -1440,6 +2125,7 @@ def book_appointment(request):
         speciality_id = request.POST.get('speciality')
         diagnosis = request.POST.get('diagnosis')
         is_urgent = request.POST.get('is_urgent') == 'on'
+        am_only = request.POST.get('am_only') == 'on'  # New field
     
     # Validate input
     if not patient_name or not civil_id or not phone_number or not speciality_id:
@@ -1475,15 +2161,19 @@ def book_appointment(request):
             messages.error(request, "Invalid speciality")
             return redirect('doctor_dashboard')
     
-    # Find available slot
-    workspace, appointment_date, appointment_time = find_available_appointment(speciality)
+    # Find available slot with AM-only preference
+    workspace, appointment_date, appointment_time = find_available_appointment(speciality, am_only=am_only)
     
     if not workspace or not appointment_date or not appointment_time:
+        session_msg = " (AM slots only)" if am_only else ""
         if request.content_type == 'application/json':
-            return JsonResponse({'success': False, 'message': f"No available appointments for {speciality.name} speciality"})
+            return JsonResponse({'success': False, 'message': f"No available appointments for {speciality.name} speciality{session_msg}"})
         else:
-            messages.error(request, f"No available appointments for {speciality.name} speciality")
+            messages.error(request, f"No available appointments for {speciality.name} speciality{session_msg}")
             return redirect('doctor_dashboard')
+    
+    # Determine session based on appointment time
+    session = 'AM' if appointment_time.hour < 14 else 'PM'
     
     # Create appointment
     appointment = ClinicAppointment.objects.create(
@@ -1495,6 +2185,7 @@ def book_appointment(request):
         appointment_type="New",
         date=appointment_date,
         time=appointment_time,
+        session=session,  # Set the session
         system_referral=True,
         booked_by=doctor,
         diagnosis=diagnosis
@@ -1510,13 +2201,14 @@ def book_appointment(request):
             'clinic_name': workspace.owner_name or workspace.name,
             'appointment_date': appointment_date.strftime('%d %b %Y'),
             'appointment_time': appointment_time.strftime('%H:%M'),
-            'workspace_id': workspace.id  # Add this line
+            'workspace_id': workspace.id,
+            'session': session  # Include session info
         })
     else:
         messages.success(
             request, 
             f"Appointment booked successfully for {patient_name} with {speciality.name} speciality on "
-            f"{appointment_date.strftime('%d %b %Y')} at {appointment_time.strftime('%H:%M')}"
+            f"{appointment_date.strftime('%d %b %Y')} at {appointment_time.strftime('%H:%M')} ({session} session)"
         )
         return redirect('doctor_dashboard')
 
@@ -1530,7 +2222,8 @@ def change_appointment_date(request):
         data = json.loads(request.body)
         appointment_id = data.get('appointment_id')
         workspace_id = data.get('workspace_id')
-        print(f"Received data: appointment_id={appointment_id}, workspace_id={workspace_id}")
+        am_only = data.get('am_only', False)  # New parameter for AM-only preference
+        print(f"Received data: appointment_id={appointment_id}, workspace_id={workspace_id}, am_only={am_only}")
     except json.JSONDecodeError:
         print("ERROR: Invalid JSON data")
         return JsonResponse({'success': False, 'message': 'Invalid JSON data'})
@@ -1546,14 +2239,13 @@ def change_appointment_date(request):
     # Get the workspace
     try:
         workspace = Workspace.objects.get(id=workspace_id)
-        print(f"Found workspace: {workspace.name}, days_open={workspace.days_open}")
-        print(f"Workspace limits: maximum={workspace.maximum}, maximum_new_referrals={workspace.maximum_new_referrals}")
+        print(f"Found workspace: {workspace.name}")
     except Workspace.DoesNotExist:
         print(f"ERROR: Workspace with id={workspace_id} not found")
         return JsonResponse({'success': False, 'message': 'Workspace not found'})
     
-    # Get time slots
-    time_slots = [
+    # AM Time slots (8:00 AM to 12:30 PM)
+    am_time_slots = [
         datetime.strptime(time_str, "%H:%M").time() 
         for time_str in [
             "08:00","08:15","08:30","08:45","09:00","09:15","09:30","09:45",
@@ -1561,10 +2253,21 @@ def change_appointment_date(request):
             "12:00","12:15","12:30"
         ]
     ]
-    print(f"Generated {len(time_slots)} time slots")
     
-    # Default 8:00 AM slot for booking when no empty slots are found
-    default_slot = datetime.strptime("08:00", "%H:%M").time()
+    # PM Time slots (2:00 PM to 5:30 PM)
+    pm_time_slots = [
+        datetime.strptime(time_str, "%H:%M").time() 
+        for time_str in [
+            "14:00","14:15","14:30","14:45","15:00","15:15","15:30","15:45",
+            "16:00","16:15","16:30","16:45","17:00","17:15","17:30"
+        ]
+    ]
+    
+    # Default slots for booking when no empty slots are found
+    default_am_slot = datetime.strptime("08:00", "%H:%M").time()
+    default_pm_slot = datetime.strptime("14:00", "%H:%M").time()
+    
+    print(f"Generated {len(am_time_slots)} AM slots and {len(pm_time_slots)} PM slots")
     
     # Find a new date (starting from the day after the current appointment)
     start_date = appointment.date + timedelta(days=1)
@@ -1583,88 +2286,149 @@ def change_appointment_date(request):
             print(f"Skipping date {check_date}: Day {day_name} is not open for this workspace")
             continue
         
-        # Check if the day is locked
-        if Lock.objects.filter(workspace=workspace, date=check_date).exists():
-            print(f"Skipping date {check_date}: Day is locked")
+        # Get available sessions for this day
+        available_sessions = workspace.get_available_sessions(day_name)
+        has_am = 'AM' in available_sessions
+        has_pm = 'PM' in available_sessions
+        
+        # If user wants AM only, skip if no AM session
+        if am_only and not has_am:
+            print(f"Skipping date {check_date}: AM-only requested but no AM session available")
             continue
         
-        # Count existing appointments for this date
-        total_appointments = ClinicAppointment.objects.filter(
-            workspace=workspace,
-            date=check_date
-        ).count()
+        # Check for session-specific locks
+        am_locked = Lock.objects.filter(workspace=workspace, date=check_date, pm=False).exists()
+        pm_locked = Lock.objects.filter(workspace=workspace, date=check_date, pm=True).exists()
         
-        # Count new referrals for this date
-        new_referrals = ClinicAppointment.objects.filter(
-            workspace=workspace,
-            date=check_date,
-            appointment_type="New",
-            system_referral=True
-        ).count()
-        
-        print(f"Date {check_date}: total_appointments={total_appointments}, new_referrals={new_referrals}")
-        
-        # Check if limits are reached
-        if (total_appointments >= workspace.maximum or 
-            new_referrals >= workspace.maximum_new_referrals):
-            print(f"Skipping date {check_date}: Limits reached - total={total_appointments}/{workspace.maximum}, new_referrals={new_referrals}/{workspace.maximum_new_referrals}")
+        # Skip workspace entirely if all available sessions are locked
+        if has_am and has_pm:
+            if am_locked and pm_locked:
+                print(f"Skipping date {check_date}: Both sessions locked")
+                continue
+        elif has_am and am_locked:
+            print(f"Skipping date {check_date}: AM session locked")
+            continue
+        elif has_pm and pm_locked:
+            print(f"Skipping date {check_date}: PM session locked")
             continue
         
-        # This is a valid date - track it even if there are no available slots
-        valid_dates_without_slots.append(check_date)
+        # Sessions to check (based on availability, locks, and user preference)
+        sessions_to_check = []
+        if has_am and not am_locked and (not am_only or am_only):
+            sessions_to_check.append(('AM', am_time_slots))
+        if has_pm and not pm_locked and not am_only:
+            sessions_to_check.append(('PM', pm_time_slots))
         
-        # Find available time slot
-        occupied_times = ClinicAppointment.objects.filter(
-            workspace=workspace,
-            date=check_date
-        ).values_list('time', flat=True)
-        print(f"Occupied times for {check_date}: {list(occupied_times)}")
+        print(f"Sessions to check: {[s[0] for s in sessions_to_check]}")
         
-        for slot in time_slots:
-            if slot not in occupied_times:
-                print(f"Found available slot: {check_date} at {slot}")
+        # Check each available session
+        found_slot = False
+        best_session = None
+        best_slot = None
+        valid_session_found = False
+        
+        for session_name, time_slots in sessions_to_check:
+            # Count existing appointments for this session
+            total_appointments = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=check_date,
+                session=session_name
+            ).count()
+            
+            # Count new referrals for this session
+            new_referrals = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=check_date,
+                session=session_name,
+                appointment_type="New",
+                system_referral=True
+            ).count()
+            
+            print(f"Session {session_name}: total={total_appointments}, new_referrals={new_referrals}")
+            
+            # Get session maximums
+            session_max_total = workspace.get_session_maximum(day_name, session_name, is_new_referral=False)
+            session_max_new = workspace.get_session_maximum(day_name, session_name, is_new_referral=True)
+            
+            # Skip sessions that have reached their limit
+            if (total_appointments >= session_max_total or 
+                new_referrals >= session_max_new):
+                print(f'Skipping {session_name} session - limits reached')
+                continue
+            
+            # This session is valid (has capacity)
+            valid_session_found = True
+            valid_dates_without_slots.append((check_date, session_name))
+            
+            # Find available time slot in this session
+            occupied_times = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=check_date,
+                session=session_name
+            ).values_list('time', flat=True)
+            
+            print(f"Occupied times for {check_date} {session_name}: {list(occupied_times)}")
+            
+            for slot in time_slots:
+                if slot not in occupied_times:
+                    print(f"Found available slot: {check_date} at {slot} ({session_name} session)")
+                    found_slot = True
+                    best_session = session_name
+                    best_slot = slot
+                    break
+            
+            if found_slot:
+                break  # Found a slot, no need to check other sessions
+        
+        # If we found an available slot, update the appointment
+        if found_slot and best_slot and best_session:
+            old_date = appointment.date
+            old_time = appointment.time
+            
+            try:
+                appointment.date = check_date
+                appointment.time = best_slot
+                appointment.session = best_session  # Update session
+                appointment.save()
+                print(f"Updated appointment: date={check_date}, time={best_slot}, session={best_session}")
                 
-                # Update the appointment
-                old_date = appointment.date
-                old_time = appointment.time
-                
-                try:
-                    appointment.date = check_date
-                    appointment.time = slot
-                    appointment.save()
-                    print(f"Updated appointment: date={check_date}, time={slot}")
-                    
-                    return JsonResponse({
-                        'success': True,
-                        'message': 'Appointment date changed successfully',
-                        'new_date': check_date.strftime('%d %b %Y'),
-                        'new_time': slot.strftime('%H:%M'),
-                        'old_date': old_date.strftime('%d %b %Y'),
-                        'old_time': old_time.strftime('%H:%M')
-                    })
-                except Exception as e:
-                    print(f"ERROR saving appointment: {str(e)}")
-                    return JsonResponse({'success': False, 'message': f'Error saving appointment: {str(e)}'})
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Appointment date changed successfully',
+                    'new_date': check_date.strftime('%d %b %Y'),
+                    'new_time': best_slot.strftime('%H:%M'),
+                    'new_session': best_session,
+                    'old_date': old_date.strftime('%d %b %Y'),
+                    'old_time': old_time.strftime('%H:%M')
+                })
+            except Exception as e:
+                print(f"ERROR saving appointment: {str(e)}")
+                return JsonResponse({'success': False, 'message': f'Error saving appointment: {str(e)}'})
     
-    # If we found valid dates but no empty slots, book at 8:00 AM on the earliest valid date
+    # If we found valid sessions but no empty slots, book at default time
     if valid_dates_without_slots:
-        earliest_valid_date = valid_dates_without_slots[0]
-        print(f"No available slots found, but there are valid dates. Booking at 8:00 AM on {earliest_valid_date}")
+        # Get the earliest valid date and session
+        earliest_date, earliest_session = valid_dates_without_slots[0]
+        default_slot = default_am_slot if earliest_session == 'AM' else default_pm_slot
+        
+        print(f"No available slots found, but there are valid sessions. Booking at default time on {earliest_date} ({earliest_session})")
         
         old_date = appointment.date
         old_time = appointment.time
         
         try:
-            appointment.date = earliest_valid_date
+            appointment.date = earliest_date
             appointment.time = default_slot
+            appointment.session = earliest_session  # Update session
             appointment.save()
-            print(f"Updated appointment to default slot: date={earliest_valid_date}, time={default_slot}")
+            print(f"Updated appointment to default slot: date={earliest_date}, time={default_slot}, session={earliest_session}")
             
             return JsonResponse({
                 'success': True,
-                'message': 'Appointment date changed successfully (using default 8:00 AM slot)',
-                'new_date': earliest_valid_date.strftime('%d %b %Y'),
+                'message': f'Appointment date changed successfully (using default {earliest_session} slot)',
+                'new_date': earliest_date.strftime('%d %b %Y'),
                 'new_time': default_slot.strftime('%H:%M'),
+                'new_session': earliest_session,
                 'old_date': old_date.strftime('%d %b %Y'),
                 'old_time': old_time.strftime('%H:%M')
             })
@@ -1672,8 +2436,9 @@ def change_appointment_date(request):
             print(f"ERROR saving appointment to default slot: {str(e)}")
             return JsonResponse({'success': False, 'message': f'Error saving appointment: {str(e)}'})
     
-    print("ERROR: No available dates found after checking 60 days")
-    return JsonResponse({'success': False, 'message': 'No available dates found'})
+    session_msg = " (AM slots only)" if am_only else ""
+    print(f"ERROR: No available dates found after checking 60 days{session_msg}")
+    return JsonResponse({'success': False, 'message': f'No available dates found{session_msg}'})
 
 
 

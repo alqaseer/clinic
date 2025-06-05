@@ -124,6 +124,77 @@
         color: #92400e;
     }
 
+    /* iPhone-style toggle switches */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    input:checked + .toggle-slider {
+        background-color: #ef4444;
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+    }
+
+    .lock-control {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        background: #f8fafc;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+    }
+
+    .lock-controls-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .session-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        min-width: 70px;
+    }
+
     /* Minimalist desktop alignment */
     .appointment-row {
         display: flex;
@@ -187,6 +258,30 @@
         background: #dc2626;
         border-color: #dc2626;
     }
+
+    .no-bookings-message {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6b7280;
+    }
+
+    .no-bookings-message i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 640px) {
+        .lock-controls-container {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+        
+        .lock-control {
+            justify-content: space-between;
+        }
+    }
 </style>
 
 <div>
@@ -203,7 +298,7 @@
 
             <!-- Action Buttons -->
             <div class="flex flex-wrap items-center gap-3">
-                {% if not is_locked or request.user == workspace.admin %}
+                {% if show_add_appointment %}
                     <a href="{% url 'add_appointment' workspace.name %}?date={{ date }}" 
                        class="floating-action-button action-button inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
                         <i class="fas fa-plus mr-2 text-sm"></i>
@@ -216,300 +311,337 @@
                     <i class="fas fa-print mr-2 text-sm"></i>
                     Print
                 </button>
-                
-                {% if request.user == workspace.admin %}
-                    {% if is_locked %}
-                        <form action="{% url 'delete_lock' workspace.name date|date:'Y-m-d' %}" method="post" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" 
-                                    class="btn-success action-button inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
-                                <i class="fas fa-unlock mr-2 text-sm"></i>
-                                Unlock
-                            </button>
-                        </form>
-                    {% else %}
-                        <form action="{% url 'create_lock' workspace.name date|date:'Y-m-d' %}" method="post" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" 
-                                    class="btn-danger action-button inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
-                                <i class="fas fa-lock mr-2 text-sm"></i>
-                                Lock
-                            </button>
-                        </form>
-                    {% endif %}
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Clean Lock Status Alert -->
+    <!-- Lock Controls (Admin Only) -->
+    {% if request.user == workspace.admin %}
+        <div class="glass-card rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-medium text-gray-900">Session Lock Controls</h3>
+                <i class="fas fa-shield-alt text-gray-400"></i>
+            </div>
+            
+            <div class="lock-controls-container">
+                {% if is_am_open %}
+                    <div class="lock-control">
+                        <span class="session-label">Morning</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-600">Unlocked</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" 
+                                       {% if am_lock_exists %}checked{% endif %}
+                                       onchange="toggleSessionLock('AM', this.checked, '{{ date|date:'Y-m-d' }}')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="text-xs text-gray-600">Locked</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if is_pm_open %}
+                    <div class="lock-control">
+                        <span class="session-label">Afternoon</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-600">Unlocked</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" 
+                                       {% if pm_lock_exists %}checked{% endif %}
+                                       onchange="toggleSessionLock('PM', this.checked, '{{ date|date:'Y-m-d' }}')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="text-xs text-gray-600">Locked</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if not is_am_open and not is_pm_open %}
+                    <div class="text-center text-gray-500 py-2">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        No sessions are configured for this day
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Enhanced Lock Status Alert -->
     {% if is_locked %}
         <div class="lock-indicator rounded-lg p-4 mb-6">
             <div class="flex items-center">
                 <i class="fas fa-lock mr-3"></i>
                 <div>
-                    <p class="font-medium">Day is Locked</p>
-                    <p class="text-sm opacity-90">Only administrators can add new appointments.</p>
+                    {% if am_lock_exists and pm_lock_exists %}
+                        <p class="font-medium">Both Morning and Afternoon Clinics are Locked</p>
+                        <p class="text-sm opacity-90">No new appointments can be added to either session.</p>
+                    {% elif am_lock_exists %}
+                        <p class="font-medium">Morning Clinic is Locked</p>
+                        <p class="text-sm opacity-90">No new appointments can be added to the morning session. Afternoon appointments may still be available.</p>
+                    {% elif pm_lock_exists %}
+                        <p class="font-medium">Afternoon Clinic is Locked</p>
+                        <p class="text-sm opacity-90">No new appointments can be added to the afternoon session. Morning appointments may still be available.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
     {% endif %}
 
-    <!-- Clean Appointments Display -->
-    <div class="glass-card rounded-lg overflow-hidden">
-        <!-- MOBILE VIEW -->
-<div class="block sm:hidden">
-    {% if appointments %}
-        {% regroup appointments|dictsort:"time" by time|time:"H:i" as appointments_by_time %}
-        
-        {% for time in timeslots %}
-            {% for time_group in appointments_by_time %}
-                {% if time_group.grouper == time %}
-                    <div class="border-b border-gray-200 last:border-b-0">
-                        <!-- Time Header -->
-                        <div class="time-slot-header px-4 py-3">
-                            <div class="flex items-center space-x-2">
-                                <i class="far fa-clock text-white"></i>
-                                <h3 class="text-base font-bold">{{ time }}</h3>
-                            </div>
-                        </div>
-                        
-                        <!-- Appointments for this time -->
-                        <div class="p-3 space-y-3">
-                            {% for appointment in time_group.list %}
-                                <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-3">
-                                    <!-- Patient Info -->
-                                    <div class="space-y-2">
-                                        <div class="flex items-start justify-between">
-                                            <div class="flex-1">
-                                                <h4 class="text-base font-bold text-gray-900">{{ appointment.patient_name }}</h4>
-                                                <p class="text-xs text-gray-600">ID: {{ appointment.civil_id }}</p>
-                                                <p class="text-xs text-gray-600">Phone: {{ appointment.phone_number }}</p>
-                                            </div>
-                                            <div class="flex items-center space-x-2 ml-2">
-                                                <!-- Status Badge -->
-                                                <span id="confirmed-status-mobile-{{ appointment.id }}" class="status-badge">
-                                                    {% if appointment.confirmed == "Unknown" %}
-                                                        <div class="w-7 h-7 bg-yellow-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')">
-                                                            <i class="fas fa-question text-yellow-600 text-xs"></i>
-                                                        </div>
-                                                    {% elif appointment.confirmed == "Confirmed" %}
-                                                        <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')">
-                                                            <i class="fas fa-check text-green-600 text-xs"></i>
-                                                        </div>
-                                                    {% elif appointment.confirmed == "Cancelled" %}
-                                                        <div class="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')">
-                                                            <i class="fas fa-times text-red-600 text-xs"></i>
-                                                        </div>
-                                                    {% endif %}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Type and Doctor -->
-                                        <div class="flex items-center space-x-3 text-xs">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                                                {{ appointment.appointment_type }}
-                                            </span>
-                                            {% if appointment.booked_by %}
-                                                <span class="text-gray-500 text-xs">by {{ appointment.booked_by.full_name }}</span>
-                                            {% endif %}
-                                        </div>
-
-                                        <!-- Action Buttons -->
-                                        <div class="flex flex-wrap items-center gap-2 pt-1">
-                                            <!-- Favorite Button -->
-                                            <span id="favorite-btn-mobile-{{ appointment.id }}">
-                                                {% if appointment.civil_id in favorited_civil_ids %}
-                                                    <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded-md">
-                                                        <i class="fas fa-star favorite-star mr-1 text-xs"></i>
-                                                        Favorited
-                                                    </span>
-                                                {% else %}
-                                                    <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
-                                                            class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium text-white rounded-md transition-all duration-300">
-                                                        <i class="fas fa-heart mr-1 text-xs"></i>
-                                                        Favorite
-                                                    </button>
-                                                {% endif %}
-                                            </span>
-                                            
-                                            {% if appointment.diagnosis %}
-                                                <button onclick="toggleDiagnosis('mobile-diagnosis-{{ appointment.id }}')"
-                                                       class="action-button inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-md hover:bg-blue-200 transition-all duration-200">
-                                                   <i id="mobile-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1 text-xs"></i>
-                                                   Diagnosis
-                                                </button>
-                                            {% endif %}
-                                            
-                                            {% if appointment.referral_letter %}
-                                                <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
-                                                       class="action-button inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-md hover:bg-purple-200 transition-all duration-200">
-                                                   <i class="fas fa-file-medical mr-1 text-xs"></i>
-                                                   Referral
-                                                </button>
-                                            {% endif %}
-                                            
-                                            <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                               class="action-button inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-200 transition-all duration-200">
-                                               <i class="fas fa-edit mr-1 text-xs"></i>
-                                               Edit
-                                            </a>
-                                        </div>
-
-                                        <!-- Diagnosis Container -->
-                                        {% if appointment.diagnosis %}
-                                        <div id="mobile-diagnosis-{{ appointment.id }}" class="diagnosis-container">
-                                            <div class="flex items-start space-x-2">
-                                                <i class="fas fa-stethoscope text-blue-500 mt-0.5 text-sm"></i>
-                                                <span class="text-gray-700 leading-relaxed text-sm">{{ appointment.diagnosis }}</span>
-                                            </div>
-                                        </div>
-                                        {% endif %}
+    <!-- Main Content Area -->
+    {% if not has_any_appointments %}
+        <!-- No Bookings Message -->
+        <div class="glass-card rounded-lg">
+            <div class="no-bookings-message">
+                <i class="fas fa-calendar-times"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No bookings at this day</h3>
+                <p class="text-sm text-gray-500">There are no scheduled appointments for {{ date|date:"l, F j, Y" }}</p>
+            </div>
+        </div>
+    {% else %}
+        <!-- Clean Appointments Display -->
+        <div class="glass-card rounded-lg overflow-hidden">
+            <!-- MOBILE VIEW -->
+            <div class="block sm:hidden">
+                {% regroup appointments|dictsort:"time" by time|time:"H:i" as appointments_by_time %}
+                
+                {% for time in timeslots %}
+                    {% for time_group in appointments_by_time %}
+                        {% if time_group.grouper == time %}
+                            <div class="border-b border-gray-200 last:border-b-0">
+                                <!-- Time Header -->
+                                <div class="time-slot-header px-4 py-3">
+                                    <div class="flex items-center space-x-2">
+                                        <i class="far fa-clock text-gray-600"></i>
+                                        <h3 class="text-base font-bold">{{ time }}</h3>
                                     </div>
                                 </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
-            {% endfor %}
-        {% endfor %}
-    {% else %}
-        <div class="text-center py-12 text-gray-400">
-            <i class="fas fa-calendar-times text-2xl mb-3"></i>
-            <p class="text-sm">No appointments scheduled for today</p>
-        </div>
-    {% endif %}
-</div>
-
-        <!-- DESKTOP VIEW -->
-        <div class="hidden sm:block">
-            <table class="w-full">
-                <thead>
-                    <tr class="time-slot-header">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Time</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointments</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    {% for time in timeslots %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ time }}
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="space-y-3">
-                                {% for appointment in appointments %}
-                                    {% if appointment.time|time:"H:i" == time %}
-                                        <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-4">
-                                            <div class="appointment-row">
-                                                <div class="appointment-main-content">
-                                                    <h4 class="text-base font-medium text-gray-900">{{ appointment.patient_name }}</h4>
-                                                    <div class="flex items-center space-x-3 text-sm text-gray-600 mt-1">
-                                                        <span>{{ appointment.civil_id }}</span>
-                                                        <span>{{ appointment.phone_number }}</span>
-                                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-amber-100 text-amber-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                                                            {{ appointment.appointment_type }}
-                                                        </span>
-                                                        {% if appointment.booked_by %}
-                                                            <span class="text-xs text-gray-500">by {{ appointment.booked_by.full_name }}</span>
-                                                        {% endif %}
+                                
+                                <!-- Appointments for this time -->
+                                <div class="p-3 space-y-3">
+                                    {% for appointment in time_group.list %}
+                                        <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-3">
+                                            <!-- Patient Info -->
+                                            <div class="space-y-2">
+                                                <div class="flex items-start justify-between">
+                                                    <div class="flex-1">
+                                                        <h4 class="text-base font-bold text-gray-900">{{ appointment.patient_name }}</h4>
+                                                        <p class="text-xs text-gray-600">ID: {{ appointment.civil_id }}</p>
+                                                        <p class="text-xs text-gray-600">Phone: {{ appointment.phone_number }}</p>
                                                     </div>
-                                                </div>
-
-                                                <div class="appointment-actions">
-                                                    <!-- Clean Status Badge -->
-                                                    <span id="confirmed-status-desktop-{{ appointment.id }}" class="status-badge">
-                                                        {% if appointment.confirmed == "Unknown" %}
-                                                            <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')">
-                                                                <i class="fas fa-question text-amber-600 text-xs"></i>
-                                                            </div>
-                                                        {% elif appointment.confirmed == "Confirmed" %}
-                                                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')">
-                                                                <i class="fas fa-check text-green-600 text-xs"></i>
-                                                            </div>
-                                                        {% elif appointment.confirmed == "Cancelled" %}
-                                                            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')">
-                                                                <i class="fas fa-times text-red-600 text-xs"></i>
-                                                            </div>
-                                                        {% endif %}
-                                                    </span>
-
-                                                    <!-- Clean Action Buttons -->
-                                                    <div class="flex items-center space-x-2">
-                                                        <span id="favorite-btn-desktop-{{ appointment.id }}">
-                                                            {% if appointment.civil_id in favorited_civil_ids %}
-                                                                <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded">
-                                                                    <i class="fas fa-star favorite-star mr-1"></i>
-                                                                    Favorited
-                                                                </span>
-                                                            {% else %}
-                                                                <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
-                                                                        class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
-                                                                    <i class="fas fa-heart mr-1"></i>
-                                                                    Favorite
-                                                                </button>
+                                                    <div class="flex items-center space-x-2 ml-2">
+                                                        <!-- Status Badge -->
+                                                        <span id="confirmed-status-mobile-{{ appointment.id }}" class="status-badge">
+                                                            {% if appointment.confirmed == "Unknown" %}
+                                                                <div class="w-7 h-7 bg-yellow-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')">
+                                                                    <i class="fas fa-question text-yellow-600 text-xs"></i>
+                                                                </div>
+                                                            {% elif appointment.confirmed == "Confirmed" %}
+                                                                <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')">
+                                                                    <i class="fas fa-check text-green-600 text-xs"></i>
+                                                                </div>
+                                                            {% elif appointment.confirmed == "Cancelled" %}
+                                                                <div class="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')">
+                                                                    <i class="fas fa-times text-red-600 text-xs"></i>
+                                                                </div>
                                                             {% endif %}
                                                         </span>
-                                                        
-                                                        {% if appointment.diagnosis %}
-                                                            <button onclick="toggleDiagnosis('desktop-diagnosis-{{ appointment.id }}')"
-                                                                   class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
-                                                               <i id="desktop-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>
-                                                               Diagnosis
-                                                            </button>
-                                                        {% endif %}
-                                                        
-                                                        {% if appointment.referral_letter %}
-                                                            <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
-                                                                   class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100">
-                                                               <i class="fas fa-file-medical mr-1"></i>
-                                                               Referral
-                                                            </button>
-                                                        {% endif %}
-                                                        
-                                                        <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                                           class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs font-medium rounded hover:bg-gray-100">
-                                                           <i class="fas fa-edit mr-1"></i>
-                                                           Edit
-                                                        </a>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <!-- Clean Diagnosis Container -->
-                                            {% if appointment.diagnosis %}
-                                            <div id="desktop-diagnosis-{{ appointment.id }}" class="diagnosis-container">
-                                                <div class="flex items-start space-x-2">
-                                                    <i class="fas fa-stethoscope text-blue-500 mt-0.5"></i>
-                                                    <span class="text-gray-700 text-sm">{{ appointment.diagnosis }}</span>
+                                                <!-- Type and Doctor -->
+                                                <div class="flex items-center space-x-3 text-xs">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                        {{ appointment.appointment_type }}
+                                                    </span>
+                                                    {% if appointment.booked_by %}
+                                                        <span class="text-gray-500 text-xs">by {{ appointment.booked_by.full_name }}</span>
+                                                    {% endif %}
                                                 </div>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                {% empty %}
-                                    <div class="text-center py-8 text-gray-500">
-                                        <i class="fas fa-clock text-lg mb-2"></i>
-                                        <p class="text-sm">No appointments scheduled</p>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- Clean Legend -->
-    <div class="mt-6 flex justify-center">
-        <div class="legend-item inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium">
-            <i class="fas fa-lightbulb mr-2"></i>
-            New patient appointments are highlighted
+                                                <!-- Action Buttons -->
+                                                <div class="flex flex-wrap items-center gap-2 pt-1">
+                                                    <!-- Favorite Button -->
+                                                    <span id="favorite-btn-mobile-{{ appointment.id }}">
+                                                        {% if appointment.civil_id in favorited_civil_ids %}
+                                                            <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded-md">
+                                                                <i class="fas fa-star favorite-star mr-1 text-xs"></i>
+                                                                Favorited
+                                                            </span>
+                                                        {% else %}
+                                                            <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
+                                                                    class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium text-white rounded-md transition-all duration-300">
+                                                                <i class="fas fa-heart mr-1 text-xs"></i>
+                                                                Favorite
+                                                            </button>
+                                                        {% endif %}
+                                                    </span>
+                                                    
+                                                    {% if appointment.diagnosis %}
+                                                        <button onclick="toggleDiagnosis('mobile-diagnosis-{{ appointment.id }}')"
+                                                               class="action-button inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-md hover:bg-blue-200 transition-all duration-200">
+                                                           <i id="mobile-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1 text-xs"></i>
+                                                           Diagnosis
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if appointment.referral_letter %}
+                                                        <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
+                                                               class="action-button inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-md hover:bg-purple-200 transition-all duration-200">
+                                                           <i class="fas fa-file-medical mr-1 text-xs"></i>
+                                                           Referral
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
+                                                       class="action-button inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-200 transition-all duration-200">
+                                                       <i class="fas fa-edit mr-1 text-xs"></i>
+                                                       Edit
+                                                    </a>
+                                                </div>
+
+                                                <!-- Diagnosis Container -->
+                                                {% if appointment.diagnosis %}
+                                                <div id="mobile-diagnosis-{{ appointment.id }}" class="diagnosis-container">
+                                                    <div class="flex items-start space-x-2">
+                                                        <i class="fas fa-stethoscope text-blue-500 mt-0.5 text-sm"></i>
+                                                        <span class="text-gray-700 leading-relaxed text-sm">{{ appointment.diagnosis }}</span>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+
+            <!-- DESKTOP VIEW -->
+            <div class="hidden sm:block">
+                <table class="w-full">
+                    <thead>
+                        <tr class="time-slot-header">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointments</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for time in timeslots %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ time }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="space-y-3">
+                                    {% for appointment in appointments %}
+                                        {% if appointment.time|time:"H:i" == time %}
+                                            <div class="appointment-card {% if appointment.appointment_type == 'New' %}new-appointment{% endif %} rounded-lg p-4">
+                                                <div class="appointment-row">
+                                                    <div class="appointment-main-content">
+                                                        <h4 class="text-base font-medium text-gray-900">{{ appointment.patient_name }}</h4>
+                                                        <div class="flex items-center space-x-3 text-sm text-gray-600 mt-1">
+                                                            <span>{{ appointment.civil_id }}</span>
+                                                            <span>{{ appointment.phone_number }}</span>
+                                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-amber-100 text-amber-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                                {{ appointment.appointment_type }}
+                                                            </span>
+                                                            {% if appointment.booked_by %}
+                                                                <span class="text-xs text-gray-500">by {{ appointment.booked_by.full_name }}</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="appointment-actions">
+                                                        <!-- Clean Status Badge -->
+                                                        <span id="confirmed-status-desktop-{{ appointment.id }}" class="status-badge">
+                                                            {% if appointment.confirmed == "Unknown" %}
+                                                                <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Unknown')">
+                                                                    <i class="fas fa-question text-amber-600 text-xs"></i>
+                                                                </div>
+                                                            {% elif appointment.confirmed == "Confirmed" %}
+                                                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Confirmed')">
+                                                                    <i class="fas fa-check text-green-600 text-xs"></i>
+                                                                </div>
+                                                            {% elif appointment.confirmed == "Cancelled" %}
+                                                                <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center" onclick="toggleConfirmed({{ appointment.id }}, 'Cancelled')">
+                                                                    <i class="fas fa-times text-red-600 text-xs"></i>
+                                                                </div>
+                                                            {% endif %}
+                                                        </span>
+
+                                                        <!-- Clean Action Buttons -->
+                                                        <div class="flex items-center space-x-2">
+                                                            <span id="favorite-btn-desktop-{{ appointment.id }}">
+                                                                {% if appointment.civil_id in favorited_civil_ids %}
+                                                                    <span class="favorite-button favorited inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                        <i class="fas fa-star favorite-star mr-1"></i>
+                                                                        Favorited
+                                                                    </span>
+                                                                {% else %}
+                                                                    <button onclick="addToFavorites('clinic', {{ appointment.id }}, '{{ appointment.patient_name|escapejs }}')"
+                                                                            class="favorite-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                        <i class="fas fa-heart mr-1"></i>
+                                                                        Favorite
+                                                                    </button>
+                                                                {% endif %}
+                                                            </span>
+                                                            
+                                                            {% if appointment.diagnosis %}
+                                                                <button onclick="toggleDiagnosis('desktop-diagnosis-{{ appointment.id }}')"
+                                                                       class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
+                                                                   <i id="desktop-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>
+                                                                   Diagnosis
+                                                                </button>
+                                                            {% endif %}
+                                                            
+                                                            {% if appointment.referral_letter %}
+                                                                <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
+                                                                       class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100">
+                                                                   <i class="fas fa-file-medical mr-1"></i>
+                                                                   Referral
+                                                                </button>
+                                                            {% endif %}
+                                                            
+                                                            <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
+                                                               class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs font-medium rounded hover:bg-gray-100">
+                                                               <i class="fas fa-edit mr-1"></i>
+                                                               Edit
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Clean Diagnosis Container -->
+                                                {% if appointment.diagnosis %}
+                                                <div id="desktop-diagnosis-{{ appointment.id }}" class="diagnosis-container">
+                                                    <div class="flex items-start space-x-2">
+                                                        <i class="fas fa-stethoscope text-blue-500 mt-0.5"></i>
+                                                        <span class="text-gray-700 text-sm">{{ appointment.diagnosis }}</span>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+
+        <!-- Clean Legend -->
+        <div class="mt-6 flex justify-center">
+            <div class="legend-item inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium">
+                <i class="fas fa-lightbulb mr-2"></i>
+                New patient appointments are highlighted
+            </div>
+        </div>
+    {% endif %}
 </div>
 
 <!-- Notification Area -->
@@ -517,6 +649,83 @@
 
 <!-- JavaScript Section -->
 <script>
+        // Function to toggle session locks
+    function toggleSessionLock(session, isLocked, date) {
+        const action = isLocked ? 'create' : 'delete';
+        const url = `{% url 'toggle_session_lock' workspace.name %}`;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                session: session,
+                action: action,
+                date: date
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success notification
+                showNotification(data.message, 'success');
+                // Refresh the page to update the lock status
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                // Revert the toggle on error
+                event.target.checked = !isLocked;
+                showNotification(data.message || 'Failed to update lock status', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Revert the toggle on error
+            event.target.checked = !isLocked;
+            showNotification('An error occurred while updating lock status', 'error');
+        });
+    }
+
+    // Enhanced notification function (you already have this in your code)
+    function showNotification(message, type) {
+        const notificationArea = document.getElementById('notification-area');
+        const notification = document.createElement('div');
+        notification.className = `notification transform transition-all duration-500 ease-out translate-x-full max-w-sm px-6 py-4 rounded-xl shadow-2xl ${
+            type === 'success' 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+                : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+        }`;
+        
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <i class="fas ${type === 'success' ? 'fa-check' : 'fa-exclamation-triangle'} text-sm"></i>
+                </div>
+                <span class="font-medium">${message}</span>
+            </div>
+        `;
+        
+        notificationArea.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Remove after 4 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notificationArea.contains(notification)) {
+                    notificationArea.removeChild(notification);
+                }
+            }, 500);
+        }, 4000);
+    }
+
     // Function to add patient to favorites
     function addToFavorites(type, id, patientName) {
         let url = `{% url 'favorite_from_clinic' workspace.name 0 %}`.replace('0', id);

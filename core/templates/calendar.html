@@ -101,46 +101,54 @@
         
         .calendar-day {
             padding: 0;
-            aspect-ratio: 1/1; /* Force square cells for mobile */
+            aspect-ratio: 1/1.2; /* Make cells slightly taller for mobile */
+            min-height: 75px; /* Ensure minimum height */
         }
         
         .calendar-cell-content {
-            padding: 4px 2px;
+            padding: 3px 1px;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
-            gap: 2px;
+            gap: 1px;
+            height: 100%;
         }
         
         .day-number {
-            font-size: 14px;
+            font-size: 13px;
         }
         
         .day-number.today {
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
         }
         
         .session-badge {
-            padding: 1px 3px;
-            font-size: 0.65rem;
-            max-width: 90%;
+            padding: 1px 2px;
+            font-size: 0.6rem;
+            max-width: 95%;
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
+            line-height: 1.1;
         }
 
         .session-icon {
-            font-size: 0.55rem;
+            font-size: 0.5rem;
         }
 
-        /* Mobile lock icons - position below day number */
+        /* Mobile lock icons - smaller and positioned below day number */
         .calendar-day .lock-icons {
             position: static;
             margin-top: 1px;
             justify-content: center;
+            gap: 1px;
+        }
+
+        .calendar-day .lock-icons i {
+            font-size: 0.45rem !important;
         }
 
         /* Mobile day header - center everything vertically */
@@ -158,6 +166,16 @@
             justify-content: center;
             align-items: center;
             width: 100%;
+        }
+
+        /* Mobile-specific closed state - show only X icon */
+        .mobile-session-container .session-badge.closed-mobile {
+            padding: 1px 3px;
+            font-size: 0.55rem;
+        }
+
+        .mobile-session-container .session-badge.closed-mobile .session-text {
+            display: none; /* Hide "Closed" text on mobile */
         }
     }
 
@@ -327,9 +345,9 @@
                                 {% endif %}
                             </div>
                         {% else %}
-                            <span class="session-badge bg-gray-100 text-gray-600">
+                            <span class="session-badge bg-gray-100 text-gray-600 closed-mobile">
                                 <i class="fas fa-times session-icon"></i>
-                                <span>Closed</span>
+                                <span class="session-text">Closed</span>
                             </span>
                         {% endif %}
                     </div>

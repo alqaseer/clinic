@@ -13,7 +13,7 @@
     }
     
     .session-section.collapsed {
-        max-height: 70px;
+        max-height: 85px; /* Increased height for mobile */
     }
     
     .session-section.expanded {
@@ -30,6 +30,7 @@
         cursor: pointer;
         transition: background-color 0.2s ease;
         border-radius: 0.375rem 0.375rem 0 0;
+        min-height: 80px; /* Ensure minimum height for mobile */
     }
     
     .session-header:hover {
@@ -107,6 +108,46 @@
     .lock-notice.owner-override {
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         border-color: #f59e0b;
+    }
+
+    /* Mobile responsive fixes */
+    @media (max-width: 640px) {
+        .session-section.collapsed {
+            max-height: 95px; /* Increased for mobile */
+        }
+        
+        .session-header {
+            min-height: 90px; /* Larger minimum height for mobile */
+            padding: 1rem 0.75rem; /* Adjusted padding for mobile */
+        }
+        
+        .session-header h3 {
+            font-size: 1rem; /* Slightly smaller on mobile */
+            line-height: 1.25;
+        }
+        
+        .session-header p {
+            font-size: 0.75rem; /* Smaller subtitle text */
+            line-height: 1.25;
+        }
+        
+        .session-status-badge {
+            font-size: 0.6875rem; /* Slightly smaller badge text */
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .session-header-content {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.5rem;
+        }
+        
+        .session-header-right {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.5rem;
+            align-self: flex-end;
+        }
     }
 </style>
 
@@ -300,7 +341,7 @@
         <div class="session-section {% if am_collapsed %}collapsed{% else %}expanded{% endif %} {% if am_disabled %}disabled{% endif %}" id="am-section">
             <div class="session-header p-4 bg-gradient-to-r from-yellow-50 to-orange-50 {% if am_disabled %}disabled{% endif %}" 
                  onclick="{% if not am_disabled %}toggleSession('am'){% endif %}">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between session-header-content">
                     <div class="flex items-center space-x-3">
                         {% if am_disabled %}
                             <i class="fas fa-lock text-red-600"></i>
@@ -319,11 +360,11 @@
                             <p class="text-sm text-gray-600">8:00 AM - 12:15 PM • 15-minute slots</p>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 session-header-right">
                         {% if has_am %}
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge">Open</span>
                         {% else %}
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge">Closed</span>
                         {% endif %}
                         {% if not am_disabled %}
                             <i class="fas fa-chevron-down expand-icon text-gray-400"></i>
@@ -366,7 +407,7 @@
         <div class="session-section {% if pm_collapsed %}collapsed{% else %}expanded{% endif %} {% if pm_disabled %}disabled{% endif %}" id="pm-section">
             <div class="session-header p-4 bg-gradient-to-r from-blue-50 to-indigo-50 {% if pm_disabled %}disabled{% endif %}" 
                  onclick="{% if not pm_disabled %}toggleSession('pm'){% endif %}">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between session-header-content">
                     <div class="flex items-center space-x-3">
                         {% if pm_disabled %}
                             <i class="fas fa-lock text-red-600"></i>
@@ -385,11 +426,11 @@
                             <p class="text-sm text-gray-600">2:00 PM - 5:30 PM • 15-minute slots</p>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 session-header-right">
                         {% if has_pm %}
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Configured</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded session-status-badge">Open</span>
                         {% else %}
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Manual</span>
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded session-status-badge">Closed</span>
                         {% endif %}
                         {% if not pm_disabled %}
                             <i class="fas fa-chevron-down expand-icon text-gray-400"></i>

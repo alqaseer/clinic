@@ -103,26 +103,35 @@
             padding: 0;
             aspect-ratio: 1/1.2; /* Make cells slightly taller for mobile */
             min-height: 75px; /* Ensure minimum height */
+            max-height: 75px; /* Ensure maximum height for consistency */
+            width: 100%; /* Ensure consistent width */
         }
         
         .calendar-cell-content {
-            padding: 3px 1px;
+            padding: 3px 2px; /* Balanced horizontal padding */
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
             gap: 1px;
             height: 100%;
+            width: 100%;
+            text-align: center; /* Ensure center alignment */
         }
         
         .day-number {
             font-size: 13px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .day-number.today {
             width: 18px;
             height: 18px;
             font-size: 11px;
+            margin: 0 auto; /* Center the today circle */
         }
         
         .session-badge {
@@ -133,6 +142,9 @@
             white-space: nowrap;
             overflow: hidden;
             line-height: 1.1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .session-icon {
@@ -145,18 +157,31 @@
             margin-top: 1px;
             justify-content: center;
             gap: 1px;
+            min-height: 8px; /* Reserve space for lock icons */
+            display: flex;
+            align-items: center;
         }
 
         .calendar-day .lock-icons i {
             font-size: 0.45rem !important;
         }
 
-        /* Mobile day header - center everything vertically */
+        /* Ensure lock icons are always visible in mobile layout */
+        .mobile-day-header .lock-icons {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Mobile day header - center everything vertically and horizontally */
         .mobile-day-header {
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
             gap: 1px;
+            width: 100%;
+            text-align: center;
         }
 
         /* Session badge container for mobile */
@@ -176,6 +201,12 @@
 
         .mobile-session-container .session-badge.closed-mobile .session-text {
             display: none; /* Hide "Closed" text on mobile */
+        }
+
+        /* Force grid consistency */
+        .calendar-grid .calendar-day:nth-child(n) {
+            min-height: 75px;
+            max-height: 75px;
         }
     }
 
@@ -308,10 +339,10 @@
                         {% if day.date >= today and day.is_locked %}
                             <div class="lock-icons">
                                 {% if day.am_locked %}
-                                    <i class="fas fa-lock text-yellow-600 text-xs" title="AM session locked"></i>
+                                    <i class="fas fa-lock text-yellow-600" title="AM session locked"></i>
                                 {% endif %}
                                 {% if day.pm_locked %}
-                                    <i class="fas fa-lock text-blue-600 text-xs" title="PM session locked"></i>
+                                    <i class="fas fa-lock text-blue-600" title="PM session locked"></i>
                                 {% endif %}
                             </div>
                         {% endif %}

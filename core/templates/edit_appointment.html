@@ -68,30 +68,28 @@
         border-color: #fca5a5 !important;
     }
 
-    /* iOS-specific fixes for date input */
-    input[type="date"] {
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        min-height: 48px; /* Ensure consistent height on iOS */
-        line-height: 1.5;
-        background-image: none;
-    }
-    
-    input[type="date"]::-webkit-date-and-time-value {
-        text-align: left;
-        font-family: inherit;
+    /* iOS-specific fixes for date input - more targeted */
+    @supports (-webkit-touch-callout: none) {
+        input[type="date"] {
+            -webkit-appearance: none;
+            min-height: 48px;
+            line-height: 1.5;
+        }
+        
+        input[type="date"]::-webkit-date-and-time-value {
+            text-align: left;
+            font-family: inherit;
+        }
     }
     
     input[type="date"]::-webkit-calendar-picker-indicator {
         opacity: 0.6;
         cursor: pointer;
-        background: none;
         margin-left: auto;
     }
     
-    /* Ensure consistent sizing across all inputs on iOS */
-    @media screen and (-webkit-min-device-pixel-ratio: 2) {
+    /* iOS device specific adjustments */
+    @media screen and (-webkit-min-device-pixel-ratio: 2) and (max-device-width: 1024px) {
         input[type="date"] {
             height: 48px !important;
             min-height: 48px !important;

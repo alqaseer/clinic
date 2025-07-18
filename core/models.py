@@ -46,6 +46,7 @@ class Workspace(models.Model):
     
     # NEW FIELDS
     session_config = models.JSONField(default=dict, blank=True)  # New session-based structure
+    give_new_referrals_time = models.BooleanField(default=True)  # New boolean field
     
     def is_day_open(self, day_name):
         """Check if a day has any open sessions - use new format if available"""

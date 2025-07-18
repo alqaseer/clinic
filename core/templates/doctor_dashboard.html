@@ -349,9 +349,16 @@
                         <div class="mb-4 flex items-center justify-between">
                             <div>
                                 <h4 class="text-sm font-medium text-gray-500">Appointment Date</h4>
-                                <p class="text-gray-900">{{ appointmentDetails.date }}</p>
-                                <p v-if="appointmentDetails.session" class="text-xs text-gray-500 mt-1">
-                                    {{ appointmentDetails.session }} Session
+                                <p class="text-gray-900">
+                                    {{ appointmentDetails.date }}
+                                    <span v-if="appointmentDetails.session" 
+                                          :class="{
+                                              'text-blue-600': appointmentDetails.session === 'AM',
+                                              'text-red-800': appointmentDetails.session === 'PM'
+                                          }" 
+                                          class="font-semibold ml-2">
+                                        ({{ appointmentDetails.session === 'AM' ? 'Morning clinic' : 'Afternoon clinic' }})
+                                    </span>
                                 </p>
                             </div>
                             <button @click="showChangeConfirmation" 
@@ -360,10 +367,13 @@
                                 Change date?
                             </button>
                         </div>
-                        <div class="mb-4">
+                        
+                        <!-- Conditional Time Display - Only show if both showTime is true AND time exists -->
+                        <div v-if="appointmentDetails.showTime === true && appointmentDetails.time" class="mb-4">
                             <h4 class="text-sm font-medium text-gray-500">Appointment Time</h4>
                             <p class="text-gray-900">{{ appointmentDetails.time }}</p>
                         </div>
+                        
                         <div v-if="dateChanged" class="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md border border-blue-200 flex items-start">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -432,7 +442,8 @@
                     date: '',
                     time: '',
                     workspaceId: null,
-                    session: '' // Add session info
+                    session: '', // Add session info
+                    showTime: true // New field to control time display
                 })
                 
                 // Patient lookup state
@@ -560,7 +571,10 @@
                         const data = await response.json()
                         
                         if (data.success) {
-                            // Update appointment details
+                            // For testing: Check if we should show time based on backend response
+                            // Remove the hardcoded subclavian check and use proper logic
+                            const shouldShowTime = data.show_time !== undefined ? data.show_time : !!data.appointment_time;
+                            
                             appointmentDetails.value = {
                                 appointmentId: data.appointment_id,
                                 patientName: patientName.value,
@@ -571,9 +585,11 @@
                                 date: data.appointment_date,
                                 time: data.appointment_time,
                                 workspaceId: data.workspace_id,
-                                session: data.session || '' // Include session info
+                                session: data.session || '',
+                                showTime: shouldShowTime
                             }
-                            console.log("After assignment:", appointmentDetails.value);
+                            console.log("Appointment details:", appointmentDetails.value);
+                            console.log("Show time:", data.show_time, "Appointment time:", data.appointment_time);
                             // Show appointment details view
                             showAppointmentDetails.value = true
                         } else {
@@ -649,6 +665,8 @@
                             if (data.new_session) {
                                 appointmentDetails.value.session = data.new_session;
                             }
+                            // Update showTime based on backend response
+                            appointmentDetails.value.showTime = data.show_time !== undefined ? data.show_time : !!data.new_time;
                             dateChanged.value = true;
                         } else {
                             alert(data.message || 'Failed to change appointment date');

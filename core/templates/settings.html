@@ -20,7 +20,7 @@
     .gradient-border-inner {
         background: rgba(255, 255, 255, 0.95);
         border-radius: 14px;
-        padding: 1.5rem;
+        padding: 1rem;
     }
     
     .custom-select {
@@ -50,11 +50,12 @@
     }
     
     .session-input {
-        width: 80px;
+        width: 70px;
         padding: 8px 12px;
-        border-radius: 6px;
+        border-radius: 8px;
         text-align: center;
         font-size: 14px;
+        font-weight: 500;
     }
     
     .session-input:disabled {
@@ -63,45 +64,201 @@
         cursor: not-allowed;
     }
     
-    .day-row {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        border-radius: 12px;
+    .day-card {
         background: rgba(248, 249, 250, 0.5);
         border: 1px solid rgba(229, 229, 234, 0.6);
-        margin-bottom: 12px;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 16px;
         transition: all 0.3s ease;
     }
     
-    .day-row:hover {
+    .day-card:hover {
         background: rgba(248, 249, 250, 0.8);
         border-color: rgba(0, 122, 255, 0.3);
     }
     
-    .day-label {
+    .day-header {
         font-weight: 600;
         color: #374151;
-        min-width: 100px;
-    }
-    
-    .session-group {
+        margin-bottom: 16px;
+        font-size: 18px;
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-left: 20px;
+    }
+    
+    .day-header::before {
+        content: '';
+        width: 4px;
+        height: 24px;
+        background: linear-gradient(135deg, #007AFF, #32D74B);
+        border-radius: 2px;
+        margin-right: 12px;
+    }
+    
+    .sessions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+    
+    .session-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 20px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 16px;
+        border: 2px solid rgba(229, 229, 234, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        min-height: 140px;
+        justify-content: space-between;
+    }
+    
+    .session-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #007AFF, #32D74B);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .session-item:hover {
+        background: rgba(255, 255, 255, 1);
+        border-color: rgba(0, 122, 255, 0.6);
+    }
+    
+    .session-item:hover::before {
+        opacity: 1;
+    }
+    
+    .session-item.enabled {
+        border-color: rgba(0, 122, 255, 0.5);
+        background: rgba(239, 246, 255, 0.9);
+    }
+    
+    .session-item.enabled::before {
+        opacity: 1;
+    }
+    
+    .session-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 20px;
     }
     
     .session-checkbox {
-        width: 18px;
-        height: 18px;
+        width: 24px;
+        height: 24px;
         accent-color: #007AFF;
+        cursor: pointer;
+        margin-bottom: 12px;
     }
     
     .session-label {
-        font-weight: 500;
+        font-weight: 700;
+        color: #374151;
+        font-size: 18px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    
+    .session-enabled .session-label {
+        color: #007AFF;
+    }
+    
+    .session-input-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+    
+    .session-input-label {
+        font-size: 12px;
         color: #6B7280;
-        min-width: 40px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .session-input {
+        width: 80px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+        border: 2px solid rgba(229, 229, 234, 0.6);
+        background: rgba(248, 249, 250, 0.8);
+        transition: all 0.3s ease;
+    }
+    
+    .session-input:focus {
+        background: rgba(248, 249, 250, 1);
+        border-color: #007AFF;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        outline: none;
+    }
+    
+    .session-input:disabled {
+        background: rgba(229, 229, 234, 0.3);
+        color: #9CA3AF;
+        cursor: not-allowed;
+        border-color: rgba(229, 229, 234, 0.3);
+    }
+    
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 28px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 28px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+        background-color: #007AFF;
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(22px);
     }
     
     .animate-slide-in {
@@ -130,6 +287,181 @@
         }
         50% {
             transform: scale(1.05);
+        }
+    }
+    
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+        .gradient-border-inner {
+            padding: 1rem;
+        }
+        
+        .sessions-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        
+        .session-item {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            min-height: auto;
+        }
+        
+        .session-item::before {
+            height: 100%;
+            width: 4px;
+            top: 0;
+            left: 0;
+            right: auto;
+            background: linear-gradient(180deg, #007AFF, #32D74B);
+        }
+        
+        .session-header {
+            flex-direction: row;
+            align-items: center;
+            margin-bottom: 0;
+            margin-right: 16px;
+        }
+        
+        .session-checkbox {
+            margin-bottom: 0;
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .session-label {
+            font-size: 16px;
+            margin-bottom: 0;
+        }
+        
+        .session-input-container {
+            flex-direction: row;
+            align-items: center;
+            width: auto;
+        }
+        
+        .session-input-label {
+            margin-bottom: 0;
+            margin-right: 8px;
+            font-size: 11px;
+        }
+        
+        .session-input {
+            width: 60px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .day-header {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .day-header::before {
+            width: 3px;
+            height: 20px;
+            margin-right: 8px;
+        }
+        
+        .day-card {
+            padding: 1rem;
+            margin-bottom: 12px;
+        }
+        
+        .text-3xl {
+            font-size: 1.5rem;
+        }
+        
+        .text-lg {
+            font-size: 1rem;
+        }
+        
+        .px-8 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        .py-4 {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+        
+        .grid.md\\:grid-cols-2 {
+            grid-template-columns: 1fr;
+        }
+        
+        .grid.md\\:grid-cols-3 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .space-x-3 > * + * {
+            margin-left: 0.5rem;
+        }
+        
+        .w-10.h-10 {
+            width: 2rem;
+            height: 2rem;
+        }
+        
+        .w-12.h-12 {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+        
+        .w-16.h-16 {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        /* Mobile toggle section */
+        .flex.flex-col.md\\:flex-row {
+            flex-direction: column;
+        }
+        
+        .ml-0.md\\:ml-6 {
+            margin-left: 0;
+            margin-top: 1rem;
+        }
+        
+        .flex.flex-col.items-center {
+            flex-direction: row;
+            justify-content: center;
+        }
+        
+        .toggle-switch.mb-2 {
+            margin-bottom: 0;
+            margin-right: 0.5rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .max-w-4xl {
+            max-width: 100%;
+            margin-left: 0.5rem;
+            margin-right: 0.5rem;
+        }
+        
+        .session-input {
+            width: 45px;
+        }
+        
+        .day-card {
+            padding: 0.75rem;
+        }
+        
+        .session-item {
+            padding: 6px 8px;
+        }
+        
+        .text-2xl {
+            font-size: 1.25rem;
+        }
+        
+        .grid.grid-cols-2 {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -162,7 +494,7 @@
                         </div>
                     </div>
                     
-                    <div class="glass-card rounded-xl p-6">
+                    <div class="glass-card rounded-xl p-4 md:p-6">
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-3">
                                 <i class="fas fa-clock mr-2 text-green-600"></i>
@@ -175,56 +507,116 @@
                         </div>
 
                         {% for day in days_data %}
-                        <div class="day-row">
-                            <div class="day-label">{{ day.label }}</div>
+                        <div class="day-card">
+                            <div class="day-header">{{ day.label }}</div>
                             
-                            <!-- AM Session -->
-                            <div class="session-group">
-                                <input 
-                                    type="checkbox" 
-                                    name="{{ day.lower_key }}_am_enabled" 
-                                    id="{{ day.lower_key }}_am_checkbox"
-                                    class="session-checkbox"
-                                    {% if day.am_enabled %}checked{% endif %}
-                                    onchange="toggleSessionInputs('{{ day.lower_key }}', 'am')"
-                                >
-                                <label for="{{ day.lower_key }}_am_checkbox" class="session-label">AM</label>
-                                <input 
-                                    type="number" 
-                                    name="{{ day.lower_key }}_am_max_total" 
-                                    id="{{ day.lower_key }}_am_max_total"
-                                    class="session-input custom-input"
-                                    placeholder="Max"
-                                    min="1"
-                                    value="{{ day.am_max_total }}"
-                                    {% if not day.am_enabled %}disabled{% endif %}
-                                >
-                            </div>
-                            
-                            <!-- PM Session -->
-                            <div class="session-group">
-                                <input 
-                                    type="checkbox" 
-                                    name="{{ day.lower_key }}_pm_enabled" 
-                                    id="{{ day.lower_key }}_pm_checkbox"
-                                    class="session-checkbox"
-                                    {% if day.pm_enabled %}checked{% endif %}
-                                    onchange="toggleSessionInputs('{{ day.lower_key }}', 'pm')"
-                                >
-                                <label for="{{ day.lower_key }}_pm_checkbox" class="session-label">PM</label>
-                                <input 
-                                    type="number" 
-                                    name="{{ day.lower_key }}_pm_max_total" 
-                                    id="{{ day.lower_key }}_pm_max_total"
-                                    class="session-input custom-input"
-                                    placeholder="Max"
-                                    min="1"
-                                    value="{{ day.pm_max_total }}"
-                                    {% if not day.pm_enabled %}disabled{% endif %}
-                                >
+                            <div class="sessions-grid">
+                                <!-- AM Session -->
+                                <div class="session-item">
+                                    <div class="session-header">
+                                        <input 
+                                            type="checkbox" 
+                                            name="{{ day.lower_key }}_am_enabled" 
+                                            id="{{ day.lower_key }}_am_checkbox"
+                                            class="session-checkbox"
+                                            {% if day.am_enabled %}checked{% endif %}
+                                            onchange="toggleSessionInputs('{{ day.lower_key }}', 'am')"
+                                        >
+                                        <label for="{{ day.lower_key }}_am_checkbox" class="session-label">AM</label>
+                                    </div>
+                                    <div class="session-input-container">
+                                        <label class="session-input-label">Max Patients</label>
+                                        <input 
+                                            type="number" 
+                                            name="{{ day.lower_key }}_am_max_total" 
+                                            id="{{ day.lower_key }}_am_max_total"
+                                            class="session-input custom-input"
+                                            placeholder="20"
+                                            min="1"
+                                            value="{{ day.am_max_total }}"
+                                            {% if not day.am_enabled %}disabled{% endif %}
+                                        >
+                                    </div>
+                                </div>
+                                
+                                <!-- PM Session -->
+                                <div class="session-item">
+                                    <div class="session-header">
+                                        <input 
+                                            type="checkbox" 
+                                            name="{{ day.lower_key }}_pm_enabled" 
+                                            id="{{ day.lower_key }}_pm_checkbox"
+                                            class="session-checkbox"
+                                            {% if day.pm_enabled %}checked{% endif %}
+                                            onchange="toggleSessionInputs('{{ day.lower_key }}', 'pm')"
+                                        >
+                                        <label for="{{ day.lower_key }}_pm_checkbox" class="session-label">PM</label>
+                                    </div>
+                                    <div class="session-input-container">
+                                        <label class="session-input-label">Max Patients</label>
+                                        <input 
+                                            type="number" 
+                                            name="{{ day.lower_key }}_pm_max_total" 
+                                            id="{{ day.lower_key }}_pm_max_total"
+                                            class="session-input custom-input"
+                                            placeholder="20"
+                                            min="1"
+                                            value="{{ day.pm_max_total }}"
+                                            {% if not day.pm_enabled %}disabled{% endif %}
+                                        >
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         {% endfor %}
+                    </div>
+                </div>
+
+                <!-- New Referrals Time Preference Section -->
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-clock text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900">Appointment Time Settings</h3>
+                            <p class="text-gray-600 text-sm">Control how appointment times are displayed to new referrals</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card rounded-xl p-4 md:p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                            <div class="flex-1">
+                                <label for="give_new_referrals_time" class="block text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-clock mr-2 text-purple-500"></i>
+                                    Show Specific Time Slots to New Referrals
+                                </label>
+                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                                    <div class="flex items-center text-sm">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
+                                        <span class="text-gray-700"><strong>Enabled:</strong> New referrals see specific time slots (e.g., "2:30 PM")</span>
+                                    </div>
+                                    <div class="flex items-center text-sm">
+                                        <div class="w-3 h-3 bg-orange-500 rounded-full mr-3 flex-shrink-0"></div>
+                                        <span class="text-gray-700"><strong>Disabled:</strong> New referrals only see dates (e.g., "March 15, 2025")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ml-0 md:ml-6 flex flex-col items-center">
+                                <label class="toggle-switch mb-2">
+                                    <input 
+                                        type="checkbox" 
+                                        name="give_new_referrals_time" 
+                                        id="give_new_referrals_time"
+                                        {% if workspace.give_new_referrals_time %}checked{% endif %}
+                                    >
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="text-xs text-gray-600 font-medium toggle-status">
+                                    {% if workspace.give_new_referrals_time %}Time Slots{% else %}Date Only{% endif %}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -240,7 +632,7 @@
                         </div>
                     </div>
                     
-                    <div class="glass-card rounded-xl p-6">
+                    <div class="glass-card rounded-xl p-4 md:p-6">
                         <label for="rooms" class="block text-sm font-medium text-gray-700 mb-3">
                             <i class="fas fa-hospital mr-2 text-blue-500"></i>
                             Number of Examination Rooms
@@ -274,7 +666,7 @@
     <!-- Data Management Section -->
     <div class="grid md:grid-cols-2 gap-6">
         <!-- Backup Notice -->
-        <div class="glass-card rounded-xl p-6 border border-yellow-200">
+        <div class="glass-card rounded-xl p-4 md:p-6 border border-yellow-200">
             <div class="flex items-start space-x-4">
                 <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="fas fa-shield-alt text-white text-lg"></i>
@@ -293,7 +685,7 @@
         </div>
 
         <!-- Download Data -->
-        <div class="glass-card rounded-xl p-6">
+        <div class="glass-card rounded-xl p-4 md:p-6">
             <div class="text-center">
                 <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-download text-white text-xl"></i>
@@ -316,7 +708,7 @@
     </div>
 
     <!-- Quick Stats -->
-    <div class="glass-card rounded-xl p-6">
+    <div class="glass-card rounded-xl p-4 md:p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <i class="fas fa-chart-bar mr-3 text-blue-500"></i>
             Quick Overview
@@ -342,9 +734,12 @@
     function toggleSessionInputs(day, session) {
         const checkbox = document.getElementById(`${day}_${session}_checkbox`);
         const input = document.getElementById(`${day}_${session}_max_total`);
+        const sessionItem = checkbox.closest('.session-item');
         
         if (checkbox.checked) {
             input.disabled = false;
+            sessionItem.classList.add('enabled');
+            sessionItem.classList.add('session-enabled');
             input.focus();
             // Set default value if empty
             if (!input.value) {
@@ -352,17 +747,45 @@
             }
         } else {
             input.disabled = true;
+            sessionItem.classList.remove('enabled');
+            sessionItem.classList.remove('session-enabled');
             input.value = '';
         }
     }
 
-    // Add smooth animations
+    // Update toggle status text
+    function updateToggleStatus() {
+        const toggle = document.getElementById('give_new_referrals_time');
+        const status = document.querySelector('.toggle-status');
+        if (toggle && status) {
+            status.textContent = toggle.checked ? 'Time Slots' : 'Date Only';
+            status.style.color = toggle.checked ? '#10B981' : '#F59E0B';
+        }
+    }
+
+    // Add smooth animations and initialize states
     document.addEventListener('DOMContentLoaded', function() {
         const cards = document.querySelectorAll('.glass-card');
         cards.forEach((card, index) => {
             card.style.animationDelay = `${index * 0.1}s`;
             card.classList.add('animate-slide-in');
         });
+
+        // Initialize session item states
+        document.querySelectorAll('.session-checkbox').forEach(checkbox => {
+            const sessionItem = checkbox.closest('.session-item');
+            if (checkbox.checked) {
+                sessionItem.classList.add('enabled');
+                sessionItem.classList.add('session-enabled');
+            }
+        });
+
+        // Add toggle listener
+        const toggle = document.getElementById('give_new_referrals_time');
+        if (toggle) {
+            toggle.addEventListener('change', updateToggleStatus);
+            updateToggleStatus(); // Initialize
+        }
     });
 </script>
 

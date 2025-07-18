@@ -558,6 +558,7 @@ def settings_page(request, workspace_name):
     if request.method == "POST":
         # Handle session-based form submission
         rooms = request.POST.get("rooms")
+        give_new_referrals_time = request.POST.get("give_new_referrals_time") == "on"
         
         # Process rooms
         if not rooms:
@@ -625,13 +626,14 @@ def settings_page(request, workspace_name):
         # Save to workspace
         workspace.session_config = new_session_config
         workspace.rooms = rooms
+        workspace.give_new_referrals_time = give_new_referrals_time
         workspace.save()
         
         # Log the action
         ActionLog.objects.create(
             workspace=workspace,
             user=request.user,
-            action_description=f"Updated workspace settings and session configuration."
+            action_description=f"Updated workspace settings, session configuration, and new referrals time preference."
         )
         
         messages.success(request, "Settings updated successfully!")
@@ -2097,6 +2099,7 @@ def find_available_appointment(speciality, am_only=False):
     return None, None, None
 
 # Doctor appointment booking
+# Doctor appointment booking
 @doctor_required
 @require_POST
 def book_appointment(request):
@@ -2191,6 +2194,9 @@ def book_appointment(request):
         diagnosis=diagnosis
     )
     
+    # Check workspace setting for showing time to new referrals
+    show_time = workspace.give_new_referrals_time
+    
     # Return response based on content type
     if request.content_type == 'application/json':
         return JsonResponse({
@@ -2200,15 +2206,21 @@ def book_appointment(request):
             'speciality_name': speciality.name,
             'clinic_name': workspace.owner_name or workspace.name,
             'appointment_date': appointment_date.strftime('%d %b %Y'),
-            'appointment_time': appointment_time.strftime('%H:%M'),
+            'appointment_time': appointment_time.strftime('%H:%M') if show_time else None,
             'workspace_id': workspace.id,
-            'session': session  # Include session info
+            'session': session,  # Include session info
+            'show_time': show_time  # Include the boolean to control frontend display
         })
     else:
+        if show_time:
+            time_msg = f" at {appointment_time.strftime('%H:%M')}"
+        else:
+            time_msg = ""
+        
         messages.success(
             request, 
             f"Appointment booked successfully for {patient_name} with {speciality.name} speciality on "
-            f"{appointment_date.strftime('%d %b %Y')} at {appointment_time.strftime('%H:%M')} ({session} session)"
+            f"{appointment_date.strftime('%d %b %Y')}{time_msg} ({session} session)"
         )
         return redirect('doctor_dashboard')
 
@@ -2392,14 +2404,18 @@ def change_appointment_date(request):
                 appointment.save()
                 print(f"Updated appointment: date={check_date}, time={best_slot}, session={best_session}")
                 
+                # Check workspace setting for showing time to new referrals
+                show_time = workspace.give_new_referrals_time
+                
                 return JsonResponse({
                     'success': True,
                     'message': 'Appointment date changed successfully',
                     'new_date': check_date.strftime('%d %b %Y'),
-                    'new_time': best_slot.strftime('%H:%M'),
+                    'new_time': best_slot.strftime('%H:%M') if show_time else None,
                     'new_session': best_session,
                     'old_date': old_date.strftime('%d %b %Y'),
-                    'old_time': old_time.strftime('%H:%M')
+                    'old_time': old_time.strftime('%H:%M'),
+                    'show_time': show_time  # Include the boolean to control frontend display
                 })
             except Exception as e:
                 print(f"ERROR saving appointment: {str(e)}")
@@ -2423,14 +2439,18 @@ def change_appointment_date(request):
             appointment.save()
             print(f"Updated appointment to default slot: date={earliest_date}, time={default_slot}, session={earliest_session}")
             
+            # Check workspace setting for showing time to new referrals
+            show_time = workspace.give_new_referrals_time
+            
             return JsonResponse({
                 'success': True,
                 'message': f'Appointment date changed successfully (using default {earliest_session} slot)',
                 'new_date': earliest_date.strftime('%d %b %Y'),
-                'new_time': default_slot.strftime('%H:%M'),
+                'new_time': default_slot.strftime('%H:%M') if show_time else None,
                 'new_session': earliest_session,
                 'old_date': old_date.strftime('%d %b %Y'),
-                'old_time': old_time.strftime('%H:%M')
+                'old_time': old_time.strftime('%H:%M'),
+                'show_time': show_time  # Include the boolean to control frontend display
             })
         except Exception as e:
             print(f"ERROR saving appointment to default slot: {str(e)}")

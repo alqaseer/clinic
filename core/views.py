@@ -197,7 +197,7 @@ def workspace_main(request, workspace_name):
     #   ✅ Celery background task
     # =========================================================
 
-    """
+    
     if request.user.username == "alqaseer":
         # ===== Performance controls =====
         MAX_PER_REQUEST = 200
@@ -269,7 +269,7 @@ def workspace_main(request, workspace_name):
 
                 for p in photo_paths:
                     default_storage.delete(p)
-    """
+    
 
     # -------------------------
     # Normal dashboard counts

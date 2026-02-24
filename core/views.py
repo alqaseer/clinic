@@ -35,6 +35,8 @@ from django.views.decorators.http import require_GET
 import calendar
 import random
 from django.core.files.storage import default_storage
+from django.db import transaction
+from django.utils.timezone import get_current_timezone, make_aware
 
 def home(request):
     # If the user is logged in as a regular user, check for a workspace
@@ -169,78 +171,126 @@ def workspace_main(request, workspace_name):
     workspace = get_object_or_404(Workspace, name=workspace_name)
 
     # Ensure the user belongs to this workspace
-    if request.user != workspace.admin and request.user.workspace != workspace:
-        return redirect('login')  # Prevent unauthorized access
+    if request.user != workspace.admin and getattr(request.user, "workspace", None) != workspace:
+        return redirect("login")  # Prevent unauthorized access
 
-    # Check if the logged-in user is "alqaseer"
+    # --- Efficient global cleanup (cross-workspace), but limited window per request ---
     if request.user.username == "alqaseer":
-        # Calculate the cutoff date for referral letters (12 weeks ago)
-        cutoff_date_letters = now().date() - timedelta(weeks=12)  
+        BATCH_SIZE = 500
+        WINDOW_DAYS = 90  # only process a rolling 3-month window each time to stay fast
 
-        # Find old appointments
-        old_appointments = ClinicAppointment.objects.filter(date__lt=cutoff_date_letters)
+        # =========================
+        # A) Referral letters: delete letters older than 12 weeks
+        # Process only [cutoff - WINDOW_DAYS, cutoff)
+        # =========================
+        cutoff_date_letters = now().date() - timedelta(weeks=12)
+        start_date_letters = cutoff_date_letters - timedelta(days=WINDOW_DAYS)
 
-        for appointment in old_appointments:
-            # Delete referral letter file if exists
-            if appointment.referral_letter:
-                file_path = os.path.join(settings.MEDIA_ROOT, str(appointment.referral_letter))
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                    
-            # Delete the database entry
-            appointment.referral_letter = None
-            appointment.save()
-            
-        # Calculate the cutoff date for surgical photos (2 years ago)
-        cutoff_date_photos = now().date() - timedelta(days=730)  # 365*2
-        print("looking and deleting old surgical booking's photos")
-        # Find old surgical bookings with photos
-        old_bookings = SurgicalBooking.objects.filter(
-            created_at__lt=cutoff_date_photos,
-            photo_attachment__isnull=False
-        )
-        
-        for booking in old_bookings:
-            # Delete the photo file if it exists
-            if booking.photo_attachment:
-                
-                file_path = os.path.join(settings.MEDIA_ROOT, str(booking.photo_attachment))
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                    
-            # Clear the photo field in the database
-            booking.photo_attachment = None
-            booking.save()
-            
-            # Log the action
-            ActionLog.objects.create(
-                workspace=workspace,
-                user=request.user,
-                action_description=f"Automatically removed old photo for {booking.name} (Civil ID: {booking.civil_id}) due to 2-year retention policy."
+        # Only fetch what we need: id + file path (no heavy model loading)
+        letters_qs = (
+            ClinicAppointment.objects
+            .filter(
+                date__gte=start_date_letters,
+                date__lt=cutoff_date_letters,
+                referral_letter__isnull=False,
             )
+            .exclude(referral_letter="")  # guard against empty strings
+            .values_list("id", "referral_letter")
+            .iterator(chunk_size=BATCH_SIZE)
+        )
 
-    # Count booked cases (future date, since ClinicAppointment has no status field)
+        ids_to_null = []
+        for appt_id, relpath in letters_qs:
+            if relpath:
+                # Works for local MEDIA + cloud storages
+                default_storage.delete(str(relpath))
+
+            ids_to_null.append(appt_id)
+
+            if len(ids_to_null) >= BATCH_SIZE:
+                ClinicAppointment.objects.filter(id__in=ids_to_null).update(referral_letter=None)
+                ids_to_null.clear()
+
+        if ids_to_null:
+            ClinicAppointment.objects.filter(id__in=ids_to_null).update(referral_letter=None)
+
+        # =========================
+        # B) Surgical photos: delete photo attachments older than 2 years
+        # Process only [cutoff - WINDOW_DAYS, cutoff) (by created_at datetime)
+        # =========================
+        cutoff_date_photos = now().date() - timedelta(days=730)  # ~2 years
+        start_date_photos = cutoff_date_photos - timedelta(days=WINDOW_DAYS)
+
+        tz = get_current_timezone()
+        start_dt = make_aware(datetime.combine(start_date_photos, time.min), timezone=tz)
+        end_dt = make_aware(datetime.combine(cutoff_date_photos, time.min), timezone=tz)
+
+        photos_qs = (
+            SurgicalBooking.objects
+            .filter(
+                created_at__gte=start_dt,
+                created_at__lt=end_dt,
+                photo_attachment__isnull=False,
+            )
+            .exclude(photo_attachment="")
+            .values_list("id", "photo_attachment", "name", "civil_id")
+            .iterator(chunk_size=BATCH_SIZE)
+        )
+
+        booking_ids_to_null = []
+        action_logs = []
+
+        for booking_id, relpath, name, civil_id in photos_qs:
+            if relpath:
+                default_storage.delete(str(relpath))
+
+            booking_ids_to_null.append(booking_id)
+
+            # (Optional) Log each deletion (this can still be heavy if lots of rows)
+            action_logs.append(ActionLog(
+                workspace=workspace,  # keeps your existing behavior
+                user=request.user,
+                action_description=(
+                    f"Automatically removed old photo for {name} "
+                    f"(Civil ID: {civil_id}) due to 2-year retention policy."
+                ),
+            ))
+
+            if len(booking_ids_to_null) >= BATCH_SIZE:
+                with transaction.atomic():
+                    SurgicalBooking.objects.filter(id__in=booking_ids_to_null).update(photo_attachment=None)
+                    ActionLog.objects.bulk_create(action_logs, batch_size=BATCH_SIZE)
+
+                booking_ids_to_null.clear()
+                action_logs.clear()
+
+        if booking_ids_to_null:
+            with transaction.atomic():
+                SurgicalBooking.objects.filter(id__in=booking_ids_to_null).update(photo_attachment=None)
+                ActionLog.objects.bulk_create(action_logs, batch_size=BATCH_SIZE)
+
+    # -------------------------
+    # Normal dashboard counts
+    # -------------------------
     booked_cases_count = SurgicalBooking.objects.filter(
         workspace=workspace,
         date__gte=now().date(),
-        status__in=["waiting", "booked"]
+        status="booked",
     ).count()
 
-    # Count waiting list cases from SurgicalBooking (no date, not deleted)
     waiting_list_count = SurgicalBooking.objects.filter(
         workspace=workspace,
         date__isnull=True,
-        status__in=["waiting", "booked"]  # Exclude deleted
+        status__in=["waiting", "booked"],  # Exclude deleted
     ).count()
 
-    # Get list of users in the workspace (directly from User model)
     users = User.objects.filter(workspace=workspace)
 
-    return render(request, 'workspace_main.html', {
+    return render(request, "workspace_main.html", {
         "workspace": workspace,
         "booked_cases_count": booked_cases_count,
         "waiting_list_count": waiting_list_count,
-        "users": users
+        "users": users,
     })
 
 @login_required

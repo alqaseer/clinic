@@ -175,21 +175,40 @@ def workspace_main(request, workspace_name):
     if request.user != workspace.admin and getattr(request.user, "workspace", None) != workspace:
         return redirect("login")  # Prevent unauthorized access
 
-    # --- Efficient global cleanup (cross-workspace), throttled + capped ---
+
+    # =========================================================
+    # 🔴 GLOBAL RETENTION CLEANUP DISABLED
+    # ---------------------------------------------------------
+    # Previously:
+    # - When user "alqaseer" opened this page
+    # - Old referral letters (>12 weeks) were deleted
+    # - Old surgical photos (>2 years) were deleted
+    # - Processing was capped and throttled
+    #
+    # This has now been fully disabled to prevent:
+    # - Slow login / slow workspace loading
+    # - File system operations during request cycle
+    # - Unexpected background deletion
+    #
+    # If retention policy is needed again,
+    # move this logic to:
+    #   ✅ A management command
+    #   ✅ A scheduled cron job
+    #   ✅ Celery background task
+    # =========================================================
+
+    """
     if request.user.username == "alqaseer":
         # ===== Performance controls =====
-        MAX_PER_REQUEST = 200         # hard cap per request (keeps login fast)
-        WINDOW_DAYS = 90              # 3 months window
-        THROTTLE_MINUTES = 360        # run cleanup at most once every 6 hours
+        MAX_PER_REQUEST = 200
+        WINDOW_DAYS = 90
+        THROTTLE_MINUTES = 360
 
-        # Throttle so alqaseer doesn't pay the cleanup cost on every login/page refresh
         cache_key = "global_retention_cleanup_lock"
         if not cache.get(cache_key):
             cache.set(cache_key, True, timeout=THROTTLE_MINUTES * 60)
 
-            # =========================
-            # A) Referral letters older than 12 weeks (3-month window, capped)
-            # =========================
+            # Referral letters cleanup
             cutoff_date_letters = now().date() - timedelta(weeks=12)
             start_date_letters = cutoff_date_letters - timedelta(days=WINDOW_DAYS)
 
@@ -209,16 +228,12 @@ def workspace_main(request, workspace_name):
                 appt_ids = [r[0] for r in letters_rows]
                 letter_paths = [str(r[1]) for r in letters_rows if r[1]]
 
-                # Null DB field in one shot (fast)
                 ClinicAppointment.objects.filter(id__in=appt_ids).update(referral_letter=None)
 
-                # Delete files after DB update (capped)
                 for p in letter_paths:
                     default_storage.delete(p)
 
-            # =========================
-            # B) Photos older than 2 years (3-month window, capped)
-            # =========================
+            # Surgical photos cleanup
             cutoff_date_photos = now().date() - timedelta(days=730)
             start_date_photos = cutoff_date_photos - timedelta(days=WINDOW_DAYS)
 
@@ -242,21 +257,19 @@ def workspace_main(request, workspace_name):
                 booking_ids = [r[0] for r in photo_rows]
                 photo_paths = [str(r[1]) for r in photo_rows if r[1]]
 
-                # Null DB + one summary ActionLog
                 with transaction.atomic():
                     SurgicalBooking.objects.filter(id__in=booking_ids).update(photo_attachment=None)
                     ActionLog.objects.create(
-                        workspace=workspace,  # keep your behavior
+                        workspace=workspace,
                         user=request.user,
                         action_description=(
-                            f"Retention cleanup: removed {len(booking_ids)} old surgical photo attachments "
-                            f"(>2y; processed window={WINDOW_DAYS}d; capped={MAX_PER_REQUEST})."
+                            f"Retention cleanup: removed {len(booking_ids)} old surgical photo attachments."
                         ),
                     )
 
-                # Delete files (capped)
                 for p in photo_paths:
                     default_storage.delete(p)
+    """
 
     # -------------------------
     # Normal dashboard counts

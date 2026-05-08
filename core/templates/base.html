@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Surgical Workspace{% endblock %}</title>
-    
+
     <!-- Tailwind CSS and Font Awesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
@@ -13,14 +13,16 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        'sf': ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                        'sf': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
                     },
                     colors: {
-                        'apple-blue': '#007AFF',
-                        'apple-gray': '#F2F2F7',
-                        'apple-dark': '#1C1C1E',
-                        'apple-light-gray': '#F8F9FA',
-                        'apple-border': '#E5E5EA',
+                        'surgi-ink': '#171412',
+                        'surgi-paper': '#f5efe7',
+                        'surgi-paper-light': '#fbf7f1',
+                        'surgi-line': '#ded2c4',
+                        'surgi-teal': '#256f65',
+                        'surgi-teal-dark': '#164d46',
+                        'surgi-amber': '#b76e2d',
                     },
                     backdropBlur: {
                         'xs': '2px',
@@ -35,12 +37,27 @@
         }
     </script>
     <style>
-        /* Apple-style custom CSS */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --ink: #171412;
+            --muted: #6f675f;
+            --paper: #f5efe7;
+            --paper-2: #fbf7f1;
+            --line: #ded2c4;
+            --line-soft: #ebe0d5;
+            --accent: #256f65;
+            --accent-dark: #164d46;
+            --amber: #b76e2d;
+            --danger: #ad3f32;
+        }
+
         html, body {
             height: 100%;
             overflow: hidden;
+            background: var(--paper);
         }
-        
+
         /* Mobile and Tablet viewport handling */
         @media (max-width: 1023px) {
             .main-container {
@@ -50,7 +67,7 @@
                 flex-direction: column;
                 overflow: hidden;
             }
-            
+
             .main-content {
                 flex: 1;
                 overflow-y: auto;
@@ -58,7 +75,7 @@
                 /* Remove padding bottom that was causing extra space */
                 padding-bottom: 0 !important;
             }
-            
+
             /* Ensure content container doesn't add extra height */
             .main-content > div {
                 min-height: 0 !important;
@@ -70,7 +87,7 @@
             .main-container {
                 height: 100vh;
             }
-            
+
             .main-content {
                 overflow-y: auto;
                 height: 100vh;
@@ -81,41 +98,121 @@
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(80, 62, 43, 0.24);
             border-radius: 3px;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(80, 62, 43, 0.38);
         }
 
-        /* Glass morphism effect */
         .glass-morphism {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(251, 247, 241, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(222, 210, 196, 0.85);
         }
 
-        /* Smooth hover animations */
+        .sidebar-shell {
+            background:
+                linear-gradient(180deg, rgba(255, 252, 247, 0.94) 0%, rgba(245, 239, 231, 0.88) 100%);
+            border-right: 1px solid var(--line);
+            box-shadow: 12px 0 34px rgba(80, 62, 43, 0.08);
+        }
+
+        .sidebar-brand {
+            border-bottom: 1px solid var(--line);
+        }
+
+        .brand-mark {
+            background: var(--ink);
+            color: var(--paper-2);
+            border: 1px solid rgba(255, 250, 243, 0.14);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .nav-section-title {
+            color: #8d8177;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.13em;
+        }
+
         .nav-item {
-            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-        
-        .nav-item:hover {
-            transform: translateX(4px);
+            position: relative;
+            transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
         }
 
-        /* Apple-style focus rings */
+        .nav-item:hover {
+            background: rgba(255, 250, 243, 0.78);
+            color: var(--accent-dark);
+        }
+
+        .nav-item.is-active {
+            background: #e8f1ed;
+            color: var(--accent-dark);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .nav-item > div {
+            background: rgba(255, 250, 243, 0.74) !important;
+            border: 1px solid var(--line);
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .nav-item:hover > div,
+        .nav-item.is-active > div {
+            background: #fffaf3 !important;
+            border-color: #c2dad3;
+        }
+
+        .nav-item i.text-blue-600,
+        .nav-item i.text-green-600,
+        .nav-item i.text-purple-600,
+        .nav-item i.text-indigo-600 {
+            color: var(--accent) !important;
+        }
+
+        .nav-item i.text-orange-600,
+        .nav-item i.text-yellow-600,
+        .nav-item i.text-pink-600 {
+            color: var(--amber) !important;
+        }
+
+        .nav-item i.text-red-600 {
+            color: var(--danger) !important;
+        }
+
+        .nav-item i.text-gray-600 {
+            color: #746a61 !important;
+        }
+
+        .nav-item > i {
+            width: 1.25rem;
+            text-align: center;
+            margin-right: 0.75rem;
+        }
+
+        .mobile-menu-panel {
+            background: var(--paper-2);
+            border-right: 1px solid var(--line);
+        }
+
+        .mobile-menu-toggle {
+            background: var(--ink);
+            border: 1px solid rgba(255, 250, 243, 0.12);
+            box-shadow: 0 14px 28px rgba(23, 20, 18, 0.18);
+        }
+
         .focus-ring:focus {
             outline: none;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 0 0 3px rgba(37, 111, 101, 0.22);
         }
 
         /* Keyframe animations */
@@ -123,67 +220,83 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        
+
         @keyframes slideUp {
             from { transform: translateY(10px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        
+
         @keyframes scaleIn {
             from { transform: scale(0.95); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
 
-        /* iOS-style button */
         .ios-button {
-            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
-            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+            background: var(--ink);
+            box-shadow: 0 14px 28px rgba(23, 20, 18, 0.18);
             transition: all 0.2s ease;
         }
-        
+
         .ios-button:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            background: #2b2521;
+            box-shadow: 0 18px 34px rgba(23, 20, 18, 0.2);
         }
-        
+
         .ios-button:active {
             transform: translateY(0);
-            box-shadow: 0 1px 4px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 8px 18px rgba(23, 20, 18, 0.18);
+        }
+
+        .workspace-pill {
+            background: rgba(255, 250, 243, 0.74);
+            border: 1px solid var(--line);
+        }
+
+        .user-card {
+            background: rgba(255, 250, 243, 0.82);
+            border: 1px solid var(--line);
+        }
+
+        .main-surface {
+            background:
+                linear-gradient(180deg, rgba(255, 252, 247, 0.9) 0%, rgba(245, 239, 231, 0) 24rem),
+                var(--paper);
         }
     </style>
 </head>
-<body class="bg-apple-light-gray text-gray-800 font-sf antialiased">
+<body class="bg-surgi-paper text-stone-800 font-sf antialiased">
 
     <!-- Main Container -->
     <div class="flex lg:h-screen main-container">
 
         <!-- Sidebar (Desktop only - 1024px and up) -->
-        <aside class="glass-morphism w-80 hidden lg:flex flex-col shadow-2xl animate-fade-in">
+        <aside class="sidebar-shell w-72 hidden lg:flex flex-col animate-fade-in">
             <!-- Branding -->
-            <div class="p-8 border-b border-apple-border/50">
-                <a href="#" class="flex items-center space-x-4 group focus-ring rounded-xl p-2 -m-2">
-                    <div class="w-12 h-12 bg-gradient-to-br from-apple-blue to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-blue-200/50 transition-all duration-300 group-hover:scale-105">
-                        <i class="fas fa-stethoscope text-white text-xl"></i>
+            <div class="sidebar-brand p-5">
+                <a href="{% url 'workspace_main' workspace.name %}" class="flex items-center space-x-3 group focus-ring rounded-lg p-2 -m-2">
+                    <div class="brand-mark w-11 h-11 rounded-lg flex items-center justify-center transition-colors">
+                        <i class="fas fa-stethoscope text-lg"></i>
                     </div>
-                    <div>
-                        <h1 class="text-xl font-semibold text-gray-900 group-hover:text-apple-blue transition-colors">{{ workspace.name }}</h1>
-                        <p class="text-sm text-gray-500 font-medium">Surgical Workspace</p>
+                    <div class="min-w-0">
+                        <h1 class="text-base font-semibold text-stone-950 group-hover:text-[#164d46] transition-colors truncate">{{ workspace.name }}</h1>
+                        <p class="text-xs text-stone-500 font-medium">Surgical Workspace</p>
                     </div>
                 </a>
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 p-6 space-y-8 custom-scrollbar overflow-y-auto">
+            <nav class="flex-1 p-4 space-y-5 custom-scrollbar overflow-y-auto">
                 <!-- Dashboard -->
                 <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Overview</h3>
+                    <h3 class="nav-section-title uppercase mb-2 px-3">Overview</h3>
                     <ul class="space-y-1">
                         <li>
-                            <a href="{% url 'workspace_main' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-apple-blue/20 group-hover:to-blue-200 transition-all">
-                                    <i class="fas fa-home text-apple-blue text-sm"></i>
+                            <a href="{% url 'workspace_main' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
+                                    <i class="fas fa-home text-blue-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Dashboard</span>
+                                <span class="font-medium text-sm">Dashboard</span>
                             </a>
                         </li>
                     </ul>
@@ -191,22 +304,22 @@
 
                 <!-- Clinic Appointments -->
                 <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Appointments</h3>
+                    <h3 class="nav-section-title uppercase mb-2 px-3">Appointments</h3>
                     <ul class="space-y-1">
                         <li>
-                            <a href="{% url 'calendar' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-green-500/20 group-hover:to-green-200 transition-all">
+                            <a href="{% url 'calendar' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-calendar-alt text-green-600 text-sm"></i>
-                                </div>
-                                <span class="font-medium">Calendar</span>
+                                </div>                                
+                                <span class="font-medium text-sm">Calendar</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'search_appointments_page' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-purple-500/20 group-hover:to-purple-200 transition-all">
+                            <a href="{% url 'search_appointments_page' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-search text-purple-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Search</span>
+                                <span class="font-medium text-sm">Search</span>
                             </a>
                         </li>
                     </ul>
@@ -214,45 +327,45 @@
 
                 <!-- Surgical List -->
                 <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Surgery</h3>
+                    <h3 class="nav-section-title uppercase mb-2 px-3">Surgery</h3>
                     <ul class="space-y-1">
                         <li>
-                            <a href="{% url 'booked_cases' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-apple-blue/20 group-hover:to-blue-200 transition-all">
-                                    <i class="fas fa-calendar-check text-apple-blue text-sm"></i>
+                            <a href="{% url 'booked_cases' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
+                                    <i class="fas fa-calendar-check text-blue-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Booked Cases</span>
+                                <span class="font-medium text-sm">Booked Cases</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'waiting_list' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-orange-500/20 group-hover:to-orange-200 transition-all">
+                            <a href="{% url 'waiting_list' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-hourglass-half text-orange-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Waiting List</span>
+                                <span class="font-medium text-sm">Waiting List</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'past_cases' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-gray-500/20 group-hover:to-gray-200 transition-all">
+                            <a href="{% url 'past_cases' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-history text-gray-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Past Cases</span>
+                                <span class="font-medium text-sm">Past Cases</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'deleted_cases' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-red-500/20 group-hover:to-red-200 transition-all">
+                            <a href="{% url 'deleted_cases' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-trash-alt text-red-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Deleted Cases</span>
+                                <span class="font-medium text-sm">Deleted Cases</span>
                             </a>
                         </li>
                     </ul>
-                    
+
                     <!-- Add Case Button -->
-                    <div class="mt-4 px-3">
-                        <a href="{% url 'add_surgical_booking' workspace.name %}" class="ios-button flex items-center justify-center px-4 py-3 text-white font-semibold rounded-xl focus-ring w-full">
+                    <div class="mt-3 px-1">
+                        <a href="{% url 'add_surgical_booking' workspace.name %}" class="ios-button flex items-center justify-center px-4 py-2.5 text-white text-sm font-semibold rounded-lg focus-ring w-full">
                             <i class="fas fa-plus mr-2"></i>
                             <span>Book New Case</span>
                         </a>
@@ -261,14 +374,14 @@
 
                 <!-- Favorites -->
                 <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Favorites</h3>
+                    <h3 class="nav-section-title uppercase mb-2 px-3">Favorites</h3>
                     <ul class="space-y-1">
                         <li>
-                            <a href="{% url 'favorite_patients_list' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-pink-100 to-pink-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-pink-500/20 group-hover:to-pink-200 transition-all">
+                            <a href="{% url 'favorite_patients_list' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-heart text-pink-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Favorite Patients</span>
+                                <span class="font-medium text-sm">Favorite Patients</span>
                             </a>
                         </li>
                     </ul>
@@ -277,30 +390,30 @@
                 <!-- Settings (Only if user is the admin) -->
                 {% if request.user == workspace.admin %}
                 <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Administration</h3>
+                    <h3 class="nav-section-title uppercase mb-2 px-3">Administration</h3>
                     <ul class="space-y-1">
                         <li>
-                            <a href="{% url 'settings_page' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-gray-500/20 group-hover:to-gray-200 transition-all">
+                            <a href="{% url 'settings_page' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-cog text-gray-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Settings</span>
+                                <span class="font-medium text-sm">Settings</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'users_management' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-indigo-500/20 group-hover:to-indigo-200 transition-all">
+                            <a href="{% url 'users_management' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-users text-indigo-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">User Management</span>
+                                <span class="font-medium text-sm">User Management</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'action_log' %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring group">
-                                <div class="w-8 h-8 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-lg flex items-center justify-center mr-4 group-hover:from-yellow-500/20 group-hover:to-yellow-200 transition-all">
+                            <a href="{% url 'action_log' %}" class="nav-item flex items-center px-3 py-2.5 text-gray-700 rounded-lg focus-ring group">
+                                <div class="w-8 h-8 rounded-md flex items-center justify-center mr-3">
                                     <i class="fas fa-history text-yellow-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium">Activity Log</span>
+                                <span class="font-medium text-sm">Activity Log</span>
                             </a>
                         </li>
                     </ul>
@@ -309,17 +422,17 @@
             </nav>
 
             <!-- User Profile & Logout -->
-            <div class="p-6 border-t border-apple-border/50">
-                <div class="flex items-center space-x-3 mb-4 p-3 bg-white/50 rounded-xl">
-                    <div class="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user text-gray-600 text-sm"></i>
+            <div class="p-4 border-t border-gray-200">
+                <div class="user-card flex items-center space-x-3 mb-3 p-3 rounded-lg">
+                    <div class="w-9 h-9 bg-[#fffaf3] border border-[#ded2c4] rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user text-[#6f675f] text-sm"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-900 truncate">{{ request.user.get_full_name|default:request.user.username }}</p>
-                        <p class="text-xs text-gray-500">{{ request.user.email }}</p>
+                        <p class="text-sm font-semibold text-stone-950 truncate">{{ request.user.get_full_name|default:request.user.username }}</p>
+                        <p class="text-xs text-stone-500">{{ request.user.email }}</p>
                     </div>
                 </div>
-                <a href="{% url 'logout' %}" class="flex items-center justify-center space-x-2 px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-red-50/80 rounded-xl transition-all duration-200 focus-ring w-full group">
+                <a href="{% url 'logout' %}" class="flex items-center justify-center space-x-2 px-4 py-2.5 text-stone-700 hover:text-[#ad3f32] hover:bg-[#f7e4df] rounded-lg transition-all duration-200 focus-ring w-full group">
                     <i class="fas fa-sign-out-alt text-sm group-hover:text-red-600 transition-colors"></i>
                     <span class="font-medium">Sign Out</span>
                 </a>
@@ -327,54 +440,54 @@
         </aside>
 
         <!-- Mobile/Tablet Sidebar (Hidden by default, shows on burger menu click) -->
-        <div id="mobile-menu" class="glass-morphism w-80 fixed inset-y-0 z-40 transform -translate-x-full transition-transform duration-300 ease-out lg:hidden shadow-2xl">
+        <div id="mobile-menu" class="mobile-menu-panel w-80 fixed inset-y-0 z-40 transform -translate-x-full transition-transform duration-300 ease-out lg:hidden shadow-xl">
             <div class="h-full flex flex-col custom-scrollbar overflow-y-auto">
                 <!-- Mobile/Tablet Header with title positioned below burger menu area -->
-                <div class="pt-20 pb-6 px-6 border-b border-apple-border/50">
+                <div class="pt-20 pb-5 px-5 border-b border-[#ded2c4]">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-gradient-to-br from-apple-blue to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                                <i class="fas fa-stethoscope text-white text-sm"></i>
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <div class="brand-mark w-10 h-10 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-stethoscope text-sm"></i>
                             </div>
-                            <div>
-                                <h2 class="text-lg font-semibold text-gray-900">{{ workspace.name }}</h2>
-                                <p class="text-xs text-gray-500 font-medium">Surgical Workspace</p>
+                            <div class="min-w-0">
+                                <h2 class="text-base font-semibold text-stone-950 truncate">{{ workspace.name }}</h2>
+                                <p class="text-xs text-stone-500 font-medium">Surgical Workspace</p>
                             </div>
                         </div>
-                        <button id="close-mobile-menu" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors focus-ring">
-                            <i class="fas fa-times text-gray-600 text-sm"></i>
+                        <button id="close-mobile-menu" class="w-8 h-8 bg-[#f0e5d8] hover:bg-[#e5d7c8] rounded-lg flex items-center justify-center transition-colors focus-ring shrink-0">
+                            <i class="fas fa-times text-stone-700 text-sm"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Mobile/Tablet Navigation (Same structure as desktop) -->
-                <nav class="flex-1 p-6 space-y-6">
+                <nav class="flex-1 p-4 space-y-5">
                     <!-- Menu Items -->
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Overview</h3>
+                        <h3 class="nav-section-title uppercase mb-2 px-3">Overview</h3>
                         <ul class="space-y-1">
-                            <li><a href="{% url 'workspace_main' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-home mr-3 text-apple-blue"></i>Dashboard</a></li>
-                        </ul>
-                    </div>
-                    
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Appointments</h3>
-                        <ul class="space-y-1">
-                            <li><a href="{% url 'calendar' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-calendar-alt mr-3 text-green-600"></i>Calendar</a></li>
-                            <li><a href="{% url 'search_appointments_page' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-search mr-3 text-purple-600"></i>Search</a></li>
+                            <li><a href="{% url 'workspace_main' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-home text-blue-600"></i>Dashboard</a></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Surgery</h3>
+                        <h3 class="nav-section-title uppercase mb-2 px-3">Appointments</h3>
                         <ul class="space-y-1">
-                            <li><a href="{% url 'booked_cases' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-calendar-check mr-3 text-apple-blue"></i>Booked Cases</a></li>
-                            <li><a href="{% url 'waiting_list' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-hourglass-half mr-3 text-orange-600"></i>Waiting List</a></li>
-                            <li><a href="{% url 'past_cases' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-history mr-3 text-gray-600"></i>Past Cases</a></li>
-                            <li><a href="{% url 'deleted_cases' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-trash-alt mr-3 text-red-600"></i>Deleted Cases</a></li>
+                            <li><a href="{% url 'calendar' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-calendar-alt text-green-600"></i>Calendar</a></li>
+                            <li><a href="{% url 'search_appointments_page' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-search text-purple-600"></i>Search</a></li>
                         </ul>
-                        <div class="mt-4 px-3">
-                            <a href="{% url 'add_surgical_booking' workspace.name %}" class="ios-button flex items-center justify-center px-4 py-3 text-white font-semibold rounded-xl focus-ring w-full">
+                    </div>
+
+                    <div>
+                        <h3 class="nav-section-title uppercase mb-2 px-3">Surgery</h3>
+                        <ul class="space-y-1">
+                            <li><a href="{% url 'booked_cases' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-calendar-check text-blue-600"></i>Booked Cases</a></li>
+                            <li><a href="{% url 'waiting_list' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-hourglass-half text-orange-600"></i>Waiting List</a></li>
+                            <li><a href="{% url 'past_cases' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-history text-gray-600"></i>Past Cases</a></li>
+                            <li><a href="{% url 'deleted_cases' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-trash-alt text-red-600"></i>Deleted Cases</a></li>
+                        </ul>
+                        <div class="mt-3 px-1">
+                            <a href="{% url 'add_surgical_booking' workspace.name %}" class="ios-button flex items-center justify-center px-4 py-2.5 text-white text-sm font-semibold rounded-lg focus-ring w-full">
                                 <i class="fas fa-plus mr-2"></i>Book New Case
                             </a>
                         </div>
@@ -382,27 +495,27 @@
 
                     <!-- Mobile/Tablet Favorites Section -->
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Favorites</h3>
+                        <h3 class="nav-section-title uppercase mb-2 px-3">Favorites</h3>
                         <ul class="space-y-1">
-                            <li><a href="{% url 'favorite_patients_list' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-heart mr-3 text-pink-600"></i>Favorite Patients</a></li>
+                            <li><a href="{% url 'favorite_patients_list' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-heart text-pink-600"></i>Favorite Patients</a></li>
                         </ul>
                     </div>
 
                     {% if request.user == workspace.admin %}
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Administration</h3>
+                        <h3 class="nav-section-title uppercase mb-2 px-3">Administration</h3>
                         <ul class="space-y-1">
-                            <li><a href="{% url 'settings_page' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-cog mr-3 text-gray-600"></i>Settings</a></li>
-                            <li><a href="{% url 'users_management' workspace.name %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-users mr-3 text-indigo-600"></i>User Management</a></li>
-                            <li><a href="{% url 'action_log' %}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:text-apple-blue hover:bg-blue-50/80 rounded-xl transition-all duration-200 focus-ring"><i class="fas fa-history mr-3 text-yellow-600"></i>Activity Log</a></li>
+                            <li><a href="{% url 'settings_page' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-cog text-gray-600"></i>Settings</a></li>
+                            <li><a href="{% url 'users_management' workspace.name %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-users text-indigo-600"></i>User Management</a></li>
+                            <li><a href="{% url 'action_log' %}" class="nav-item flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg focus-ring"><i class="fas fa-history text-yellow-600"></i>Activity Log</a></li>
                         </ul>
                     </div>
                     {% endif %}
                 </nav>
 
                 <!-- Mobile/Tablet Logout -->
-                <div class="p-6 border-t border-apple-border/50">
-                    <a href="{% url 'logout' %}" class="flex items-center justify-center space-x-2 px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-red-50/80 rounded-xl transition-all duration-200 focus-ring w-full">
+                <div class="p-4 border-t border-[#ded2c4]">
+                    <a href="{% url 'logout' %}" class="flex items-center justify-center space-x-2 px-4 py-2.5 text-stone-700 hover:text-[#ad3f32] hover:bg-[#f7e4df] rounded-lg transition-all duration-200 focus-ring w-full">
                         <i class="fas fa-sign-out-alt text-sm"></i>
                         <span class="font-medium">Sign Out</span>
                     </a>
@@ -411,12 +524,12 @@
         </div>
 
         <!-- Burger Menu Toggle (Now shows on tablets too) -->
-        <button id="burger-menu-toggle" class="p-3 fixed top-4 left-4 z-50 glass-morphism text-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 lg:hidden focus-ring ios-button">
+        <button id="burger-menu-toggle" class="mobile-menu-toggle p-3 fixed top-4 left-4 z-50 text-white rounded-lg hover:shadow-xl transition-all duration-200 lg:hidden focus-ring">
             <i class="fas fa-bars w-5 h-5 text-white"></i>
         </button>
 
         <!-- Main Content -->
-        <main class="flex-1 bg-apple-light-gray lg:p-8 lg:pt-8 main-content custom-scrollbar">
+        <main class="main-surface flex-1 lg:p-8 lg:pt-8 main-content custom-scrollbar">
             <!-- Mobile/Tablet padding handled differently -->
             <div class="p-4 pt-20 lg:p-0 lg:pt-0">
                 <div class="max-w-7xl mx-auto animate-fade-in">
@@ -440,6 +553,27 @@
         burgerToggle.addEventListener("click", toggleMobileMenu);
         closeMobileMenu.addEventListener("click", toggleMobileMenu);
 
+        // Highlight the current navigation item
+        let activeLink = null;
+        let activeLinkLength = 0;
+
+        document.querySelectorAll(".nav-item[href]").forEach((link) => {
+            const linkPath = new URL(link.href, window.location.origin).pathname;
+            const currentPath = window.location.pathname;
+            const isExact = currentPath === linkPath;
+            const isNested = linkPath !== "/" && currentPath.startsWith(linkPath) && linkPath.length > activeLinkLength;
+
+            if (isExact || isNested) {
+                activeLink = link;
+                activeLinkLength = linkPath.length;
+            }
+        });
+
+        if (activeLink) {
+            activeLink.classList.add("is-active");
+            activeLink.setAttribute("aria-current", "page");
+        }
+
         // Close mobile menu when clicking outside
         document.addEventListener("click", (e) => {
             if (!mobileMenu.contains(e.target) && !burgerToggle.contains(e.target) && !mobileMenu.classList.contains("-translate-x-full")) {
@@ -449,7 +583,7 @@
 
         // Add smooth scroll behavior
         document.documentElement.style.scrollBehavior = 'smooth';
-        
+
         // Prevent overscroll on iOS
         document.body.addEventListener('touchmove', function(e) {
             if (!e.target.closest('.custom-scrollbar')) {

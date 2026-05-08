@@ -4,679 +4,435 @@
 
 {% block content %}
 <style>
-    .glass-card {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(229, 229, 234, 0.3);
+    .settings-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
     }
-    
-    .gradient-border {
-        background: linear-gradient(135deg, #007AFF, #32D74B, #FF9F0A, #FF375F);
-        border-radius: 16px;
-        padding: 2px;
-    }
-    
-    .gradient-border-inner {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 14px;
-        padding: 1rem;
-    }
-    
-    .custom-select {
-        background: rgba(248, 249, 250, 0.8);
-        border: 1px solid rgba(229, 229, 234, 0.6);
-        transition: all 0.3s ease;
-    }
-    
-    .custom-select:focus {
-        background: rgba(248, 249, 250, 1);
-        border-color: #007AFF;
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
-        outline: none;
-    }
-    
-    .custom-input {
-        background: rgba(248, 249, 250, 0.8);
-        border: 1px solid rgba(229, 229, 234, 0.6);
-        transition: all 0.3s ease;
-    }
-    
-    .custom-input:focus {
-        background: rgba(248, 249, 250, 1);
-        border-color: #007AFF;
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
-        outline: none;
-    }
-    
-    .session-input {
-        width: 70px;
-        padding: 8px 12px;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 14px;
-        font-weight: 500;
-    }
-    
-    .session-input:disabled {
-        background: rgba(229, 229, 234, 0.3);
-        color: #9CA3AF;
-        cursor: not-allowed;
-    }
-    
-    .day-card {
-        background: rgba(248, 249, 250, 0.5);
-        border: 1px solid rgba(229, 229, 234, 0.6);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 16px;
-        transition: all 0.3s ease;
-    }
-    
-    .day-card:hover {
-        background: rgba(248, 249, 250, 0.8);
-        border-color: rgba(0, 122, 255, 0.3);
-    }
-    
-    .day-header {
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 16px;
-        font-size: 18px;
+
+    .settings-section-title {
         display: flex;
         align-items: center;
+        gap: 0.75rem;
     }
-    
-    .day-header::before {
-        content: '';
-        width: 4px;
-        height: 24px;
-        background: linear-gradient(135deg, #007AFF, #32D74B);
-        border-radius: 2px;
-        margin-right: 12px;
+
+    .settings-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
-    
+
+    .custom-select,
+    .custom-input {
+        background: white;
+        border: 1px solid #d1d5db;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .custom-select:focus,
+    .custom-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+        outline: none;
+    }
+
+    .day-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background: #f9fafb;
+        overflow: hidden;
+    }
+
+    .day-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: white;
+        font-weight: 600;
+        color: #111827;
+    }
+
     .sessions-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+        padding: 0.75rem;
     }
-    
+
     .session-item {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        padding: 24px 20px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 16px;
-        border: 2px solid rgba(229, 229, 234, 0.4);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        min-height: 140px;
         justify-content: space-between;
+        gap: 1rem;
+        min-width: 0;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background: white;
+        padding: 0.875rem;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
     }
-    
-    .session-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #007AFF, #32D74B);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    
-    .session-item:hover {
-        background: rgba(255, 255, 255, 1);
-        border-color: rgba(0, 122, 255, 0.6);
-    }
-    
-    .session-item:hover::before {
-        opacity: 1;
-    }
-    
+
     .session-item.enabled {
-        border-color: rgba(0, 122, 255, 0.5);
-        background: rgba(239, 246, 255, 0.9);
+        border-color: #93c5fd;
+        background: #eff6ff;
     }
-    
-    .session-item.enabled::before {
-        opacity: 1;
-    }
-    
+
     .session-header {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        margin-bottom: 20px;
+        gap: 0.625rem;
+        min-width: 4.5rem;
     }
-    
+
     .session-checkbox {
-        width: 24px;
-        height: 24px;
-        accent-color: #007AFF;
+        width: 1.125rem;
+        height: 1.125rem;
+        accent-color: #2563eb;
         cursor: pointer;
-        margin-bottom: 12px;
+        flex-shrink: 0;
     }
-    
+
     .session-label {
+        font-size: 0.875rem;
         font-weight: 700;
         color: #374151;
-        font-size: 18px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
-    
-    .session-enabled .session-label {
-        color: #007AFF;
+
+    .session-item.enabled .session-label {
+        color: #1d4ed8;
     }
-    
+
     .session-input-container {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        width: 100%;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        min-width: 0;
     }
-    
+
     .session-input-label {
-        font-size: 12px;
-        color: #6B7280;
+        font-size: 0.75rem;
         font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        color: #6b7280;
+        white-space: nowrap;
     }
-    
+
     .session-input {
-        width: 80px;
-        padding: 12px 16px;
-        border-radius: 10px;
+        width: 4.75rem;
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.625rem;
         text-align: center;
-        font-size: 16px;
+        font-size: 0.875rem;
         font-weight: 600;
-        border: 2px solid rgba(229, 229, 234, 0.6);
-        background: rgba(248, 249, 250, 0.8);
-        transition: all 0.3s ease;
     }
-    
-    .session-input:focus {
-        background: rgba(248, 249, 250, 1);
-        border-color: #007AFF;
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
-        outline: none;
-    }
-    
+
     .session-input:disabled {
-        background: rgba(229, 229, 234, 0.3);
-        color: #9CA3AF;
+        background: #f3f4f6;
+        color: #9ca3af;
         cursor: not-allowed;
-        border-color: rgba(229, 229, 234, 0.3);
+        border-color: #e5e7eb;
     }
-    
+
     .toggle-switch {
         position: relative;
         display: inline-block;
-        width: 50px;
-        height: 28px;
+        width: 52px;
+        height: 30px;
+        flex-shrink: 0;
     }
-    
+
     .toggle-switch input {
         opacity: 0;
         width: 0;
         height: 0;
     }
-    
+
     .toggle-slider {
         position: absolute;
         cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-        border-radius: 28px;
+        inset: 0;
+        background-color: #cbd5e1;
+        transition: 0.2s;
+        border-radius: 999px;
     }
-    
+
     .toggle-slider:before {
         position: absolute;
         content: "";
-        height: 20px;
-        width: 20px;
+        height: 22px;
+        width: 22px;
         left: 4px;
         bottom: 4px;
         background-color: white;
-        transition: 0.4s;
+        transition: 0.2s;
         border-radius: 50%;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
     }
-    
+
     input:checked + .toggle-slider {
-        background-color: #007AFF;
+        background-color: #2563eb;
     }
-    
+
     input:checked + .toggle-slider:before {
         transform: translateX(22px);
     }
-    
-    .animate-slide-in {
-        animation: slideIn 0.6s ease-out;
-    }
-    
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .icon-container {
-        background: linear-gradient(135deg, #007AFF, #32D74B);
-        animation: pulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes pulse {
-        0%, 100% {
-            transform: scale(1);
-        }
-        50% {
-            transform: scale(1.05);
-        }
-    }
-    
-    /* Mobile Responsive Styles */
+
     @media (max-width: 768px) {
-        .gradient-border-inner {
-            padding: 1rem;
-        }
-        
         .sessions-grid {
             grid-template-columns: 1fr;
-            gap: 16px;
         }
-        
+
         .session-item {
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            min-height: auto;
-        }
-        
-        .session-item::before {
-            height: 100%;
-            width: 4px;
-            top: 0;
-            left: 0;
-            right: auto;
-            background: linear-gradient(180deg, #007AFF, #32D74B);
-        }
-        
-        .session-header {
-            flex-direction: row;
-            align-items: center;
-            margin-bottom: 0;
-            margin-right: 16px;
-        }
-        
-        .session-checkbox {
-            margin-bottom: 0;
-            margin-right: 12px;
-            width: 20px;
-            height: 20px;
-        }
-        
-        .session-label {
-            font-size: 16px;
-            margin-bottom: 0;
-        }
-        
-        .session-input-container {
-            flex-direction: row;
-            align-items: center;
-            width: auto;
-        }
-        
-        .session-input-label {
-            margin-bottom: 0;
-            margin-right: 8px;
-            font-size: 11px;
-        }
-        
-        .session-input {
-            width: 60px;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-        
-        .day-header {
-            font-size: 16px;
-            margin-bottom: 12px;
-        }
-        
-        .day-header::before {
-            width: 3px;
-            height: 20px;
-            margin-right: 8px;
-        }
-        
-        .day-card {
-            padding: 1rem;
-            margin-bottom: 12px;
-        }
-        
-        .text-3xl {
-            font-size: 1.5rem;
-        }
-        
-        .text-lg {
-            font-size: 1rem;
-        }
-        
-        .px-8 {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-        
-        .py-4 {
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-        }
-        
-        .grid.md\\:grid-cols-2 {
-            grid-template-columns: 1fr;
-        }
-        
-        .grid.md\\:grid-cols-3 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .space-x-3 > * + * {
-            margin-left: 0.5rem;
-        }
-        
-        .w-10.h-10 {
-            width: 2rem;
-            height: 2rem;
-        }
-        
-        .w-12.h-12 {
-            width: 2.5rem;
-            height: 2.5rem;
-        }
-        
-        .w-16.h-16 {
-            width: 3rem;
-            height: 3rem;
-        }
-        
-        /* Mobile toggle section */
-        .flex.flex-col.md\\:flex-row {
-            flex-direction: column;
-        }
-        
-        .ml-0.md\\:ml-6 {
-            margin-left: 0;
-            margin-top: 1rem;
-        }
-        
-        .flex.flex-col.items-center {
-            flex-direction: row;
-            justify-content: center;
-        }
-        
-        .toggle-switch.mb-2 {
-            margin-bottom: 0;
-            margin-right: 0.5rem;
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .max-w-4xl {
-            max-width: 100%;
-            margin-left: 0.5rem;
-            margin-right: 0.5rem;
-        }
-        
-        .session-input {
-            width: 45px;
-        }
-        
-        .day-card {
             padding: 0.75rem;
         }
-        
+    }
+
+    @media (max-width: 480px) {
         .session-item {
-            padding: 6px 8px;
+            align-items: flex-start;
+            flex-direction: column;
         }
-        
-        .text-2xl {
-            font-size: 1.25rem;
+
+        .session-input-container {
+            width: 100%;
+            justify-content: space-between;
         }
-        
-        .grid.grid-cols-2 {
-            grid-template-columns: 1fr;
+
+        .session-input {
+            width: 4.25rem;
         }
     }
 </style>
 
-<div class="max-w-4xl mx-auto space-y-8 animate-slide-in">
-    <!-- Header Section -->
-    <div class="text-center mb-8">
-        <div class="icon-container w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-cog text-white text-2xl"></i>
+<div class="max-w-7xl mx-auto space-y-6">
+    <section class="settings-card rounded-lg p-5 sm:p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div class="min-w-0">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-11 h-11 rounded-lg bg-gray-100 text-gray-700 flex items-center justify-center">
+                        <i class="fas fa-cog text-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspace Settings</p>
+                        <h1 class="text-2xl sm:text-3xl font-semibold text-gray-900 truncate">{{ workspace.name }}</h1>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 max-w-2xl">
+                    Configure session availability, referral time display, room capacity, and workspace data export.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 shrink-0">
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
+                    <div class="text-xl font-semibold text-green-700">{{ active_days_count }}</div>
+                    <div class="text-xs text-gray-500">Days</div>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
+                    <div class="text-xl font-semibold text-blue-700">{{ workspace.rooms }}</div>
+                    <div class="text-xs text-gray-500">Rooms</div>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
+                    <div class="text-xl font-semibold text-indigo-700">{{ total_sessions_count }}</div>
+                    <div class="text-xs text-gray-500">Sessions</div>
+                </div>
+            </div>
         </div>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Workspace Settings</h1>
-        <p class="text-gray-600 text-lg">Configure {{ workspace.name }} to your preferences</p>
-    </div>
+    </section>
 
-    <!-- Settings Form -->
-    <div class="gradient-border">
-        <div class="gradient-border-inner">
-            <form method="POST" class="space-y-8">
-                {% csrf_token %}
+    <form method="POST" class="space-y-6">
+        {% csrf_token %}
 
-                <!-- Clinic Session Schedule Section -->
-                <div class="space-y-4">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-calendar-week text-white"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-semibold text-gray-900">Session Schedule</h3>
-                            <p class="text-gray-600 text-sm">Configure your clinic's operating days and session limits</p>
-                        </div>
+        <section class="settings-card rounded-lg overflow-hidden">
+            <div class="px-5 sm:px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="settings-section-title">
+                    <div class="settings-icon bg-green-50 text-green-600">
+                        <i class="fas fa-calendar-week"></i>
                     </div>
-                    
-                    <div class="glass-card rounded-xl p-4 md:p-6">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-3">
-                                <i class="fas fa-clock mr-2 text-green-600"></i>
-                                Operating Sessions
-                            </label>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <i class="fas fa-info-circle text-blue-500"></i>
-                                Check the sessions you want to enable and set the maximum appointments for each session
-                            </div>
-                        </div>
-
-                        {% for day in days_data %}
-                        <div class="day-card">
-                            <div class="day-header">{{ day.label }}</div>
-                            
-                            <div class="sessions-grid">
-                                <!-- AM Session -->
-                                <div class="session-item">
-                                    <div class="session-header">
-                                        <input 
-                                            type="checkbox" 
-                                            name="{{ day.lower_key }}_am_enabled" 
-                                            id="{{ day.lower_key }}_am_checkbox"
-                                            class="session-checkbox"
-                                            {% if day.am_enabled %}checked{% endif %}
-                                            onchange="toggleSessionInputs('{{ day.lower_key }}', 'am')"
-                                        >
-                                        <label for="{{ day.lower_key }}_am_checkbox" class="session-label">AM</label>
-                                    </div>
-                                    <div class="session-input-container">
-                                        <label class="session-input-label">Max Patients</label>
-                                        <input 
-                                            type="number" 
-                                            name="{{ day.lower_key }}_am_max_total" 
-                                            id="{{ day.lower_key }}_am_max_total"
-                                            class="session-input custom-input"
-                                            placeholder="20"
-                                            min="1"
-                                            value="{{ day.am_max_total }}"
-                                            {% if not day.am_enabled %}disabled{% endif %}
-                                        >
-                                    </div>
-                                </div>
-                                
-                                <!-- PM Session -->
-                                <div class="session-item">
-                                    <div class="session-header">
-                                        <input 
-                                            type="checkbox" 
-                                            name="{{ day.lower_key }}_pm_enabled" 
-                                            id="{{ day.lower_key }}_pm_checkbox"
-                                            class="session-checkbox"
-                                            {% if day.pm_enabled %}checked{% endif %}
-                                            onchange="toggleSessionInputs('{{ day.lower_key }}', 'pm')"
-                                        >
-                                        <label for="{{ day.lower_key }}_pm_checkbox" class="session-label">PM</label>
-                                    </div>
-                                    <div class="session-input-container">
-                                        <label class="session-input-label">Max Patients</label>
-                                        <input 
-                                            type="number" 
-                                            name="{{ day.lower_key }}_pm_max_total" 
-                                            id="{{ day.lower_key }}_pm_max_total"
-                                            class="session-input custom-input"
-                                            placeholder="20"
-                                            min="1"
-                                            value="{{ day.pm_max_total }}"
-                                            {% if not day.pm_enabled %}disabled{% endif %}
-                                        >
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Session Schedule</h2>
+                        <p class="text-sm text-gray-600">Enable clinic sessions and set the maximum patients per session.</p>
                     </div>
                 </div>
+            </div>
 
-                <!-- New Referrals Time Preference Section -->
-                <div class="space-y-4">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-user-clock text-white"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-semibold text-gray-900">Appointment Time Settings</h3>
-                            <p class="text-gray-600 text-sm">Control how appointment times are displayed to new referrals</p>
-                        </div>
+            <div class="p-5 sm:p-6 space-y-4">
+                {% for day in days_data %}
+                <div class="day-card">
+                    <div class="day-header">
+                        <span>{{ day.label }}</span>
+                        <span class="text-xs font-medium text-gray-500">AM / PM</span>
                     </div>
-                    
-                    <div class="glass-card rounded-xl p-4 md:p-6">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                            <div class="flex-1">
-                                <label for="give_new_referrals_time" class="block text-lg font-semibold text-gray-800 mb-3">
-                                    <i class="fas fa-clock mr-2 text-purple-500"></i>
-                                    Show Specific Time Slots to New Referrals
-                                </label>
-                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
-                                    <div class="flex items-center text-sm">
-                                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
-                                        <span class="text-gray-700"><strong>Enabled:</strong> New referrals see specific time slots (e.g., "2:30 PM")</span>
-                                    </div>
-                                    <div class="flex items-center text-sm">
-                                        <div class="w-3 h-3 bg-orange-500 rounded-full mr-3 flex-shrink-0"></div>
-                                        <span class="text-gray-700"><strong>Disabled:</strong> New referrals only see dates (e.g., "March 15, 2025")</span>
-                                    </div>
-                                </div>
+
+                    <div class="sessions-grid">
+                        <div class="session-item">
+                            <div class="session-header">
+                                <input
+                                    type="checkbox"
+                                    name="{{ day.lower_key }}_am_enabled"
+                                    id="{{ day.lower_key }}_am_checkbox"
+                                    class="session-checkbox"
+                                    {% if day.am_enabled %}checked{% endif %}
+                                    onchange="toggleSessionInputs('{{ day.lower_key }}', 'am')"
+                                >
+                                <label for="{{ day.lower_key }}_am_checkbox" class="session-label">AM</label>
                             </div>
-                            <div class="ml-0 md:ml-6 flex flex-col items-center">
-                                <label class="toggle-switch mb-2">
-                                    <input 
-                                        type="checkbox" 
-                                        name="give_new_referrals_time" 
-                                        id="give_new_referrals_time"
-                                        {% if workspace.give_new_referrals_time %}checked{% endif %}
-                                    >
-                                    <span class="toggle-slider"></span>
-                                </label>
-                                <span class="text-xs text-gray-600 font-medium toggle-status">
-                                    {% if workspace.give_new_referrals_time %}Time Slots{% else %}Date Only{% endif %}
-                                </span>
+                            <div class="session-input-container">
+                                <label class="session-input-label" for="{{ day.lower_key }}_am_max_total">Max Patients</label>
+                                <input
+                                    type="number"
+                                    name="{{ day.lower_key }}_am_max_total"
+                                    id="{{ day.lower_key }}_am_max_total"
+                                    class="session-input custom-input"
+                                    placeholder="20"
+                                    min="1"
+                                    value="{{ day.am_max_total }}"
+                                    {% if not day.am_enabled %}disabled{% endif %}
+                                >
+                            </div>
+                        </div>
+
+                        <div class="session-item">
+                            <div class="session-header">
+                                <input
+                                    type="checkbox"
+                                    name="{{ day.lower_key }}_pm_enabled"
+                                    id="{{ day.lower_key }}_pm_checkbox"
+                                    class="session-checkbox"
+                                    {% if day.pm_enabled %}checked{% endif %}
+                                    onchange="toggleSessionInputs('{{ day.lower_key }}', 'pm')"
+                                >
+                                <label for="{{ day.lower_key }}_pm_checkbox" class="session-label">PM</label>
+                            </div>
+                            <div class="session-input-container">
+                                <label class="session-input-label" for="{{ day.lower_key }}_pm_max_total">Max Patients</label>
+                                <input
+                                    type="number"
+                                    name="{{ day.lower_key }}_pm_max_total"
+                                    id="{{ day.lower_key }}_pm_max_total"
+                                    class="session-input custom-input"
+                                    placeholder="20"
+                                    min="1"
+                                    value="{{ day.pm_max_total }}"
+                                    {% if not day.pm_enabled %}disabled{% endif %}
+                                >
                             </div>
                         </div>
                     </div>
                 </div>
+                {% endfor %}
+            </div>
+        </section>
 
-                <!-- Number of Rooms Section -->
-                <div class="space-y-4">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-door-open text-white"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-semibold text-gray-900">Facility Configuration</h3>
-                            <p class="text-gray-600 text-sm">Set up your clinic's physical layout</p>
-                        </div>
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="settings-card rounded-lg p-5 sm:p-6">
+                <div class="settings-section-title mb-5">
+                    <div class="settings-icon bg-purple-50 text-purple-600">
+                        <i class="fas fa-user-clock"></i>
                     </div>
-                    
-                    <div class="glass-card rounded-xl p-4 md:p-6">
-                        <label for="rooms" class="block text-sm font-medium text-gray-700 mb-3">
-                            <i class="fas fa-hospital mr-2 text-blue-500"></i>
-                            Number of Examination Rooms
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Referral Time Display</h2>
+                        <p class="text-sm text-gray-600">Control what new referrals can see.</p>
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 mb-5 space-y-3">
+                    <div class="flex gap-3 text-sm">
+                        <span class="w-2.5 h-2.5 rounded-full bg-green-500 mt-1.5 shrink-0"></span>
+                        <span class="text-gray-700"><strong>Enabled:</strong> referrals see specific appointment times.</span>
+                    </div>
+                    <div class="flex gap-3 text-sm">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 mt-1.5 shrink-0"></span>
+                        <span class="text-gray-700"><strong>Disabled:</strong> referrals see the appointment date only.</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-4">
+                    <label for="give_new_referrals_time" class="text-sm font-semibold text-gray-900">
+                        Show time slots
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-medium toggle-status">
+                            {% if workspace.give_new_referrals_time %}Time Slots{% else %}Date Only{% endif %}
+                        </span>
+                        <label class="toggle-switch">
+                            <input
+                                type="checkbox"
+                                name="give_new_referrals_time"
+                                id="give_new_referrals_time"
+                                {% if workspace.give_new_referrals_time %}checked{% endif %}
+                            >
+                            <span class="toggle-slider"></span>
                         </label>
-                        <select 
-                            name="rooms" 
-                            id="rooms" 
-                            class="custom-select block w-full rounded-lg text-gray-900 p-3">
-                            {% for i in rooms_range %}
-                            <option value="{{ i }}" {% if workspace.rooms == i %}selected{% endif %}>
-                                {{ i }} Room{{ i|pluralize }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-card rounded-lg p-5 sm:p-6">
+                <div class="settings-section-title mb-5">
+                    <div class="settings-icon bg-blue-50 text-blue-600">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Facility Configuration</h2>
+                        <p class="text-sm text-gray-600">Set the available examination rooms.</p>
                     </div>
                 </div>
 
-                <!-- Save Button -->
-                <div class="flex justify-end pt-6">
-                    <button 
-                        type="submit" 
-                        class="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-blue-500/25 flex items-center space-x-2">
-                        <i class="fas fa-save"></i>
-                        <span>Save Settings</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+                <label for="rooms" class="block text-sm font-medium text-gray-700 mb-2">
+                    Number of Examination Rooms
+                </label>
+                <select
+                    name="rooms"
+                    id="rooms"
+                    class="custom-select block w-full rounded-md text-gray-900 p-3">
+                    {% for i in rooms_range %}
+                    <option value="{{ i }}" {% if workspace.rooms == i %}selected{% endif %}>
+                        {{ i }} Room{{ i|pluralize }}
+                    </option>
+                    {% endfor %}
+                </select>
 
-    <!-- Data Management Section -->
-    <div class="grid md:grid-cols-2 gap-6">
-        <!-- Backup Notice -->
-        <div class="glass-card rounded-xl p-4 md:p-6 border border-yellow-200">
-            <div class="flex items-start space-x-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-shield-alt text-white text-lg"></i>
+                <div class="mt-5 rounded-lg bg-blue-50 border border-blue-100 p-4 text-sm text-blue-900">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Room count is used when calculating session capacity and appointment availability.
+                </div>
+            </div>
+        </section>
+
+        <div class="settings-card rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-900">Save workspace configuration</h2>
+                <p class="text-sm text-gray-600 mt-0.5">Changes apply to future scheduling and referral display.</p>
+            </div>
+            <button
+                type="submit"
+                class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 transition-colors">
+                <i class="fas fa-save mr-2"></i>
+                Save Settings
+            </button>
+        </div>
+    </form>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="settings-card rounded-lg p-5 sm:p-6 border-l-4 border-l-amber-500">
+            <div class="flex items-start gap-4">
+                <div class="settings-icon bg-amber-50 text-amber-600">
+                    <i class="fas fa-shield-alt"></i>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Data Security</h3>
-                    <p class="text-gray-700 text-sm leading-relaxed mb-3">
-                        Your data is securely backed up daily using two different methods. However, we recommend periodically downloading a personal copy of your data.
+                    <h2 class="text-lg font-semibold text-gray-900">Data Security</h2>
+                    <p class="text-sm text-gray-700 leading-relaxed mt-2">
+                        Your data is securely backed up daily using two different methods. We recommend periodically downloading a personal copy of your data.
                     </p>
-                    <div class="flex items-center space-x-2 text-yellow-600 text-sm">
+                    <div class="flex items-center gap-2 text-amber-700 text-sm mt-4">
                         <i class="fas fa-signature"></i>
                         <span class="font-medium">Abdullah Alqaseer</span>
                     </div>
@@ -684,50 +440,27 @@
             </div>
         </div>
 
-        <!-- Download Data -->
-        <div class="glass-card rounded-xl p-4 md:p-6">
-            <div class="text-center">
-                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-download text-white text-xl"></i>
+        <div class="settings-card rounded-lg p-5 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="settings-icon bg-green-50 text-green-600">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Export Your Data</h2>
+                        <p class="text-sm text-gray-600 mt-1">Download an Excel file with surgical bookings and appointments.</p>
+                    </div>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Export Your Data</h3>
-                <p class="text-gray-600 text-sm mb-6">Download an Excel file containing all your surgical bookings and appointments</p>
-                
-                <form method="get" action="{% url 'download_my_data' %}">
-                    <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-green-500/25 flex items-center justify-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7,10 12,15 17,10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                        <span>Download My Data</span>
+
+                <form method="get" action="{% url 'download_my_data' %}" class="shrink-0">
+                    <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 transition-colors">
+                        <i class="fas fa-download mr-2"></i>
+                        Download My Data
                     </button>
                 </form>
             </div>
         </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="glass-card rounded-xl p-4 md:p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <i class="fas fa-chart-bar mr-3 text-blue-500"></i>
-            Quick Overview
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div class="text-center">
-                <div class="text-2xl font-bold text-green-600">{{ active_days_count }}</div>
-                <div class="text-xs text-gray-500">Operating Days</div>
-            </div>
-            <div class="text-center">
-                <div class="text-2xl font-bold text-blue-500">{{ workspace.rooms }}</div>
-                <div class="text-xs text-gray-500">Room{{ workspace.rooms|pluralize }}</div>
-            </div>
-            <div class="text-center">
-                <div class="text-2xl font-bold text-purple-500">{{ total_sessions_count }}</div>
-                <div class="text-xs text-gray-500">Active Sessions</div>
-            </div>
-        </div>
-    </div>
+    </section>
 </div>
 
 <script>
@@ -735,15 +468,14 @@
         const checkbox = document.getElementById(`${day}_${session}_checkbox`);
         const input = document.getElementById(`${day}_${session}_max_total`);
         const sessionItem = checkbox.closest('.session-item');
-        
+
         if (checkbox.checked) {
             input.disabled = false;
             sessionItem.classList.add('enabled');
             sessionItem.classList.add('session-enabled');
             input.focus();
-            // Set default value if empty
             if (!input.value) {
-                input.value = 20; // Default max total
+                input.value = 20;
             }
         } else {
             input.disabled = true;
@@ -753,25 +485,16 @@
         }
     }
 
-    // Update toggle status text
     function updateToggleStatus() {
         const toggle = document.getElementById('give_new_referrals_time');
         const status = document.querySelector('.toggle-status');
         if (toggle && status) {
             status.textContent = toggle.checked ? 'Time Slots' : 'Date Only';
-            status.style.color = toggle.checked ? '#10B981' : '#F59E0B';
+            status.style.color = toggle.checked ? '#047857' : '#b45309';
         }
     }
 
-    // Add smooth animations and initialize states
     document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.glass-card');
-        cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
-            card.classList.add('animate-slide-in');
-        });
-
-        // Initialize session item states
         document.querySelectorAll('.session-checkbox').forEach(checkbox => {
             const sessionItem = checkbox.closest('.session-item');
             if (checkbox.checked) {
@@ -780,11 +503,10 @@
             }
         });
 
-        // Add toggle listener
         const toggle = document.getElementById('give_new_referrals_time');
         if (toggle) {
             toggle.addEventListener('change', updateToggleStatus);
-            updateToggleStatus(); // Initialize
+            updateToggleStatus();
         }
     });
 </script>

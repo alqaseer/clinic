@@ -274,11 +274,12 @@ def workspace_main(request, workspace_name):
     # -------------------------
     # Normal dashboard counts
     # -------------------------
-    booked_cases_count = SurgicalBooking.objects.filter(
+    today = now().date()
+    booked_cases_queryset = SurgicalBooking.objects.filter(
         workspace=workspace,
-        date__gte=now().date(),
-        status="booked",
-    ).count()
+        date__gte=today,
+    ).exclude(status="deleted")
+    booked_cases_count = booked_cases_queryset.count()
 
     waiting_list_count = SurgicalBooking.objects.filter(
         workspace=workspace,
@@ -307,10 +308,9 @@ def booked_cases(request, workspace_name):
     today = now().date()
 
     cases = SurgicalBooking.objects.filter(
-        workspace=workspace, 
+        workspace=workspace,
         date__gte=today,  # Filter cases where date is today or in the future
-        status__in=['booked', 'waiting', 'past']  # Exclude 'deleted' cases
-    ).order_by('date')  # Arrange chronologically by date
+    ).exclude(status='deleted').order_by('date')  # Arrange chronologically by date
     for case in cases:
         case.days_until = (case.date - today).days
 

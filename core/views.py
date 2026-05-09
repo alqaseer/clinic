@@ -311,6 +311,8 @@ def booked_cases(request, workspace_name):
         date__gte=today,  # Filter cases where date is today or in the future
         status__in=['booked', 'waiting', 'past']  # Exclude 'deleted' cases
     ).order_by('date')  # Arrange chronologically by date
+    for case in cases:
+        case.days_until = (case.date - today).days
 
     # Get list of civil IDs that are already favorited in this workspace
     favorited_civil_ids = list(
@@ -351,6 +353,10 @@ def waiting_list(request, workspace_name):
     
     # Order by creation date
     cases = cases.order_by('created_at')
+    today = timezone.localdate()
+    for case in cases:
+        created_date = timezone.localtime(case.created_at).date() if case.created_at else today
+        case.days_waiting = (today - created_date).days
 
     # Get list of civil IDs that are already favorited in this workspace
     favorited_civil_ids = list(

@@ -4,35 +4,81 @@
 
 {% block content %}
 <style>
+    .booked-shell {
+        color: #171412;
+    }
+
     .favorite-star {
-        color: #fbbf24;
-        text-shadow: 0 0 3px rgba(251, 191, 36, 0.5);
+        color: #b76e2d;
     }
 
     .glass-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        background: #fffaf3;
+        border: 1px solid #ded2c4;
+        box-shadow: 0 18px 42px rgba(80, 62, 43, 0.10);
         transition: all 0.2s ease;
     }
 
     .case-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: #fffefd;
+        border: 1px solid #ded2c4;
         transition: all 0.15s ease;
+        overflow: hidden;
     }
 
     .case-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-color: #d1d5db;
+        box-shadow: 0 18px 34px rgba(80, 62, 43, 0.12);
+        border-color: #c8b7a5;
     }
 
     .action-button {
         transition: all 0.15s ease;
+        border: 1px solid transparent;
     }
 
     .action-button:hover {
         transform: translateY(-1px);
+    }
+
+    .btn-ink {
+        background: #171412;
+        color: #fffaf3;
+        border: 1px solid #171412;
+    }
+
+    .btn-ink:hover {
+        background: #2b2521;
+    }
+
+    .btn-soft {
+        background: rgba(255, 252, 247, 0.62);
+        color: #171412;
+        border: 1px solid #ded2c4;
+    }
+
+    .btn-soft:hover {
+        background: #fffaf3;
+        border-color: #c8b7a5;
+    }
+
+    .btn-favorite {
+        background: #fff8e8;
+        color: #5f3b1f;
+        border: 1px solid #d7a465;
+    }
+
+    .btn-favorite:hover {
+        background: #f7dfb9;
+    }
+
+    .btn-danger-soft {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+
+    .btn-danger-soft:hover {
+        background: #fecaca;
     }
 
     .status-badge {
@@ -40,278 +86,233 @@
         font-size: 0.75rem;
     }
 
-    .date-header {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        color: #1e293b;
-        border: 1px solid #e2e8f0;
-        position: relative;
-        overflow: hidden;
+    .status-waiting {
+        background: #fff8e8;
+        color: #5f3b1f;
+        border: 1px solid #d7a465;
     }
 
-    .date-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.02) 100%);
+    .status-anesthesia {
+        background: #f0e5d8;
+        color: #5f3b1f;
+        border: 1px solid #d8c8b8;
     }
 
-    .date-header-content {
-        position: relative;
-        z-index: 1;
+    .status-ready {
+        background: #e8f1ed;
+        color: #164d46;
+        border: 1px solid #9fc4ba;
     }
 
-    .date-accent {
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(to bottom, #3b82f6, #2563eb);
-        border-radius: 2px;
-        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    .case-accent {
+        width: 0.35rem;
+        background: #256f65;
+    }
+
+    .case-accent.ready {
+        background: #164d46;
+    }
+
+    .case-accent.anesthesia {
+        background: #8f6a4a;
+    }
+
+    .case-accent.waiting {
+        background: #b76e2d;
+    }
+
+    .case-label {
+        color: #164d46;
+        letter-spacing: 0.08em;
+    }
+
+    .case-muted {
+        color: #6f675f;
+    }
+
+    .case-detail-box {
+        background: #fbf7f1;
+        border: 1px solid #eaded1;
+    }
+
+    .date-group-header {
+        background: #efe3d6;
+        border-bottom: 1px solid #ded2c4;
+    }
+
+    .date-group-accent {
+        width: 0.35rem;
+        align-self: stretch;
+        background: #256f65;
+        border-radius: 999px;
+    }
+
+    .schedule-chip {
+        background: #e8f1ed;
+        color: #164d46;
+        border: 1px solid #9fc4ba;
+        box-shadow: 0 8px 18px rgba(37, 111, 101, 0.10);
+    }
+
+    .countdown-chip {
+        background: #fff1c7;
+        color: #5f3b1f;
+        border: 1px solid #d7a465;
+        box-shadow: 0 8px 18px rgba(183, 110, 45, 0.12);
     }
 </style>
 
-<div class="max-w-7xl mx-auto">
-    <!-- Clean Header -->
+<div class="booked-shell max-w-7xl mx-auto">
     <div class="glass-card rounded-lg p-6 mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-semibold text-gray-900">Booked Cases</h1>
-                <p class="text-sm text-gray-600 mt-1">Upcoming surgical procedures</p>
+                <p class="case-label text-xs font-semibold uppercase mb-2">Surgery Schedule</p>
+                <h1 class="text-2xl sm:text-3xl font-semibold">Booked Cases</h1>
+                <p class="case-muted text-sm mt-2">{{ cases|length }} upcoming surgical case{{ cases|length|pluralize }}</p>
             </div>
-            <a href="{% url 'add_surgical_booking' workspace.name %}" 
-               class="action-button inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+            <a href="{% url 'add_surgical_booking' workspace.name %}"
+               class="action-button btn-ink inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
                 <i class="fas fa-plus mr-2"></i>
                 New Case
             </a>
         </div>
     </div>
-    
+
     <div class="space-y-6">
         {% regroup cases by date as grouped_cases %}
-        
+
         {% for group in grouped_cases %}
-            <!-- Combined Container for Date Header and Cases -->
-            <div class="glass-card rounded-lg overflow-hidden shadow-sm">
-                <!-- Compact Date Header (inside container) -->
-                <div class="date-header p-4 border-b border-gray-200">
-                    <div class="date-header-content flex items-center space-x-3">
-                        <div class="date-accent"></div>
-                        <div class="flex-1">
-                            <h2 class="text-base font-medium text-gray-900">{{ group.grouper|date:"l, F j, Y" }}</h2>
-                            <p class="text-xs text-gray-600 mt-0.5">{{ group.list|length }} surgical case{{ group.list|length|pluralize }} scheduled</p>
+            <section class="glass-card rounded-lg overflow-hidden">
+                <div class="date-group-header p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="date-group-accent"></div>
+                        <div class="flex-1 min-w-0">
+                            <h2 class="text-lg font-semibold truncate">{{ group.grouper|date:"l, F j, Y" }}</h2>
+                            <p class="case-muted text-sm mt-1">{{ group.list|length }} surgical case{{ group.list|length|pluralize }} scheduled</p>
                         </div>
-                        <div class="bg-blue-50 rounded-md px-2 py-1">
-                            <i class="fas fa-calendar-day text-blue-600 text-sm"></i>
+                        <div class="hidden sm:flex w-10 h-10 rounded-full items-center justify-center" style="background: #e8f1ed; color: #164d46;">
+                            <i class="fas fa-calendar-day"></i>
                         </div>
                     </div>
                 </div>
 
-                <!-- Desktop Table View -->
-                <div class="hidden lg:block">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnosis</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Procedure</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            {% for case in group.list %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4">
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-900">{{ case.name }}</div>
-                                        <div class="text-sm text-gray-500">{{ case.civil_id }}</div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center space-x-2">
-                                        <a href="tel:{{ case.phone }}" class="text-sm text-blue-600 hover:text-blue-800">
-                                            {{ case.phone }}
-                                        </a>
-                                        <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="text-green-500 hover:text-green-600">
-                                            <i class="fab fa-whatsapp text-sm"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900">{{ case.diagnosis }}</div>
-                                    {% if case.side != "Not Applicable" %}
-                                        <div class="text-xs text-gray-500">{{ case.side }} side</div>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900">{{ case.procedure }}</div>
-                                    {% if case.notes %}
-                                        <div class="text-xs text-gray-500 truncate max-w-xs">{{ case.notes }}</div>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <div class="space-y-2">
+                <div class="p-4 space-y-4">
+                    {% for case in group.list %}
+                    <article class="case-card rounded-lg flex">
+                        <div class="case-accent {% if case.readiness == 'ready' %}ready{% elif case.readiness == 'sent_for_anesthesia' %}anesthesia{% elif case.readiness == 'waiting' %}waiting{% endif %}"></div>
+                        <div class="flex-1 p-4 sm:p-5">
+                            <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2 mb-2">
                                         {% if case.readiness == "waiting" %}
-                                            <span class="status-badge bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Waiting</span>
+                                            <span class="status-badge status-waiting px-2 py-1 rounded-full">Waiting</span>
                                         {% elif case.readiness == "sent_for_anesthesia" %}
-                                            <span class="status-badge bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Anesthesia</span>
+                                            <span class="status-badge status-anesthesia px-2 py-1 rounded-full">Anesthesia</span>
                                         {% elif case.readiness == "ready" %}
-                                            <span class="status-badge bg-green-100 text-green-800 px-2 py-1 rounded-full">Ready</span>
+                                            <span class="status-badge status-ready px-2 py-1 rounded-full">Ready</span>
                                         {% endif %}
-                                        
-                                        {% if case.photo_attachment %}
-                                            <button onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
-                                                    class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100">
-                                                <i class="fas fa-image mr-1"></i>
-                                                Photo
-                                            </button>
+
+                                        {% if case.side != "Not Applicable" %}
+                                            <span class="case-muted text-xs font-medium px-2 py-1 rounded-full" style="background: #fbf7f1; border: 1px solid #eaded1;">{{ case.side }} side</span>
                                         {% endif %}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center justify-center space-x-2">
-                                        <span id="favorite-btn-desktop-{{ case.id }}">
-                                            {% if case.civil_id in favorited_civil_ids %}
-                                                <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-not-allowed">
-                                                    <i class="fas fa-star favorite-star mr-1"></i>
-                                                    Favorited
-                                                </span>
+
+                                        <span class="schedule-chip inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full">
+                                            <i class="far fa-calendar"></i>
+                                            {{ case.date|date:"M d, Y" }}
+                                        </span>
+                                        <span class="countdown-chip inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full">
+                                            {% if case.days_until == 0 %}
+                                                Today
+                                            {% elif case.days_until == 1 %}
+                                                Tomorrow
                                             {% else %}
-                                                <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
-                                                        class="action-button inline-flex items-center px-2 py-1 bg-pink-50 text-pink-700 text-xs rounded hover:bg-pink-100">
-                                                    <i class="fas fa-heart mr-1"></i>
-                                                    Favorite
-                                                </button>
+                                                In {{ case.days_until }} days
                                             {% endif %}
                                         </span>
-                                        
-                                        <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
-                                           class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs rounded hover:bg-gray-100">
-                                            <i class="fas fa-edit mr-1"></i>
-                                            Edit
-                                        </a>
-                                        
-                                        <button onclick="deleteCase({{ case.id }})" 
-                                                class="action-button inline-flex items-center px-2 py-1 bg-red-50 text-red-700 text-xs rounded hover:bg-red-100">
-                                            <i class="fas fa-trash mr-1"></i>
-                                            Delete
-                                        </button>
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
 
-                <!-- Mobile Card View -->
-                <div class="lg:hidden p-4 space-y-4">
-                    {% for case in group.list %}
-                    <div class="case-card rounded-lg p-4">
-                        <!-- Patient Header - Fixed to prevent overflow -->
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3">
-                            <div class="flex-1">
-                                <h3 class="text-base font-medium text-gray-900">{{ case.name }}</h3>
-                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 mt-1">
-                                    <span>{{ case.civil_id }}</span>
-                                    <a href="tel:{{ case.phone }}" class="text-blue-600 hover:text-blue-800">
-                                        {{ case.phone }}
+                                    <h2 class="text-lg sm:text-xl font-semibold truncate">{{ case.name }}</h2>
+                                    <div class="case-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mt-1">
+                                        <span>{{ case.civil_id }}</span>
+                                        <a href="tel:{{ case.phone }}" class="font-medium" style="color: #164d46;">{{ case.phone }}</a>
+                                        <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="inline-flex items-center gap-1" style="color: #256f65;">
+                                            <i class="fab fa-whatsapp"></i>
+                                            WhatsApp
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-wrap xl:justify-end gap-2">
+                                    {% if case.photo_attachment %}
+                                        <button onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name|escapejs }}')"
+                                                class="action-button btn-soft inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                            <i class="fas fa-image mr-1"></i>
+                                            Photo
+                                        </button>
+                                    {% endif %}
+
+                                    <span id="favorite-btn-desktop-{{ case.id }}">
+                                        {% if case.civil_id in favorited_civil_ids %}
+                                            <span class="inline-flex items-center px-3 py-2 btn-soft text-xs font-medium rounded-md cursor-not-allowed">
+                                                <i class="fas fa-star favorite-star mr-1"></i>
+                                                Favorited
+                                            </span>
+                                        {% else %}
+                                            <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
+                                                    class="action-button btn-favorite inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                                <i class="fas fa-heart mr-1"></i>
+                                                Favorite
+                                            </button>
+                                        {% endif %}
+                                    </span>
+
+                                    <a href="{% url 'edit_surgical_booking' workspace.name case.id %}"
+                                       class="action-button btn-soft inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                        <i class="fas fa-edit mr-1"></i>
+                                        Edit
                                     </a>
-                                    <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="text-green-500 hover:text-green-600">
-                                        <i class="fab fa-whatsapp"></i>
-                                    </a>
+
+                                    <button onclick="deleteCase({{ case.id }})"
+                                            class="action-button btn-danger-soft inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                        <i class="fas fa-trash mr-1"></i>
+                                        Delete
+                                    </button>
                                 </div>
                             </div>
-                            
-                            <div class="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-                                {% if case.readiness == "waiting" %}
-                                    <span class="status-badge bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Waiting</span>
-                                {% elif case.readiness == "sent_for_anesthesia" %}
-                                    <span class="status-badge bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Anesthesia</span>
-                                {% elif case.readiness == "ready" %}
-                                    <span class="status-badge bg-green-100 text-green-800 px-2 py-1 rounded-full">Ready</span>
-                                {% endif %}
-                                
-                                {% if case.photo_attachment %}
-                                    <button onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
-                                            class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100">
-                                        <i class="fas fa-image mr-1"></i>
-                                        Photo
-                                    </button>
-                                {% endif %}
-                            </div>
-                        </div>
 
-                        <!-- Case Details -->
-                        <div class="space-y-2 mb-4">
-                            <div>
-                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Diagnosis</span>
-                                <p class="text-sm text-gray-900">{{ case.diagnosis }}</p>
-                                {% if case.side != "Not Applicable" %}
-                                    <p class="text-xs text-gray-500">{{ case.side }} side</p>
-                                {% endif %}
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+                                <div class="case-detail-box rounded-lg p-4">
+                                    <p class="case-label text-xs font-semibold uppercase mb-2">Diagnosis</p>
+                                    <p class="text-sm leading-6">{{ case.diagnosis }}</p>
+                                </div>
+
+                                <div class="case-detail-box rounded-lg p-4">
+                                    <p class="case-label text-xs font-semibold uppercase mb-2">Procedure</p>
+                                    <p class="text-sm leading-6">{{ case.procedure }}</p>
+                                </div>
                             </div>
-                            
-                            <div>
-                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Procedure</span>
-                                <p class="text-sm text-gray-900">{{ case.procedure }}</p>
-                            </div>
-                            
+
                             {% if case.notes %}
-                            <div>
-                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Notes</span>
-                                <p class="text-sm text-gray-900">{{ case.notes }}</p>
+                            <div class="case-detail-box rounded-lg p-4 mt-3">
+                                <p class="case-label text-xs font-semibold uppercase mb-2">Notes</p>
+                                <p class="text-sm leading-6">{{ case.notes }}</p>
                             </div>
                             {% endif %}
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-                            <span id="favorite-btn-mobile-{{ case.id }}">
-                                {% if case.civil_id in favorited_civil_ids %}
-                                    <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-not-allowed">
-                                        <i class="fas fa-star favorite-star mr-1"></i>
-                                        Favorited
-                                    </span>
-                                {% else %}
-                                    <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
-                                            class="action-button inline-flex items-center px-2 py-1 bg-pink-50 text-pink-700 text-xs rounded hover:bg-pink-100">
-                                        <i class="fas fa-heart mr-1"></i>
-                                        Favorite
-                                    </button>
-                                {% endif %}
-                            </span>
-                            
-                            <div class="flex space-x-2">
-                                <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
-                                   class="action-button inline-flex items-center px-3 py-1 bg-gray-50 text-gray-700 text-sm rounded hover:bg-gray-100">
-                                    <i class="fas fa-edit mr-1"></i>
-                                    Edit
-                                </a>
-                                <button onclick="deleteCase({{ case.id }})" 
-                                        class="action-button inline-flex items-center px-3 py-1 bg-red-50 text-red-700 text-sm rounded hover:bg-red-100">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    </article>
                     {% endfor %}
                 </div>
-            </div>
+            </section>
 
         {% empty %}
             <div class="glass-card rounded-lg p-12 text-center">
-                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-calendar-alt text-gray-400 text-xl"></i>
+                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background: #f0e5d8;">
+                    <i class="fas fa-calendar-alt text-xl" style="color: #8f6a4a;"></i>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No booked cases</h3>
-                <p class="text-gray-500 mb-4">Get started by booking your first surgical case.</p>
-                <a href="{% url 'add_surgical_booking' workspace.name %}" 
-                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+                <h3 class="text-lg font-medium mb-2">No booked cases</h3>
+                <p class="case-muted mb-4">Get started by booking your first surgical case.</p>
+                <a href="{% url 'add_surgical_booking' workspace.name %}"
+                   class="action-button btn-ink inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
                     <i class="fas fa-plus mr-2"></i>
                     Book New Case
                 </a>
@@ -320,15 +321,13 @@
     </div>
 </div>
 
-<!-- Notification Area -->
 <div id="notification-area" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
-<!-- Clean Photo Modal -->
-<div id="photoModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-4xl max-h-full overflow-hidden">
-        <div class="flex justify-between items-center p-4 border-b border-gray-200">
-            <h3 id="photoModalTitle" class="text-lg font-medium text-gray-900"></h3>
-            <button onclick="closePhotoModal()" class="text-gray-400 hover:text-gray-500">
+<div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden p-4">
+    <div class="relative rounded-lg shadow-xl max-w-full max-h-full overflow-auto w-full max-w-3xl" style="background: #fffaf3; border: 1px solid #ded2c4;">
+        <div class="sticky top-0 p-4 border-b flex justify-between items-center" style="background: #fbf7f1; border-color: #ded2c4;">
+            <h3 id="photoModalTitle" class="text-lg font-medium truncate pr-4" style="color: #171412;"></h3>
+            <button onclick="closePhotoModal()" class="flex-shrink-0" style="color: #6f675f;">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -339,21 +338,14 @@
 </div>
 
 <script>
-    // Function to add patient to favorites
     function addToFavorites(type, id, patientName) {
         let url = `{% url 'favorite_from_surgical' workspace.name 0 %}`.replace('0', id);
-        
-        const mobileBtn = document.getElementById(`favorite-btn-mobile-${id}`);
         const desktopBtn = document.getElementById(`favorite-btn-desktop-${id}`);
-        
-        // Show loading state
-        if (mobileBtn) {
-            mobileBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
-        }
+
         if (desktopBtn) {
-            desktopBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
+            desktopBtn.innerHTML = '<span class="inline-flex items-center px-3 py-2 btn-soft text-xs font-medium rounded-md"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
         }
-        
+
         fetch(url, {
             method: 'POST',
             headers: {
@@ -364,44 +356,24 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show success state
-                const successHtml = '<span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
-                
-                if (mobileBtn) {
-                    mobileBtn.innerHTML = successHtml;
-                }
+                const successHtml = '<span class="inline-flex items-center px-3 py-2 btn-soft text-xs font-medium rounded-md cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
                 if (desktopBtn) {
                     desktopBtn.innerHTML = successHtml;
                 }
-                
-                // Show success notification
                 showNotification(data.message, 'success');
             } else {
-                // Restore original buttons on error
-                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
-                
-                if (mobileBtn) {
-                    mobileBtn.innerHTML = originalHtml;
-                }
+                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="action-button btn-favorite inline-flex items-center px-3 py-2 text-xs font-medium rounded-md"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
                 if (desktopBtn) {
                     desktopBtn.innerHTML = originalHtml;
                 }
-                
                 showNotification(data.message, 'error');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            // Restore original buttons on error
-            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Add to Favorite</button>`;
-            
-            if (mobileBtn) {
-                mobileBtn.innerHTML = originalHtml;
-            }
+        .catch(() => {
+            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="action-button btn-favorite inline-flex items-center px-3 py-2 text-xs font-medium rounded-md"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
             if (desktopBtn) {
-                desktopBtn.innerHTML = originalHtml;  
+                desktopBtn.innerHTML = originalHtml;
             }
-            
             showNotification('An error occurred while adding to favorites.', 'error');
         });
     }
@@ -410,7 +382,7 @@
         const notificationArea = document.getElementById('notification-area');
         const notification = document.createElement('div');
         notification.className = `max-w-sm px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 ${
-            type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            type === 'success' ? 'bg-green-700 text-white' : 'bg-red-700 text-white'
         }`;
         notification.innerHTML = `
             <div class="flex items-center">
@@ -418,15 +390,13 @@
                 <span>${message}</span>
             </div>
         `;
-        
+
         notificationArea.appendChild(notification);
-        
-        // Animate in
+
         setTimeout(() => {
             notification.classList.add('opacity-100');
         }, 100);
-        
-        // Remove after 4 seconds
+
         setTimeout(() => {
             notification.classList.add('opacity-0');
             setTimeout(() => {
@@ -459,57 +429,33 @@
                 alert("Error deleting case.");
             }
         })
-        .catch(error => {
+        .catch(() => {
             alert("Network error. Please try again.");
         });
     }
 
     function showPhotoModal(imageUrl, patientName) {
-        // Set the image source and title
         document.getElementById('photoModalImage').src = imageUrl;
         document.getElementById('photoModalTitle').textContent = `Photo Attachment - ${patientName}`;
-        
-        // Show the modal
         document.getElementById('photoModal').classList.remove('hidden');
-        
-        // Prevent background scrolling
         document.body.style.overflow = 'hidden';
     }
 
     function closePhotoModal() {
-        // Hide the modal
         document.getElementById('photoModal').classList.add('hidden');
-        
-        // Allow background scrolling again
         document.body.style.overflow = 'auto';
     }
 
-    // Close modal if clicked outside the content
     document.getElementById('photoModal').addEventListener('click', function(event) {
         if (event.target === this) {
             closePhotoModal();
         }
     });
 
-    // Close modal with Escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape' && !document.getElementById('photoModal').classList.contains('hidden')) {
             closePhotoModal();
         }
-    });
-
-    // Handle device orientation changes
-    window.addEventListener('orientationchange', function() {
-        // Small delay to allow for orientation change to complete
-        setTimeout(function() {
-            // If modal is open, ensure it's still properly positioned
-            if (!document.getElementById('photoModal').classList.contains('hidden')) {
-                // Force a repaint to handle any layout issues
-                document.getElementById('photoModal').style.display = 'none';
-                document.getElementById('photoModal').offsetHeight; // Trigger reflow
-                document.getElementById('photoModal').style.display = 'flex';
-            }
-        }, 100);
     });
 </script>
 {% endblock %}

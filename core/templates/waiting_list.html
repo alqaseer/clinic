@@ -4,279 +4,294 @@
 
 {% block content %}
 <style>
+    .waiting-shell {
+        color: #171412;
+    }
+
     .favorite-star {
-        color: #fbbf24;
-        text-shadow: 0 0 3px rgba(251, 191, 36, 0.5);
+        color: #b76e2d;
     }
 
     .glass-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        background: #fffaf3;
+        border: 1px solid #ded2c4;
+        box-shadow: 0 18px 42px rgba(80, 62, 43, 0.10);
         transition: all 0.2s ease;
     }
 
     .case-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: #fffefd;
+        border: 1px solid #ded2c4;
         transition: all 0.15s ease;
+        overflow: hidden;
     }
 
     .case-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-color: #d1d5db;
+        box-shadow: 0 18px 34px rgba(80, 62, 43, 0.12);
+        border-color: #c8b7a5;
     }
 
     .action-button {
         transition: all 0.15s ease;
+        border: 1px solid transparent;
     }
 
     .action-button:hover {
         transform: translateY(-1px);
     }
 
+    .btn-ink {
+        background: #171412;
+        color: #fffaf3;
+        border: 1px solid #171412;
+    }
+
+    .btn-ink:hover {
+        background: #2b2521;
+    }
+
+    .btn-soft {
+        background: rgba(255, 252, 247, 0.62);
+        color: #171412;
+        border: 1px solid #ded2c4;
+    }
+
+    .btn-soft:hover {
+        background: #fffaf3;
+        border-color: #c8b7a5;
+    }
+
+    .btn-favorite {
+        background: #fff8e8;
+        color: #5f3b1f;
+        border: 1px solid #d7a465;
+    }
+
+    .btn-favorite:hover {
+        background: #f7dfb9;
+    }
+
+    .btn-danger-soft {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+
+    .btn-danger-soft:hover {
+        background: #fecaca;
+    }
+
     .status-badge {
         font-weight: 500;
         font-size: 0.75rem;
     }
+
+    .status-waiting {
+        background: #fff8e8;
+        color: #5f3b1f;
+        border: 1px solid #d7a465;
+    }
+
+    .status-anesthesia {
+        background: #f0e5d8;
+        color: #5f3b1f;
+        border: 1px solid #d8c8b8;
+    }
+
+    .status-ready {
+        background: #e8f1ed;
+        color: #164d46;
+        border: 1px solid #9fc4ba;
+    }
+
+    .case-accent {
+        width: 0.35rem;
+        background: #b76e2d;
+    }
+
+    .case-accent.ready {
+        background: #256f65;
+    }
+
+    .case-accent.anesthesia {
+        background: #8f6a4a;
+    }
+
+    .case-label {
+        color: #164d46;
+        letter-spacing: 0.08em;
+    }
+
+    .case-muted {
+        color: #6f675f;
+    }
+
+    .case-detail-box {
+        background: #fbf7f1;
+        border: 1px solid #eaded1;
+    }
+
+    .waiting-age-chip {
+        background: #fff1c7;
+        color: #5f3b1f;
+        border: 1px solid #d7a465;
+        box-shadow: 0 8px 18px rgba(183, 110, 45, 0.12);
+    }
+
+    .filter-select {
+        background: #fffefd;
+        border: 1px solid #d8c8b8;
+        color: #171412;
+    }
+
+    .filter-select:focus {
+        border-color: #256f65;
+        box-shadow: 0 0 0 3px rgba(37, 111, 101, 0.12);
+        outline: none;
+    }
 </style>
 
-<div class="max-w-7xl mx-auto">
-    <!-- Clean Header -->
+<div class="waiting-shell max-w-7xl mx-auto">
     <div class="glass-card rounded-lg p-6 mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             <div>
-                <h1 class="text-2xl font-semibold text-gray-900">Waiting List</h1>
-                <p class="text-sm text-gray-600 mt-1">Cases pending surgical scheduling</p>
+                <p class="case-label text-xs font-semibold uppercase mb-2">Surgery Queue</p>
+                <h1 class="text-2xl sm:text-3xl font-semibold">Waiting List</h1>
+                <p class="case-muted text-sm mt-2">{{ cases|length }} case{{ cases|length|pluralize }} pending surgical scheduling</p>
             </div>
-            <a href="{% url 'add_surgical_booking' workspace.name %}" 
-               class="action-button inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
-                <i class="fas fa-plus mr-2"></i>
-                New Case
-            </a>
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <div class="flex items-center gap-3">
+                    <label for="readinessFilter" class="case-muted text-sm font-medium">Readiness</label>
+                    <select id="readinessFilter" onchange="filterByReadiness()" class="filter-select px-3 py-2 rounded-md text-sm">
+                        <option value="all" {% if not request.GET.readiness or request.GET.readiness == 'all' %}selected{% endif %}>All Status</option>
+                        <option value="waiting" {% if request.GET.readiness == 'waiting' %}selected{% endif %}>Waiting</option>
+                        <option value="sent_for_anesthesia" {% if request.GET.readiness == 'sent_for_anesthesia' %}selected{% endif %}>Sent for Anesthesia</option>
+                        <option value="ready" {% if request.GET.readiness == 'ready' %}selected{% endif %}>Ready</option>
+                    </select>
+                </div>
+                <a href="{% url 'add_surgical_booking' workspace.name %}"
+                   class="action-button btn-ink inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-plus mr-2"></i>
+                    New Case
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="glass-card rounded-lg p-4 mb-6">
-        <div class="flex items-center space-x-4">
-            <label for="readinessFilter" class="text-sm font-medium text-gray-700">Filter by readiness:</label>
-            <select id="readinessFilter" onchange="filterByReadiness()" 
-                    class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
-                <option value="all" {% if not request.GET.readiness or request.GET.readiness == 'all' %}selected{% endif %}>All Status</option>
-                <option value="waiting" {% if request.GET.readiness == 'waiting' %}selected{% endif %}>Waiting</option>
-                <option value="sent_for_anesthesia" {% if request.GET.readiness == 'sent_for_anesthesia' %}selected{% endif %}>Sent for Anesthesia</option>
-                <option value="ready" {% if request.GET.readiness == 'ready' %}selected{% endif %}>Ready</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Cases List -->
     {% if cases %}
-        <!-- Desktop Table View -->
-        <div class="hidden lg:block glass-card rounded-lg overflow-hidden">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnosis</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Procedure</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    {% for case in cases %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4">
-                            <div>
-                                <div class="text-sm font-medium text-gray-900">{{ case.name }}</div>
-                                <div class="text-sm text-gray-500">{{ case.civil_id }}</div>
-                                <div class="text-xs text-gray-400 mt-1">{{ case.created_at|date:"M d, Y" }}</div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center space-x-2">
-                                <a href="tel:{{ case.phone }}" class="text-sm text-blue-600 hover:text-blue-800">
-                                    {{ case.phone }}
-                                </a>
-                                <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="text-green-500 hover:text-green-600">
-                                    <i class="fab fa-whatsapp text-sm"></i>
-                                </a>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900">{{ case.diagnosis }}</div>
-                            {% if case.side != "Not Applicable" %}
-                                <div class="text-xs text-gray-500">{{ case.side }} side</div>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900">{{ case.procedure }}</div>
-                            {% if case.notes %}
-                                <div class="text-xs text-gray-500 truncate max-w-xs">{{ case.notes }}</div>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="space-y-2">
+        <div class="space-y-4">
+            {% for case in cases %}
+            <article class="case-card rounded-lg flex">
+                <div class="case-accent {% if case.readiness == 'ready' %}ready{% elif case.readiness == 'sent_for_anesthesia' %}anesthesia{% endif %}"></div>
+                <div class="flex-1 p-4 sm:p-5">
+                    <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2 mb-2">
                                 {% if case.readiness == "waiting" %}
-                                    <span class="status-badge bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Waiting</span>
+                                    <span class="status-badge status-waiting px-2 py-1 rounded-full">Waiting</span>
                                 {% elif case.readiness == "sent_for_anesthesia" %}
-                                    <span class="status-badge bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Anesthesia</span>
+                                    <span class="status-badge status-anesthesia px-2 py-1 rounded-full">Anesthesia</span>
                                 {% elif case.readiness == "ready" %}
-                                    <span class="status-badge bg-green-100 text-green-800 px-2 py-1 rounded-full">Ready</span>
+                                    <span class="status-badge status-ready px-2 py-1 rounded-full">Ready</span>
                                 {% endif %}
-                                
-                                {% if case.photo_attachment %}
-                                    <button onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
-                                            class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100">
-                                        <i class="fas fa-image mr-1"></i>
-                                        Photo
-                                    </button>
+
+                                {% if case.side != "Not Applicable" %}
+                                    <span class="case-muted text-xs font-medium px-2 py-1 rounded-full" style="background: #fbf7f1; border: 1px solid #eaded1;">{{ case.side }} side</span>
                                 {% endif %}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center justify-center space-x-2">
-                                <span id="favorite-btn-desktop-{{ case.id }}">
-                                    {% if case.civil_id in favorited_civil_ids %}
-                                        <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-not-allowed">
-                                            <i class="fas fa-star favorite-star mr-1"></i>
-                                            Favorited
-                                        </span>
+
+                                <span class="waiting-age-chip inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full">
+                                    <i class="far fa-clock"></i>
+                                    Added {{ case.created_at|date:"M d, Y" }}
+                                </span>
+                                <span class="waiting-age-chip inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full">
+                                    {% if case.days_waiting == 0 %}
+                                        Waiting today
                                     {% else %}
-                                        <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
-                                                class="action-button inline-flex items-center px-2 py-1 bg-pink-50 text-pink-700 text-xs rounded hover:bg-pink-100">
-                                            <i class="fas fa-heart mr-1"></i>
-                                            Favorite
-                                        </button>
+                                        {{ case.days_waiting }} day{{ case.days_waiting|pluralize }} waiting
                                     {% endif %}
                                 </span>
-                                
-                                <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
-                                   class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs rounded hover:bg-gray-100">
-                                    <i class="fas fa-edit mr-1"></i>
-                                    Edit
-                                </a>
-                                
-                                <button onclick="deleteCase({{ case.id }})" 
-                                        class="action-button inline-flex items-center px-2 py-1 bg-red-50 text-red-700 text-xs rounded hover:bg-red-100">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Delete
-                                </button>
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
 
-        <!-- Mobile Card View -->
-        <div class="lg:hidden space-y-4">
-            {% for case in cases %}
-            <div class="case-card rounded-lg p-4">
-                <!-- Patient Header - Fixed for mobile to prevent overflow -->
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3">
-                    <div class="flex-1">
-                        <h3 class="text-base font-medium text-gray-900">{{ case.name }}</h3>
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 mt-1">
-                            <span>{{ case.civil_id }}</span>
-                            <a href="tel:{{ case.phone }}" class="text-blue-600 hover:text-blue-800">
-                                {{ case.phone }}
-                            </a>
-                            <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="text-green-500 hover:text-green-600">
-                                <i class="fab fa-whatsapp"></i>
-                            </a>
+                            <h2 class="text-lg sm:text-xl font-semibold truncate">{{ case.name }}</h2>
+                            <div class="case-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mt-1">
+                                <span>{{ case.civil_id }}</span>
+                                <a href="tel:{{ case.phone }}" class="font-medium" style="color: #164d46;">{{ case.phone }}</a>
+                                <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="inline-flex items-center gap-1" style="color: #256f65;">
+                                    <i class="fab fa-whatsapp"></i>
+                                    WhatsApp
+                                </a>
+                            </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Created: {{ case.created_at|date:"M d, Y" }}</p>
-                    </div>
-                    
-                    <div class="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-                        {% if case.readiness == "waiting" %}
-                            <span class="status-badge bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Waiting</span>
-                        {% elif case.readiness == "sent_for_anesthesia" %}
-                            <span class="status-badge bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Anesthesia</span>
-                        {% elif case.readiness == "ready" %}
-                            <span class="status-badge bg-green-100 text-green-800 px-2 py-1 rounded-full">Ready</span>
-                        {% endif %}
-                        
-                        {% if case.photo_attachment %}
-                            <button onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
-                                    class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100">
-                                <i class="fas fa-image mr-1"></i>
-                                Photo
-                            </button>
-                        {% endif %}
-                    </div>
-                </div>
 
-                <!-- Case Details -->
-                <div class="space-y-2 mb-4">
-                    <div>
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Diagnosis</span>
-                        <p class="text-sm text-gray-900">{{ case.diagnosis }}</p>
-                        {% if case.side != "Not Applicable" %}
-                            <p class="text-xs text-gray-500">{{ case.side }} side</p>
-                        {% endif %}
+                        <div class="flex flex-wrap xl:justify-end gap-2">
+                            {% if case.photo_attachment %}
+                                <button onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name|escapejs }}')"
+                                        class="action-button btn-soft inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                    <i class="fas fa-image mr-1"></i>
+                                    Photo
+                                </button>
+                            {% endif %}
+
+                            <span id="favorite-btn-desktop-{{ case.id }}">
+                                {% if case.civil_id in favorited_civil_ids %}
+                                    <span class="inline-flex items-center px-3 py-2 btn-soft text-xs font-medium rounded-md cursor-not-allowed">
+                                        <i class="fas fa-star favorite-star mr-1"></i>
+                                        Favorited
+                                    </span>
+                                {% else %}
+                                    <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
+                                            class="action-button btn-favorite inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                        <i class="fas fa-heart mr-1"></i>
+                                        Favorite
+                                    </button>
+                                {% endif %}
+                            </span>
+
+                            <a href="{% url 'edit_surgical_booking' workspace.name case.id %}"
+                               class="action-button btn-soft inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                <i class="fas fa-edit mr-1"></i>
+                                Edit
+                            </a>
+
+                            <button onclick="deleteCase({{ case.id }})"
+                                    class="action-button btn-danger-soft inline-flex items-center px-3 py-2 text-xs font-medium rounded-md">
+                                <i class="fas fa-trash mr-1"></i>
+                                Delete
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div>
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Procedure</span>
-                        <p class="text-sm text-gray-900">{{ case.procedure }}</p>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+                        <div class="case-detail-box rounded-lg p-4">
+                            <p class="case-label text-xs font-semibold uppercase mb-2">Diagnosis</p>
+                            <p class="text-sm leading-6">{{ case.diagnosis }}</p>
+                        </div>
+
+                        <div class="case-detail-box rounded-lg p-4">
+                            <p class="case-label text-xs font-semibold uppercase mb-2">Procedure</p>
+                            <p class="text-sm leading-6">{{ case.procedure }}</p>
+                        </div>
                     </div>
-                    
+
                     {% if case.notes %}
-                    <div>
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Notes</span>
-                        <p class="text-sm text-gray-900">{{ case.notes }}</p>
+                    <div class="case-detail-box rounded-lg p-4 mt-3">
+                        <p class="case-label text-xs font-semibold uppercase mb-2">Notes</p>
+                        <p class="text-sm leading-6">{{ case.notes }}</p>
                     </div>
                     {% endif %}
                 </div>
-
-                <!-- Action Buttons -->
-                <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <span id="favorite-btn-mobile-{{ case.id }}">
-                        {% if case.civil_id in favorited_civil_ids %}
-                            <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-not-allowed">
-                                <i class="fas fa-star favorite-star mr-1"></i>
-                                Favorited
-                            </span>
-                        {% else %}
-                            <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
-                                    class="action-button inline-flex items-center px-2 py-1 bg-pink-50 text-pink-700 text-xs rounded hover:bg-pink-100">
-                                <i class="fas fa-heart mr-1"></i>
-                                Favorite
-                            </button>
-                        {% endif %}
-                    </span>
-                    
-                    <div class="flex space-x-2">
-                        <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
-                           class="action-button inline-flex items-center px-3 py-1 bg-gray-50 text-gray-700 text-sm rounded hover:bg-gray-100">
-                            <i class="fas fa-edit mr-1"></i>
-                            Edit
-                        </a>
-                        <button onclick="deleteCase({{ case.id }})" 
-                                class="action-button inline-flex items-center px-3 py-1 bg-red-50 text-red-700 text-sm rounded hover:bg-red-100">
-                            <i class="fas fa-trash mr-1"></i>
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            </div>
+            </article>
             {% endfor %}
         </div>
     {% else %}
         <div class="glass-card rounded-lg p-12 text-center">
-            <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-hourglass-half text-gray-400 text-xl"></i>
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background: #f0e5d8;">
+                <i class="fas fa-hourglass-half text-xl" style="color: #8f6a4a;"></i>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No cases in waiting list</h3>
-            <p class="text-gray-500 mb-4">All cases are scheduled or add your first case to get started.</p>
-            <a href="{% url 'add_surgical_booking' workspace.name %}" 
-               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+            <h3 class="text-lg font-medium mb-2">No cases in waiting list</h3>
+            <p class="case-muted mb-4">All cases are scheduled or add your first case to get started.</p>
+            <a href="{% url 'add_surgical_booking' workspace.name %}"
+               class="action-button btn-ink inline-flex items-center px-4 py-2 text-sm font-medium rounded-md">
                 <i class="fas fa-plus mr-2"></i>
                 Add New Case
             </a>
@@ -289,10 +304,10 @@
 
 <!-- Photo Modal -->
 <div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden p-4">
-    <div class="relative bg-white rounded-lg shadow-xl max-w-full max-h-full overflow-auto w-full max-w-3xl">
-        <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
-            <h3 id="photoModalTitle" class="text-lg font-medium text-gray-900 truncate pr-4"></h3>
-            <button onclick="closePhotoModal()" class="text-gray-400 hover:text-gray-500 flex-shrink-0">
+    <div class="relative rounded-lg shadow-xl max-w-full max-h-full overflow-auto w-full max-w-3xl" style="background: #fffaf3; border: 1px solid #ded2c4;">
+        <div class="sticky top-0 p-4 border-b flex justify-between items-center" style="background: #fbf7f1; border-color: #ded2c4;">
+            <h3 id="photoModalTitle" class="text-lg font-medium truncate pr-4" style="color: #171412;"></h3>
+            <button onclick="closePhotoModal()" class="flex-shrink-0" style="color: #6f675f;">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -314,11 +329,8 @@
         const desktopBtn = document.getElementById(`favorite-btn-desktop-${id}`);
         
         // Show loading state
-        if (mobileBtn) {
-            mobileBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
-        }
         if (desktopBtn) {
-            desktopBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
+            desktopBtn.innerHTML = '<span class="inline-flex items-center px-3 py-2 btn-soft text-xs font-medium rounded-md"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
         }
         
         fetch(url, {
@@ -332,11 +344,8 @@
         .then(data => {
             if (data.success) {
                 // Show success state
-                const successHtml = '<span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
+                const successHtml = '<span class="inline-flex items-center px-3 py-2 btn-soft text-xs font-medium rounded-md cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
                 
-                if (mobileBtn) {
-                    mobileBtn.innerHTML = successHtml;
-                }
                 if (desktopBtn) {
                     desktopBtn.innerHTML = successHtml;
                 }
@@ -345,11 +354,8 @@
                 showNotification(data.message, 'success');
             } else {
                 // Restore original buttons on error
-                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
+                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="action-button btn-favorite inline-flex items-center px-3 py-2 text-xs font-medium rounded-md"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
                 
-                if (mobileBtn) {
-                    mobileBtn.innerHTML = originalHtml;
-                }
                 if (desktopBtn) {
                     desktopBtn.innerHTML = originalHtml;
                 }
@@ -360,11 +366,8 @@
         .catch(error => {
             console.error('Error:', error);
             // Restore original buttons on error
-            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
+            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="action-button btn-favorite inline-flex items-center px-3 py-2 text-xs font-medium rounded-md"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
             
-            if (mobileBtn) {
-                mobileBtn.innerHTML = originalHtml;
-            }
             if (desktopBtn) {
                 desktopBtn.innerHTML = originalHtml;  
             }

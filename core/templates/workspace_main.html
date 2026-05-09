@@ -34,6 +34,30 @@
         background: #f9fafb;
     }
 
+    .team-panel-toggle {
+        transition: background-color 0.15s ease;
+    }
+
+    .team-panel-toggle:hover {
+        background: #f9fafb;
+    }
+
+    .team-panel-content {
+        display: none;
+    }
+
+    .team-panel-content.expanded {
+        display: block;
+    }
+
+    .team-panel-chevron {
+        transition: transform 0.2s ease;
+    }
+
+    .team-panel-chevron.expanded {
+        transform: rotate(180deg);
+    }
+
     @media (max-width: 640px) {
         .metric-accent {
             min-height: 48px;
@@ -139,16 +163,31 @@
 
     <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div class="xl:col-span-2 dashboard-card rounded-lg overflow-hidden">
-            <div class="px-5 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-900">Workspace Team</h2>
-                    <p class="text-sm text-gray-600 mt-0.5">Users with access to this workspace</p>
+            <button type="button"
+                    id="workspaceTeamToggle"
+                    class="team-panel-toggle w-full px-5 sm:px-6 py-4 flex items-center justify-between gap-4 text-left"
+                    aria-expanded="false"
+                    aria-controls="workspaceTeamContent">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-semibold text-gray-900">Workspace Team</h2>
+                        <p class="text-sm text-gray-600 mt-0.5">
+                            {{ users|length }} member{{ users|length|pluralize }} with access to this workspace
+                        </p>
+                    </div>
                 </div>
-                <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                    <i class="fas fa-users"></i>
+                <div class="flex items-center gap-3 shrink-0">
+                    <span class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium">
+                        Click to expand
+                    </span>
+                    <i id="workspaceTeamChevron" class="team-panel-chevron fas fa-chevron-down text-gray-500"></i>
                 </div>
-            </div>
+            </button>
 
+            <div id="workspaceTeamContent" class="team-panel-content border-t border-gray-200">
             {% if users %}
                 <div class="divide-y divide-gray-200">
                     {% for user in users %}
@@ -183,6 +222,7 @@
                     <p class="text-sm text-gray-500 mt-1">Add team members from user management.</p>
                 </div>
             {% endif %}
+            </div>
         </div>
 
         <aside class="space-y-4">
@@ -251,4 +291,21 @@
     </section>
 </div>
 {% endwith %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggle = document.getElementById('workspaceTeamToggle');
+        const content = document.getElementById('workspaceTeamContent');
+        const chevron = document.getElementById('workspaceTeamChevron');
+
+        if (!toggle || !content || !chevron) {
+            return;
+        }
+
+        toggle.addEventListener('click', function() {
+            const isExpanded = content.classList.toggle('expanded');
+            toggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+            chevron.classList.toggle('expanded', isExpanded);
+        });
+    });
+</script>
 {% endblock %}

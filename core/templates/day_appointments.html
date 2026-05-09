@@ -100,6 +100,157 @@
         color: #6b7280;
     }
 
+    .surgery-button {
+        background: #059669;
+        color: white;
+    }
+
+    .surgery-button:hover {
+        background: #047857;
+    }
+
+    .surgery-modal {
+        background:
+            linear-gradient(180deg, rgba(255, 252, 247, 0.92) 0%, rgba(245, 239, 231, 0.88) 100%),
+            #f5efe7;
+        color: #171412;
+    }
+
+    .surgery-modal.hidden {
+        display: none;
+    }
+
+    .surgery-modal-header {
+        background: rgba(251, 247, 241, 0.88);
+        border-bottom: 1px solid #ded2c4;
+        backdrop-filter: blur(18px);
+    }
+
+    .surgery-modal-card {
+        background: #fffaf3;
+        border: 1px solid #ded2c4;
+        box-shadow: 0 34px 80px rgba(80, 62, 43, 0.16);
+    }
+
+    .surgery-section-title {
+        color: #164d46;
+        letter-spacing: 0.08em;
+    }
+
+    .surgery-field {
+        border-color: #d8c8b8;
+        background: #fffefd;
+        color: #171412;
+    }
+
+    .surgery-field:focus {
+        border-color: #256f65;
+        box-shadow: 0 0 0 3px rgba(37, 111, 101, 0.12);
+        outline: none;
+    }
+
+    .surgery-choice {
+        border-color: #ded2c4;
+        background: rgba(255, 252, 247, 0.56);
+    }
+
+    .surgery-choice:hover {
+        border-color: #c8b7a5;
+        background: #fffaf3;
+    }
+
+    .surgery-submit-button {
+        background: #171412;
+        color: #fffaf3;
+        box-shadow: 0 14px 34px rgba(23, 20, 18, 0.18);
+    }
+
+    .surgery-submit-button:hover {
+        background: #2b2521;
+        transform: translateY(-1px);
+    }
+
+    .follow-up-button {
+        background: #256f65;
+        color: #fffaf3;
+    }
+
+    .follow-up-button:hover {
+        background: #164d46;
+    }
+
+    .follow-up-calendar-day {
+        min-height: 4.25rem;
+        border: 1px solid #ded2c4;
+        background: rgba(255, 252, 247, 0.56);
+        transition: all 0.15s ease;
+    }
+
+    .follow-up-calendar-day.open {
+        background: #e8f1ed;
+        border-color: #9fc4ba;
+        color: #164d46;
+    }
+
+    .follow-up-calendar-day.selected {
+        background: #171412;
+        border-color: #171412;
+        color: #fffaf3;
+    }
+
+    .follow-up-calendar-day.full {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+
+    .follow-up-calendar-day.disabled {
+        background: #eee7de;
+        color: #9a8d80;
+        cursor: not-allowed;
+    }
+
+    .follow-up-slot {
+        border: 1px solid #ded2c4;
+        background: #fffefd;
+        color: #171412;
+        transition: all 0.15s ease;
+    }
+
+    .follow-up-slot:hover {
+        border-color: #256f65;
+        background: #f4fbf8;
+    }
+
+    .follow-up-slot.selected {
+        background: #256f65;
+        border-color: #256f65;
+        color: #fffaf3;
+    }
+
+    .follow-up-slot.full {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+
+    .follow-up-slot.full:hover {
+        background: #fecaca;
+        border-color: #f87171;
+    }
+
+    .follow-up-slot.disabled {
+        background: #eee7de;
+        color: #9a8d80;
+        cursor: not-allowed;
+    }
+
+    .follow-up-slot.full.disabled {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+
     @keyframes slideDown {
         from {
             opacity: 0;
@@ -475,7 +626,30 @@
                                                             </button>
                                                         {% endif %}
                                                     </span>
-                                                    
+
+                                                    <button type="button"
+                                                            onclick="openSurgeryBookingModal(this)"
+                                                            data-appointment-id="{{ appointment.id }}"
+                                                            data-name="{{ appointment.patient_name|escape }}"
+                                                            data-civil-id="{{ appointment.civil_id|escape }}"
+                                                            data-phone="{{ appointment.phone_number|escape }}"
+                                                            data-diagnosis="{{ appointment.diagnosis|default_if_none:''|escape }}"
+                                                            class="surgery-button inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-all duration-300">
+                                                        <i class="fas fa-procedures mr-1 text-xs"></i>
+                                                        Book Surgery
+                                                    </button>
+
+                                                    <button type="button"
+                                                            onclick="openFollowUpModal(this)"
+                                                            data-appointment-id="{{ appointment.id }}"
+                                                            data-name="{{ appointment.patient_name|escape }}"
+                                                            data-civil-id="{{ appointment.civil_id|escape }}"
+                                                            data-phone="{{ appointment.phone_number|escape }}"
+                                                            class="follow-up-button inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-all duration-300">
+                                                        <i class="fas fa-calendar-plus mr-1 text-xs"></i>
+                                                        Follow Up
+                                                    </button>
+
                                                     {% if appointment.diagnosis %}
                                                         <button onclick="toggleDiagnosis('mobile-diagnosis-{{ appointment.id }}')"
                                                                class="action-button inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-md hover:bg-blue-200 transition-all duration-200">
@@ -587,7 +761,30 @@
                                                                     </button>
                                                                 {% endif %}
                                                             </span>
-                                                            
+
+                                                            <button type="button"
+                                                                    onclick="openSurgeryBookingModal(this)"
+                                                                    data-appointment-id="{{ appointment.id }}"
+                                                                    data-name="{{ appointment.patient_name|escape }}"
+                                                                    data-civil-id="{{ appointment.civil_id|escape }}"
+                                                                    data-phone="{{ appointment.phone_number|escape }}"
+                                                                    data-diagnosis="{{ appointment.diagnosis|default_if_none:''|escape }}"
+                                                                    class="surgery-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                <i class="fas fa-procedures mr-1"></i>
+                                                                Book Surgery
+                                                            </button>
+
+                                                            <button type="button"
+                                                                    onclick="openFollowUpModal(this)"
+                                                                    data-appointment-id="{{ appointment.id }}"
+                                                                    data-name="{{ appointment.patient_name|escape }}"
+                                                                    data-civil-id="{{ appointment.civil_id|escape }}"
+                                                                    data-phone="{{ appointment.phone_number|escape }}"
+                                                                    class="follow-up-button inline-flex items-center px-2 py-1 text-xs font-medium rounded">
+                                                                <i class="fas fa-calendar-plus mr-1"></i>
+                                                                Follow Up
+                                                            </button>
+
                                                             {% if appointment.diagnosis %}
                                                                 <button onclick="toggleDiagnosis('desktop-diagnosis-{{ appointment.id }}')"
                                                                        class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
@@ -644,11 +841,579 @@
     {% endif %}
 </div>
 
+<!-- Follow-Up Booking Modal -->
+<div id="followUpModal" class="surgery-modal hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="min-h-screen">
+        <div class="surgery-modal-header sticky top-0 z-10">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold" style="color: #171412;">Follow Up</h2>
+                    <p id="followUpModalSubtitle" class="text-sm mt-1" style="color: #6f675f;"></p>
+                </div>
+                <button type="button"
+                        onclick="closeFollowUpModal()"
+                        class="w-10 h-10 rounded-full flex items-center justify-center"
+                        style="background: #f0e5d8; color: #171412;"
+                        aria-label="Close follow-up booking">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+            <div class="surgery-modal-card rounded-lg p-4 sm:p-6 space-y-6">
+                <div id="followUpBookingStep" class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h3 class="surgery-section-title text-sm font-semibold uppercase mb-1">Select a Day</h3>
+                            <p class="text-sm" style="color: #6f675f;">Open days are highlighted in green.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="changeFollowUpMonth(-1)"
+                                    class="px-3 py-2 rounded-md text-sm"
+                                    style="background: rgba(255, 252, 247, 0.52); border: 1px solid #ded2c4; color: #171412;">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div id="followUpCalendarTitle" class="min-w-36 text-center font-semibold" style="color: #171412;"></div>
+                            <button type="button" onclick="changeFollowUpMonth(1)"
+                                    class="px-3 py-2 rounded-md text-sm"
+                                    style="background: rgba(255, 252, 247, 0.52); border: 1px solid #ded2c4; color: #171412;">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase" style="color: #6f675f;">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+                    <div id="followUpCalendarGrid" class="grid grid-cols-7 gap-2"></div>
+
+                    <div>
+                        <h3 class="surgery-section-title text-sm font-semibold uppercase mb-3">Available Slots</h3>
+                        <div id="followUpSlotSummary" class="text-sm mb-3" style="color: #6f675f;">Select an open day to see available slots.</div>
+                        <div id="followUpSlots" class="space-y-4"></div>
+                    </div>
+
+                    <form id="followUpBookingForm" method="POST" class="pt-2" action="{% url 'book_follow_up_from_appointment' workspace.name 0 %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="date" id="followUpSelectedDate">
+                        <input type="hidden" name="time" id="followUpSelectedTime">
+                        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3" style="border-top: 1px solid #ded2c4; padding-top: 1rem;">
+                            <button type="button"
+                                    onclick="closeFollowUpModal()"
+                                    class="px-4 py-2 rounded-md text-center"
+                                    style="background: rgba(255, 252, 247, 0.52); border: 1px solid #ded2c4; color: #171412;">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    id="followUpSaveButton"
+                                    disabled
+                                    class="surgery-submit-button px-5 py-2 rounded-md text-center font-medium disabled:opacity-40 disabled:cursor-not-allowed">
+                                Save Follow Up
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="followUpDetailsStep" class="hidden space-y-5">
+                    <div>
+                        <h3 class="surgery-section-title text-sm font-semibold uppercase mb-2">Booking Details</h3>
+                        <div id="followUpDetailsCard" class="rounded-lg p-4" style="background: #fffefd; border: 1px solid #ded2c4;"></div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button"
+                                onclick="closeFollowUpModal()"
+                                class="surgery-submit-button px-5 py-2 rounded-md text-center font-medium">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Surgery Booking Modal -->
+<div id="surgeryBookingModal" class="surgery-modal hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="min-h-screen">
+        <div class="surgery-modal-header sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold" style="color: #171412;">Book for Surgery</h2>
+                    <p id="surgeryModalSubtitle" class="text-sm mt-1" style="color: #6f675f;"></p>
+                </div>
+                <button type="button"
+                        onclick="closeSurgeryBookingModal()"
+                        class="w-10 h-10 rounded-full flex items-center justify-center"
+                        style="background: #f0e5d8; color: #171412;"
+                        aria-label="Close surgery booking">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+            <form id="surgeryBookingForm"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'book_surgery_from_appointment' workspace.name 0 %}"
+                  class="surgery-modal-card rounded-lg p-4 sm:p-6 space-y-6">
+                {% csrf_token %}
+
+                <div>
+                    <h3 class="surgery-section-title text-sm font-semibold uppercase mb-3">Patient Data</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="surgery_patient_name" class="block text-sm font-medium mb-1" style="color: #171412;">Patient Name</label>
+                            <input type="text" name="name" id="surgery_patient_name" required
+                                   class="surgery-field w-full px-3 py-2 border rounded-md">
+                        </div>
+                        <div>
+                            <label for="surgery_civil_id" class="block text-sm font-medium mb-1" style="color: #171412;">Civil ID</label>
+                            <input type="text" name="civil_id" id="surgery_civil_id" minlength="12" maxlength="12" pattern="\d{12}" required
+                                   class="surgery-field w-full px-3 py-2 border rounded-md">
+                        </div>
+                        <div>
+                            <label for="surgery_phone" class="block text-sm font-medium mb-1" style="color: #171412;">Phone Number</label>
+                            <input type="text" name="phone" id="surgery_phone" minlength="8" maxlength="8" pattern="\d{8}" required
+                                   class="surgery-field w-full px-3 py-2 border rounded-md">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="surgery-section-title text-sm font-semibold uppercase mb-3">Surgical Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label for="surgery_diagnosis" class="block text-sm font-medium mb-1" style="color: #171412;">Diagnosis</label>
+                            <textarea name="diagnosis" id="surgery_diagnosis" rows="2" required
+                                      class="surgery-field w-full px-3 py-2 border rounded-md"></textarea>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="surgery_procedure" class="block text-sm font-medium mb-1" style="color: #171412;">Surgery / Procedure</label>
+                            <textarea name="procedure" id="surgery_procedure" rows="2" required
+                                      class="surgery-field w-full px-3 py-2 border rounded-md"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="surgery_side" class="block text-sm font-medium mb-1" style="color: #171412;">Side</label>
+                            <select name="side" id="surgery_side"
+                                    class="surgery-field w-full px-3 py-2 border rounded-md">
+                                <option value="Not Applicable">Not Applicable</option>
+                                <option value="Right">Right</option>
+                                <option value="Left">Left</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="surgery_readiness" class="block text-sm font-medium mb-1" style="color: #171412;">Readiness</label>
+                            <select name="readiness" id="surgery_readiness"
+                                    class="surgery-field w-full px-3 py-2 border rounded-md">
+                                <option value="waiting">Waiting</option>
+                                <option value="sent_for_anesthesia">Sent for Anesthesia</option>
+                                <option value="ready">Ready</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium mb-2" style="color: #171412;">Booking Destination</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="surgery-choice flex items-center gap-3 border rounded-md p-3 cursor-pointer">
+                                    <input type="radio" name="status" value="waiting" checked onchange="toggleSurgeryDateRequirement()"
+                                           class="h-4 w-4">
+                                    <span>
+                                        <span class="block text-sm font-semibold" style="color: #171412;">Waiting List</span>
+                                        <span class="block text-xs" style="color: #6f675f;">No surgery date yet</span>
+                                    </span>
+                                </label>
+                                <label class="surgery-choice flex items-center gap-3 border rounded-md p-3 cursor-pointer">
+                                    <input type="radio" name="status" value="booked" onchange="toggleSurgeryDateRequirement()"
+                                           class="h-4 w-4">
+                                    <span>
+                                        <span class="block text-sm font-semibold" style="color: #171412;">Booked Cases</span>
+                                        <span class="block text-xs" style="color: #6f675f;">Surgery date required</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="surgeryDateField" class="hidden">
+                            <label for="surgery_date" class="block text-sm font-medium mb-1" style="color: #171412;">Surgery Date</label>
+                            <input type="date" name="date" id="surgery_date" min="{% now 'Y-m-d' %}"
+                                   class="surgery-field w-full px-3 py-2 border rounded-md">
+                        </div>
+
+                        <div>
+                            <label for="surgery_photo_attachment" class="block text-sm font-medium mb-1" style="color: #171412;">Photo Attachment</label>
+                            <input type="file" name="photo_attachment" id="surgery_photo_attachment" accept="image/*"
+                                   class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold"
+                                   style="color: #6f675f;">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="surgery_notes" class="block text-sm font-medium mb-1" style="color: #171412;">Notes</label>
+                            <textarea name="notes" id="surgery_notes" rows="3"
+                                      class="surgery-field w-full px-3 py-2 border rounded-md"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2" style="border-top: 1px solid #ded2c4;">
+                    <button type="button"
+                            onclick="closeSurgeryBookingModal()"
+                            class="px-4 py-2 rounded-md text-center"
+                            style="background: rgba(255, 252, 247, 0.52); border: 1px solid #ded2c4; color: #171412;">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="surgery-submit-button px-5 py-2 rounded-md text-center font-medium">
+                        Book for Surgery
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Notification Area -->
 <div id="notification-area" class="fixed top-4 right-4 z-50 space-y-3"></div>
 
 <!-- JavaScript Section -->
 <script>
+    const surgeryBookingUrlTemplate = "{% url 'book_surgery_from_appointment' workspace.name 0 %}";
+    const followUpCalendarUrlTemplate = "{% url 'follow_up_calendar_data' workspace.name 0 %}";
+    const followUpSlotsUrlTemplate = "{% url 'follow_up_slots_data' workspace.name 0 %}";
+    const followUpBookUrlTemplate = "{% url 'book_follow_up_from_appointment' workspace.name 0 %}";
+    const followUpState = {
+        appointmentId: null,
+        patientName: '',
+        civilId: '',
+        phone: '',
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        selectedDate: '',
+        selectedTime: '',
+    };
+
+    function buildAppointmentUrl(template, appointmentId) {
+        return template.replace('/0/', `/${appointmentId}/`);
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function openFollowUpModal(button) {
+        const modal = document.getElementById('followUpModal');
+        followUpState.appointmentId = button.dataset.appointmentId;
+        followUpState.patientName = button.dataset.name || '';
+        followUpState.civilId = button.dataset.civilId || '';
+        followUpState.phone = button.dataset.phone || '';
+        followUpState.selectedDate = '';
+        followUpState.selectedTime = '';
+
+        const today = new Date();
+        followUpState.year = today.getFullYear();
+        followUpState.month = today.getMonth() + 1;
+
+        document.getElementById('followUpModalSubtitle').textContent = `${followUpState.patientName} - ${followUpState.civilId}`;
+        document.getElementById('followUpBookingStep').classList.remove('hidden');
+        document.getElementById('followUpDetailsStep').classList.add('hidden');
+        document.getElementById('followUpSelectedDate').value = '';
+        document.getElementById('followUpSelectedTime').value = '';
+        document.getElementById('followUpSaveButton').disabled = true;
+        document.getElementById('followUpSlots').innerHTML = '';
+        document.getElementById('followUpSlotSummary').textContent = 'Select an open day to see available slots.';
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        loadFollowUpCalendar();
+    }
+
+    function closeFollowUpModal() {
+        document.getElementById('followUpModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function changeFollowUpMonth(delta) {
+        followUpState.month += delta;
+        if (followUpState.month < 1) {
+            followUpState.month = 12;
+            followUpState.year -= 1;
+        } else if (followUpState.month > 12) {
+            followUpState.month = 1;
+            followUpState.year += 1;
+        }
+        followUpState.selectedDate = '';
+        followUpState.selectedTime = '';
+        document.getElementById('followUpSelectedDate').value = '';
+        document.getElementById('followUpSelectedTime').value = '';
+        document.getElementById('followUpSaveButton').disabled = true;
+        document.getElementById('followUpSlots').innerHTML = '';
+        document.getElementById('followUpSlotSummary').textContent = 'Select an open day to see available slots.';
+        loadFollowUpCalendar();
+    }
+
+    function loadFollowUpCalendar() {
+        const grid = document.getElementById('followUpCalendarGrid');
+        grid.innerHTML = '<div class="col-span-7 text-center py-8" style="color: #6f675f;">Loading calendar...</div>';
+
+        const url = `${buildAppointmentUrl(followUpCalendarUrlTemplate, followUpState.appointmentId)}?year=${followUpState.year}&month=${followUpState.month}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    grid.innerHTML = `<div class="col-span-7 text-center py-8 text-red-600">${data.message || 'Could not load calendar.'}</div>`;
+                    return;
+                }
+
+                document.getElementById('followUpCalendarTitle').textContent = `${data.month_name} ${data.year}`;
+                grid.innerHTML = '';
+
+                for (let i = 0; i < data.first_weekday; i++) {
+                    const blank = document.createElement('div');
+                    blank.className = 'min-h-16';
+                    grid.appendChild(blank);
+                }
+
+                data.days.forEach(day => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'follow-up-calendar-day rounded-md p-2 text-left';
+                    if (day.all_slots_taken) {
+                        button.classList.add('full');
+                    }
+                    if (day.is_available) {
+                        button.classList.add('open');
+                        button.onclick = () => selectFollowUpDate(day.date);
+                    } else {
+                        button.classList.add('disabled');
+                        button.disabled = true;
+                    }
+                    if (day.date === followUpState.selectedDate) {
+                        button.classList.add('selected');
+                    }
+
+                    const sessions = [];
+                    if (day.has_am) sessions.push('AM');
+                    if (day.has_pm) sessions.push('PM');
+                    button.innerHTML = `
+                        <span class="block text-sm font-semibold">${day.day}</span>
+                        <span class="block text-xs mt-2">${day.all_slots_taken ? 'Full' : (sessions.length ? sessions.join(' / ') : 'Closed')}</span>
+                    `;
+                    grid.appendChild(button);
+                });
+            })
+            .catch(() => {
+                grid.innerHTML = '<div class="col-span-7 text-center py-8 text-red-600">Could not load calendar.</div>';
+            });
+    }
+
+    function selectFollowUpDate(date) {
+        followUpState.selectedDate = date;
+        followUpState.selectedTime = '';
+        document.getElementById('followUpSelectedDate').value = date;
+        document.getElementById('followUpSelectedTime').value = '';
+        document.getElementById('followUpSaveButton').disabled = true;
+        loadFollowUpCalendar();
+        loadFollowUpSlots(date);
+    }
+
+    function loadFollowUpSlots(date) {
+        const slotContainer = document.getElementById('followUpSlots');
+        const summary = document.getElementById('followUpSlotSummary');
+        slotContainer.innerHTML = '<div class="text-sm py-4" style="color: #6f675f;">Loading slots...</div>';
+
+        const url = `${buildAppointmentUrl(followUpSlotsUrlTemplate, followUpState.appointmentId)}?date=${date}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    slotContainer.innerHTML = `<div class="text-sm text-red-600">${data.message || 'Could not load slots.'}</div>`;
+                    return;
+                }
+
+                summary.textContent = data.display_date;
+                slotContainer.innerHTML = '';
+                if (data.sessions && data.sessions.AM) {
+                    renderFollowUpSessionSlots('AM', 'Morning Session', data.slots.AM || [], slotContainer, data.is_owner);
+                }
+                if (data.sessions && data.sessions.PM) {
+                    renderFollowUpSessionSlots('PM', 'Afternoon Session', data.slots.PM || [], slotContainer, data.is_owner);
+                }
+
+                if (!slotContainer.innerHTML.trim()) {
+                    slotContainer.innerHTML = '<div class="text-sm py-4" style="color: #6f675f;">No sessions are configured for this day.</div>';
+                }
+            })
+            .catch(() => {
+                slotContainer.innerHTML = '<div class="text-sm text-red-600">Could not load slots.</div>';
+            });
+    }
+
+    function renderFollowUpSessionSlots(session, title, slots, container, isOwner) {
+        if (!slots.length) return;
+
+        const section = document.createElement('div');
+        section.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold" style="color: #171412;">${title}</h4>
+                ${isOwner ? '<span class="text-xs font-semibold" style="color: #b76e2d;">Owner override</span>' : ''}
+            </div>
+        `;
+
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2';
+
+        slots.forEach(slot => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'follow-up-slot rounded-md p-3 text-center';
+            if (slot.is_full) {
+                button.classList.add('full');
+            }
+            if (slot.disabled) {
+                button.classList.add('disabled');
+                button.disabled = true;
+            }
+            if (followUpState.selectedTime === slot.time) {
+                button.classList.add('selected');
+            }
+            button.innerHTML = `
+                <span class="block text-sm font-semibold">${slot.time}</span>
+                <span class="block text-xs mt-1">${slot.count}/${slot.rooms}${slot.is_full ? ' Full' : ''}</span>
+            `;
+            button.onclick = () => selectFollowUpSlot(slot.time);
+            grid.appendChild(button);
+        });
+
+        section.appendChild(grid);
+        container.appendChild(section);
+    }
+
+    function selectFollowUpSlot(time) {
+        followUpState.selectedTime = time;
+        document.getElementById('followUpSelectedTime').value = time;
+        document.getElementById('followUpSaveButton').disabled = false;
+        loadFollowUpSlots(followUpState.selectedDate);
+    }
+
+    document.getElementById('followUpBookingForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        if (!followUpState.selectedDate || !followUpState.selectedTime) {
+            showNotification('Please select a day and slot.', 'error');
+            return;
+        }
+
+        const form = event.target;
+        const saveButton = document.getElementById('followUpSaveButton');
+        saveButton.disabled = true;
+        saveButton.textContent = 'Saving...';
+        form.action = buildAppointmentUrl(followUpBookUrlTemplate, followUpState.appointmentId);
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: new FormData(form),
+        })
+        .then(response => response.json())
+        .then(data => {
+            saveButton.textContent = 'Save Follow Up';
+            if (!data.success) {
+                saveButton.disabled = false;
+                showNotification(data.message || 'Could not book follow-up.', 'error');
+                return;
+            }
+
+            const appointment = data.appointment;
+            document.getElementById('followUpBookingStep').classList.add('hidden');
+            document.getElementById('followUpDetailsStep').classList.remove('hidden');
+            document.getElementById('followUpDetailsCard').innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div><span style="color: #6f675f;">Patient</span><div class="font-semibold">${escapeHtml(appointment.patient_name)}</div></div>
+                    <div><span style="color: #6f675f;">Civil ID</span><div class="font-semibold">${escapeHtml(appointment.civil_id)}</div></div>
+                    <div><span style="color: #6f675f;">Phone</span><div class="font-semibold">${escapeHtml(appointment.phone_number)}</div></div>
+                    <div><span style="color: #6f675f;">Type</span><div class="font-semibold">${escapeHtml(appointment.appointment_type)}</div></div>
+                    <div><span style="color: #6f675f;">Date</span><div class="font-semibold">${escapeHtml(appointment.display_date)}</div></div>
+                    <div><span style="color: #6f675f;">Time</span><div class="font-semibold">${escapeHtml(appointment.time)} (${escapeHtml(appointment.session)})</div></div>
+                    <div><span style="color: #6f675f;">Status</span><div class="font-semibold">${escapeHtml(appointment.confirmed)}</div></div>
+                </div>
+            `;
+            showNotification(data.message, 'success');
+        })
+        .catch(() => {
+            saveButton.textContent = 'Save Follow Up';
+            saveButton.disabled = false;
+            showNotification('Could not book follow-up.', 'error');
+        });
+    });
+
+    function openSurgeryBookingModal(button) {
+        const modal = document.getElementById('surgeryBookingModal');
+        const form = document.getElementById('surgeryBookingForm');
+        const appointmentId = button.dataset.appointmentId;
+        const patientName = button.dataset.name || '';
+        const civilId = button.dataset.civilId || '';
+        const phone = button.dataset.phone || '';
+        const diagnosis = button.dataset.diagnosis || '';
+
+        form.reset();
+        form.action = surgeryBookingUrlTemplate.replace('/0/book-surgery/', `/${appointmentId}/book-surgery/`);
+
+        document.getElementById('surgery_patient_name').value = patientName;
+        document.getElementById('surgery_civil_id').value = civilId;
+        document.getElementById('surgery_phone').value = phone;
+        document.getElementById('surgery_diagnosis').value = diagnosis;
+        document.getElementById('surgeryModalSubtitle').textContent = `${patientName} - ${civilId}`;
+
+        toggleSurgeryDateRequirement();
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        setTimeout(() => document.getElementById('surgery_procedure').focus(), 50);
+    }
+
+    function closeSurgeryBookingModal() {
+        document.getElementById('surgeryBookingModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleSurgeryDateRequirement() {
+        const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+        const dateField = document.getElementById('surgeryDateField');
+        const dateInput = document.getElementById('surgery_date');
+
+        if (selectedStatus === 'booked') {
+            dateField.classList.remove('hidden');
+            dateInput.required = true;
+        } else {
+            dateField.classList.add('hidden');
+            dateInput.required = false;
+            dateInput.value = '';
+        }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeFollowUpModal();
+            closeSurgeryBookingModal();
+        }
+    });
+
         // Function to toggle session locks
     function toggleSessionLock(session, isLocked, date) {
         const action = isLocked ? 'create' : 'delete';

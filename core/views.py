@@ -448,6 +448,329 @@ def add_surgical_booking(request, workspace_name):
     return render(request, 'add_surgical_booking.html', {'form': form, 'workspace': workspace})
 
 @login_required
+@require_POST
+@csrf_protect
+def book_surgery_from_appointment(request, workspace_name, appointment_id):
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    appointment = get_object_or_404(ClinicAppointment, id=appointment_id, workspace=workspace)
+
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return redirect('login')
+
+    status = request.POST.get('status', 'waiting')
+    if status not in ['waiting', 'booked']:
+        status = 'waiting'
+
+    if status == 'booked' and not request.POST.get('date'):
+        messages.error(request, "Please select a surgery date for booked cases.")
+        return redirect('day_appointments', workspace_name=workspace_name, date=appointment.date)
+
+    form_data = request.POST.copy()
+    form_data['name'] = request.POST.get('name') or appointment.patient_name
+    form_data['civil_id'] = request.POST.get('civil_id') or appointment.civil_id
+    form_data['phone'] = request.POST.get('phone') or appointment.phone_number
+
+    if status == 'waiting':
+        form_data['date'] = ''
+
+    form = SurgicalBookingForm(form_data, request.FILES)
+    if form.is_valid():
+        booking = form.save(commit=False)
+        booking.workspace = workspace
+        booking.status = status
+        booking.save()
+
+        ActionLog.objects.create(
+            workspace=workspace,
+            user=request.user,
+            action_description=(
+                f"Booked surgery from clinic appointment for {booking.name} "
+                f"(Civil ID: {booking.civil_id}) (Procedure: {booking.procedure})."
+            )
+        )
+
+        messages.success(request, f"Booked for surgery: {booking.name}.")
+        if booking.status == 'booked':
+            return redirect('booked_cases', workspace_name=workspace_name)
+        return redirect('waiting_list', workspace_name=workspace_name)
+
+    for field, errors in form.errors.items():
+        label = form.fields[field].label if field in form.fields else field
+        for error in errors:
+            messages.error(request, f"{label}: {error}")
+
+    return redirect('day_appointments', workspace_name=workspace_name, date=appointment.date)
+
+def _generate_follow_up_time_slots(start_time, end_time):
+    slots = []
+    start = datetime.strptime(start_time, "%H:%M")
+    end = datetime.strptime(end_time, "%H:%M")
+    while start <= end:
+        slots.append(start.strftime("%H:%M"))
+        start += timedelta(minutes=15)
+    return slots
+
+
+def _get_follow_up_day_data(workspace, selected_date, user):
+    day_name = selected_date.strftime("%A")
+    available_sessions = workspace.get_available_sessions(day_name)
+    is_owner = user == workspace.admin
+    session_time_slots = {
+        "AM": _generate_follow_up_time_slots("08:00", "12:15"),
+        "PM": _generate_follow_up_time_slots("14:00", "17:30"),
+    }
+
+    am_locked = Lock.objects.filter(workspace=workspace, date=selected_date, pm=False).exists()
+    pm_locked = Lock.objects.filter(workspace=workspace, date=selected_date, pm=True).exists()
+
+    sessions = {}
+    has_open_slot = False
+    for session_name, locked in [("AM", am_locked), ("PM", pm_locked)]:
+        if session_name not in available_sessions:
+            continue
+
+        session_count = ClinicAppointment.objects.filter(
+            workspace=workspace,
+            date=selected_date,
+            session=session_name
+        ).count()
+        session_max = workspace.get_session_maximum(day_name, session_name, is_new_referral=False)
+        session_full = session_max > 0 and session_count >= session_max
+        session_has_open_slot = False
+        for slot in session_time_slots[session_name]:
+            slot_count = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=selected_date,
+                session=session_name,
+                time=slot
+            ).count()
+            if slot_count < workspace.rooms:
+                session_has_open_slot = True
+                has_open_slot = True
+                break
+
+        sessions[session_name] = {
+            "locked": locked,
+            "full": session_full,
+            "slots_full": not session_has_open_slot,
+            "available": is_owner or (not locked and not session_full and session_has_open_slot),
+            "count": session_count,
+            "maximum": session_max,
+        }
+    all_slots_taken = bool(sessions) and not has_open_slot
+
+    return {
+        "day_name": day_name,
+        "sessions": sessions,
+        "is_open": bool(sessions),
+        "is_available": any(session["available"] for session in sessions.values()),
+        "all_slots_taken": all_slots_taken,
+    }
+
+
+def _get_follow_up_slots(workspace, selected_date, user):
+    day_data = _get_follow_up_day_data(workspace, selected_date, user)
+    slot_config = {
+        "AM": _generate_follow_up_time_slots("08:00", "12:15"),
+        "PM": _generate_follow_up_time_slots("14:00", "17:30"),
+    }
+    slots = {}
+    is_owner = user == workspace.admin
+
+    for session_name, time_slots in slot_config.items():
+        session_data = day_data["sessions"].get(session_name)
+        if not session_data:
+            continue
+
+        for slot in time_slots:
+            count = ClinicAppointment.objects.filter(
+                workspace=workspace,
+                date=selected_date,
+                session=session_name,
+                time=slot
+            ).count()
+            is_full = count >= workspace.rooms
+            disabled = not is_owner and (
+                session_data["locked"] or session_data["full"] or is_full
+            )
+            slots.setdefault(session_name, []).append({
+                "time": slot,
+                "count": count,
+                "rooms": workspace.rooms,
+                "is_full": is_full,
+                "disabled": disabled,
+            })
+
+    return day_data, slots
+
+
+@login_required
+@require_GET
+def follow_up_calendar_data(request, workspace_name, appointment_id):
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    get_object_or_404(ClinicAppointment, id=appointment_id, workspace=workspace)
+
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return JsonResponse({'success': False, 'message': 'Access denied'}, status=403)
+
+    today = timezone.localdate()
+    year = int(request.GET.get("year", today.year))
+    month = int(request.GET.get("month", today.month))
+    _, days_in_month = calendar.monthrange(year, month)
+
+    days = []
+    for day_number in range(1, days_in_month + 1):
+        current_date = datetime(year, month, day_number).date()
+        day_data = _get_follow_up_day_data(workspace, current_date, request.user)
+        days.append({
+            "date": current_date.strftime("%Y-%m-%d"),
+            "day": day_number,
+            "is_past": current_date < today,
+            "is_open": day_data["is_open"],
+            "is_available": day_data["is_available"] and current_date >= today,
+            "all_slots_taken": day_data["all_slots_taken"],
+            "has_am": "AM" in day_data["sessions"],
+            "has_pm": "PM" in day_data["sessions"],
+        })
+
+    return JsonResponse({
+        "success": True,
+        "year": year,
+        "month": month,
+        "month_name": datetime(year, month, 1).strftime("%B"),
+        "first_weekday": (datetime(year, month, 1).weekday() + 1) % 7,
+        "days": days,
+        "is_owner": request.user == workspace.admin,
+    })
+
+
+@login_required
+@require_GET
+def follow_up_slots_data(request, workspace_name, appointment_id):
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    get_object_or_404(ClinicAppointment, id=appointment_id, workspace=workspace)
+
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return JsonResponse({'success': False, 'message': 'Access denied'}, status=403)
+
+    date_str = request.GET.get("date")
+    try:
+        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'message': 'Invalid date'}, status=400)
+
+    day_data, slots = _get_follow_up_slots(workspace, selected_date, request.user)
+    return JsonResponse({
+        "success": True,
+        "date": selected_date.strftime("%Y-%m-%d"),
+        "display_date": selected_date.strftime("%A, %d %B %Y"),
+        "day_name": day_data["day_name"],
+        "is_owner": request.user == workspace.admin,
+        "sessions": day_data["sessions"],
+        "slots": slots,
+    })
+
+
+@login_required
+@require_POST
+@csrf_protect
+def book_follow_up_from_appointment(request, workspace_name, appointment_id):
+    workspace = get_object_or_404(Workspace, name=workspace_name)
+    source_appointment = get_object_or_404(ClinicAppointment, id=appointment_id, workspace=workspace)
+
+    if request.user.workspace != workspace and request.user != workspace.admin:
+        return JsonResponse({'success': False, 'message': 'Access denied'}, status=403)
+
+    date_str = request.POST.get("date")
+    time_str = request.POST.get("time")
+    try:
+        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        selected_time = datetime.strptime(time_str, "%H:%M").time()
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'message': 'Please select a valid day and time.'}, status=400)
+
+    if selected_date < timezone.localdate():
+        return JsonResponse({'success': False, 'message': 'Cannot book a follow-up in the past.'}, status=400)
+
+    session = "AM" if selected_time < time(14, 0) else "PM"
+    day_data, slots = _get_follow_up_slots(workspace, selected_date, request.user)
+    selected_slot = next(
+        (slot for slot in slots.get(session, []) if slot["time"] == time_str),
+        None
+    )
+
+    if not selected_slot:
+        return JsonResponse({'success': False, 'message': 'Selected slot is not available.'}, status=400)
+
+    if selected_slot["disabled"]:
+        return JsonResponse({'success': False, 'message': 'Selected slot is full or closed.'}, status=400)
+
+    follow_up = ClinicAppointment.objects.create(
+        workspace=workspace,
+        patient_name=source_appointment.patient_name,
+        civil_id=source_appointment.civil_id,
+        phone_number=source_appointment.phone_number,
+        confirmed="Unknown",
+        appointment_type="Follow-Up",
+        date=selected_date,
+        time=selected_time,
+        session=session,
+        diagnosis=source_appointment.diagnosis,
+        booked_by=source_appointment.booked_by,
+    )
+
+    ActionLog.objects.create(
+        workspace=workspace,
+        user=request.user,
+        action_description=(
+            f"Booked follow-up appointment for {follow_up.patient_name} "
+            f"(Civil ID: {follow_up.civil_id}) on {follow_up.date} at {follow_up.time}."
+        )
+    )
+
+    session_data = day_data["sessions"].get(session, {})
+    session_max = session_data.get("maximum", 0)
+    session_count = ClinicAppointment.objects.filter(
+        workspace=workspace,
+        date=selected_date,
+        session=session
+    ).count()
+
+    if session_max > 0 and session_count >= session_max:
+        pm_value = session == "PM"
+        lock_exists = Lock.objects.filter(
+            workspace=workspace,
+            date=selected_date,
+            pm=pm_value
+        ).exists()
+        if not lock_exists:
+            Lock.objects.create(workspace=workspace, date=selected_date, pm=pm_value)
+            ActionLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action_description=(
+                    f"Day {selected_date} {session} session automatically locked "
+                    f"as it reached maximum capacity ({session_max} appointments)."
+                )
+            )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Follow-up appointment booked.",
+        "appointment": {
+            "patient_name": follow_up.patient_name,
+            "civil_id": follow_up.civil_id,
+            "phone_number": follow_up.phone_number,
+            "date": follow_up.date.strftime("%Y-%m-%d"),
+            "display_date": follow_up.date.strftime("%A, %d %B %Y"),
+            "time": follow_up.time.strftime("%H:%M"),
+            "session": follow_up.session,
+            "appointment_type": follow_up.appointment_type,
+            "confirmed": follow_up.confirmed,
+        }
+    })
+
+@login_required
 def calendar_view(request, workspace_name):
     workspace = get_object_or_404(Workspace, name=workspace_name)
     today = datetime.today()

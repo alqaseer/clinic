@@ -383,12 +383,28 @@ def past_cases(request, workspace_name):
         return redirect('login')
 
     today = now().date()
+    search_query = request.GET.get('search', '').strip()
 
     cases = SurgicalBooking.objects.filter(
-        workspace=workspace, 
+        workspace=workspace,
         date__lt=today,  # Filter cases where date is in the past
-        status__in=['booked', 'waiting', 'past']  # Exclude 'deleted' cases
-    ).order_by('date')  # Arrange chronologically by date
+    ).exclude(status='deleted')
+
+    if search_query:
+        cases = cases.filter(
+            Q(name__icontains=search_query) |
+            Q(civil_id__icontains=search_query) |
+            Q(phone__icontains=search_query) |
+            Q(diagnosis__icontains=search_query) |
+            Q(procedure__icontains=search_query) |
+            Q(notes__icontains=search_query)
+        )
+
+    total_cases = cases.count()
+    cases = cases.order_by('-date', '-created_at')
+    paginator = Paginator(cases, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     # Get list of civil IDs that are already favorited in this workspace
     favorited_civil_ids = list(
@@ -399,7 +415,10 @@ def past_cases(request, workspace_name):
     )
 
     return render(request, 'past_cases.html', {
-        'cases': cases, 
+        'cases': page_obj,
+        'page_obj': page_obj,
+        'total_cases': total_cases,
+        'search_query': search_query,
         'workspace': workspace,
         'favorited_civil_ids': favorited_civil_ids,  # Add this for favorite functionality
     })

@@ -4,219 +4,289 @@
 
 {% block content %}
 <style>
+    .logbook-shell {
+        color: #171412;
+    }
+
+    .glass-card {
+        background: #fffaf3;
+        border: 1px solid #ded2c4;
+        box-shadow: 0 18px 42px rgba(80, 62, 43, 0.10);
+    }
+
+    .logbook-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .logbook-table thead {
+        background: #efe3d6;
+        color: #6f675f;
+    }
+
+    .logbook-table tbody tr {
+        background: #fffefd;
+        transition: background-color 0.15s ease;
+    }
+
+    .logbook-table tbody tr:hover {
+        background: #fbf7f1;
+    }
+
+    .logbook-table td,
+    .logbook-table th {
+        border-bottom: 1px solid #eaded1;
+    }
+
+    .case-label {
+        color: #164d46;
+        letter-spacing: 0.08em;
+    }
+
+    .case-muted {
+        color: #6f675f;
+    }
+
+    .search-field {
+        background: #fffefd;
+        border: 1px solid #d8c8b8;
+        color: #171412;
+    }
+
+    .search-field:focus {
+        border-color: #256f65;
+        box-shadow: 0 0 0 3px rgba(37, 111, 101, 0.12);
+        outline: none;
+    }
+
+    .btn-ink {
+        background: #171412;
+        color: #fffaf3;
+        border: 1px solid #171412;
+    }
+
+    .btn-ink:hover {
+        background: #2b2521;
+    }
+
+    .btn-soft {
+        background: rgba(255, 252, 247, 0.62);
+        color: #171412;
+        border: 1px solid #ded2c4;
+    }
+
+    .btn-soft:hover {
+        background: #fffaf3;
+        border-color: #c8b7a5;
+    }
+
+    .btn-favorite {
+        background: #fff8e8;
+        color: #5f3b1f;
+        border: 1px solid #d7a465;
+    }
+
+    .btn-danger-soft {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+
     .favorite-star {
-        color: #fbbf24; /* Mario star gold/yellow color */
-        text-shadow: 0 0 3px rgba(251, 191, 36, 0.5);
+        color: #b76e2d;
+    }
+
+    .date-chip {
+        background: #f0e5d8;
+        color: #5f3b1f;
+        border: 1px solid #d8c8b8;
+    }
+
+    .side-chip {
+        background: #e8f1ed;
+        color: #164d46;
+        border: 1px solid #9fc4ba;
+    }
+
+    .pagination-link {
+        background: #fffefd;
+        border: 1px solid #ded2c4;
+        color: #171412;
+    }
+
+    .pagination-link:hover {
+        background: #fbf7f1;
+        border-color: #c8b7a5;
+    }
+
+    .pagination-current {
+        background: #171412;
+        border: 1px solid #171412;
+        color: #fffaf3;
     }
 </style>
 
-<div class="container mx-auto px-4">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-semibold text-gray-800">Past Cases</h2>
-    </div>
-    
-    <!-- Desktop Table View -->
-    <div class="hidden lg:block overflow-x-auto">
-        <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
-            <thead class="bg-gray-50 border-b">
-                <tr>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Patient Name</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Phone Number</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Diagnosis</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Side</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Procedure</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Date</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Notes</th>
-                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Photo</th>
-                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Favorite</th>
-                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for case in cases %}
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.name }}</td>
-                    <td class="px-4 py-2">
-                        <div class="flex items-center space-x-2">
-                            <a href="tel:{{ case.phone }}" class="text-sm text-blue-600 hover:text-blue-800">
-                                📞 {{ case.phone }}
-                            </a>
-                            <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="text-green-500 hover:text-green-600">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.487"/>
-                                </svg>
-                            </a>
-                        </div>
-                    </td>
-                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.diagnosis }}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.side }}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.procedure }}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.date|date:"M d, Y" }}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">{{ case.notes|truncatechars:50 }}</td>
-                    <td class="px-4 py-2 text-center">
-                        {% if case.photo_attachment %}
-                            <button 
-                                onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
-                                class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
-                            >
-                                View Photo
-                            </button>
-                        {% else %}
-                            <span class="text-gray-400 text-xs">No photo</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-2 text-center">
-                        <span id="favorite-btn-desktop-{{ case.id }}">
-                            {% if case.civil_id in favorited_civil_ids %}
-                                <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed">
-                                    <i class="fas fa-star favorite-star mr-1"></i>
-                                    Favorited
-                                </span>
-                            {% else %}
-                                <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
-                                        class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
-                                    <i class="fas fa-heart mr-1"></i>
-                                    Favorite
-                                </button>
-                            {% endif %}
-                        </span>
-                    </td>
-                    <td class="px-4 py-2 text-center">
-                        <!-- Edit Button -->
-                        <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
-                           class="text-blue-500 hover:text-blue-600 font-medium px-2">
-                            ✏️ Edit
-                        </a>
+<div class="logbook-shell max-w-7xl mx-auto space-y-5">
+    <section class="glass-card rounded-lg p-5 sm:p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div>
+                <p class="case-label text-xs font-semibold uppercase mb-2">Surgery Archive</p>
+                <h1 class="text-2xl sm:text-3xl font-semibold">Past Cases Logbook</h1>
+                <p class="case-muted text-sm mt-2">
+                    {{ total_cases }} completed case{{ total_cases|pluralize }}{% if search_query %} matching "{{ search_query }}"{% endif %}
+                </p>
+            </div>
 
-                        <!-- Delete Button -->
-                        <button onclick="deleteCase({{ case.id }})" 
-                                class="text-red-500 hover:text-red-600 font-medium px-2">
-                            🗑 Delete
-                        </button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="10" class="px-4 py-2 text-center text-sm text-gray-500">
-                        <div class="py-8">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="font-medium">No past cases available.</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Mobile Card View -->
-    <div class="lg:hidden space-y-4">
-        {% for case in cases %}
-        <div class="bg-white border border-gray-200 shadow-md rounded-lg p-4">
-            <div class="flex justify-between items-start mb-3">
-                <div class="flex-1">
-                    <h3 class="text-lg font-semibold text-gray-800">{{ case.name }}</h3>
-                    <div class="flex items-center space-x-2 mt-1">
-                        <a href="tel:{{ case.phone }}" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
-                            📞 {{ case.phone }}
-                        </a>
-                        <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="text-green-500 hover:text-green-600 text-lg">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.487"/>
-                            </svg>
-                        </a>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">{{ case.date|date:"M d, Y" }}</p>
+            <form method="GET" class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                <div class="relative flex-1 lg:w-80">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-sm" style="color: #6f675f;"></i>
+                    <input type="search"
+                           name="search"
+                           value="{{ search_query }}"
+                           placeholder="Search patient, civil ID, phone, diagnosis..."
+                           class="search-field w-full pl-9 pr-3 py-2 rounded-md text-sm">
                 </div>
-                <div class="flex flex-col items-end gap-2">
-                    {% if case.photo_attachment %}
-                        <button 
-                            onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name }}')" 
-                            class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors duration-200"
-                        >
-                            📷 View
-                        </button>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="space-y-2 mb-4">
-                <div>
-                    <span class="text-xs font-medium text-gray-500">Diagnosis:</span>
-                    <p class="text-sm text-gray-700">{{ case.diagnosis }}</p>
-                </div>
-                <div>
-                    <span class="text-xs font-medium text-gray-500">Procedure:</span>
-                    <p class="text-sm text-gray-700">{{ case.procedure }}</p>
-                </div>
-                <div class="flex justify-between">
-                    <div>
-                        <span class="text-xs font-medium text-gray-500">Side:</span>
-                        <p class="text-sm text-gray-700">{{ case.side }}</p>
-                    </div>
-                    {% if case.notes %}
-                    <div class="flex-1 ml-4">
-                        <span class="text-xs font-medium text-gray-500">Notes:</span>
-                        <p class="text-sm text-gray-700">{{ case.notes|truncatechars:100 }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <!-- Mobile Favorite Button -->
-            <div class="mb-3">
-                <span id="favorite-btn-mobile-{{ case.id }}">
-                    {% if case.civil_id in favorited_civil_ids %}
-                        <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed">
-                            <i class="fas fa-star favorite-star mr-1"></i>
-                            Favorited
-                        </span>
-                    {% else %}
-                        <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
-                                class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors">
-                            <i class="fas fa-heart mr-1"></i>
-                            Favorite
-                        </button>
-                    {% endif %}
-                </span>
-            </div>
-            
-            <div class="flex justify-end space-x-3 pt-3 border-t border-gray-100">
-                <a href="{% url 'edit_surgical_booking' workspace.name case.id %}" 
-                   class="text-blue-500 hover:text-blue-600 font-medium text-sm">
-                    ✏️ Edit
-                </a>
-                <button onclick="deleteCase({{ case.id }})" 
-                        class="text-red-500 hover:text-red-600 font-medium text-sm">
-                    🗑 Delete
+                <button type="submit" class="btn-ink px-4 py-2 rounded-md text-sm font-medium">
+                    Search
                 </button>
+                {% if search_query %}
+                    <a href="{% url 'past_cases' workspace.name %}" class="btn-soft px-4 py-2 rounded-md text-sm font-medium text-center">
+                        Clear
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </section>
+
+    <section class="glass-card rounded-lg overflow-hidden">
+        {% if total_cases %}
+            <div class="overflow-x-auto">
+                <table class="logbook-table min-w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Patient</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Diagnosis</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Procedure</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Notes</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for case in cases %}
+                        <tr>
+                            <td class="px-4 py-3 align-top whitespace-nowrap">
+                                <span class="date-chip inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold">
+                                    <i class="far fa-calendar"></i>
+                                    {{ case.date|date:"M d, Y" }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 align-top min-w-56">
+                                <div class="font-semibold">{{ case.name }}</div>
+                                <div class="case-muted text-xs mt-1">{{ case.civil_id }}</div>
+                                <div class="flex flex-wrap items-center gap-2 mt-2">
+                                    <a href="tel:{{ case.phone }}" class="font-medium text-xs" style="color: #164d46;">{{ case.phone }}</a>
+                                    <a href="https://wa.me/965{{ case.phone }}" target="_blank" class="text-xs inline-flex items-center gap-1" style="color: #256f65;">
+                                        <i class="fab fa-whatsapp"></i>
+                                        WhatsApp
+                                    </a>
+                                    {% if case.side != "Not Applicable" %}
+                                        <span class="side-chip text-xs font-medium px-2 py-0.5 rounded-full">{{ case.side }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 align-top max-w-xs">
+                                <div class="line-clamp-2">{{ case.diagnosis }}</div>
+                            </td>
+                            <td class="px-4 py-3 align-top max-w-xs">
+                                <div class="line-clamp-2">{{ case.procedure }}</div>
+                            </td>
+                            <td class="px-4 py-3 align-top max-w-xs case-muted">
+                                {{ case.notes|default:"-"|truncatechars:80 }}
+                            </td>
+                            <td class="px-4 py-3 align-top">
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    {% if case.photo_attachment %}
+                                        <button onclick="showPhotoModal('{{ case.photo_attachment.url }}', '{{ case.name|escapejs }}')"
+                                                class="btn-soft inline-flex items-center px-2 py-1 text-xs font-medium rounded-md">
+                                            <i class="fas fa-image mr-1"></i>
+                                            Photo
+                                        </button>
+                                    {% endif %}
+
+                                    <span id="favorite-btn-desktop-{{ case.id }}">
+                                        {% if case.civil_id in favorited_civil_ids %}
+                                            <span class="btn-soft inline-flex items-center px-2 py-1 text-xs font-medium rounded-md cursor-not-allowed">
+                                                <i class="fas fa-star favorite-star mr-1"></i>
+                                                Favorited
+                                            </span>
+                                        {% else %}
+                                            <button onclick="addToFavorites('surgical', {{ case.id }}, '{{ case.name|escapejs }}')"
+                                                    class="btn-favorite inline-flex items-center px-2 py-1 text-xs font-medium rounded-md">
+                                                <i class="fas fa-heart mr-1"></i>
+                                                Favorite
+                                            </button>
+                                        {% endif %}
+                                    </span>
+
+                                    <a href="{% url 'edit_surgical_booking' workspace.name case.id %}"
+                                       class="btn-soft inline-flex items-center px-2 py-1 text-xs font-medium rounded-md">
+                                        <i class="fas fa-edit mr-1"></i>
+                                        Edit
+                                    </a>
+                                    <button onclick="deleteCase({{ case.id }})"
+                                            class="btn-danger-soft inline-flex items-center px-2 py-1 text-xs font-medium rounded-md">
+                                        <i class="fas fa-trash mr-1"></i>
+                                        Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </div>
-        {% empty %}
-        <div class="bg-white border border-gray-200 shadow-md rounded-lg p-8 text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p class="font-medium text-gray-700">No past cases available.</p>
-        </div>
-        {% endfor %}
-    </div>
+        {% else %}
+            <div class="p-12 text-center">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background: #f0e5d8;">
+                    <i class="fas fa-book-medical text-xl" style="color: #8f6a4a;"></i>
+                </div>
+                <h3 class="text-lg font-medium mb-2">No past cases found</h3>
+                <p class="case-muted">Try another search or check back once cases move into the archive.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p class="case-muted text-sm">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </p>
+            <div class="flex flex-wrap gap-2">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if search_query %}&search={{ search_query|urlencode }}{% endif %}" class="pagination-link px-3 py-2 rounded-md text-sm">First</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}" class="pagination-link px-3 py-2 rounded-md text-sm">Previous</a>
+                {% endif %}
+
+                <span class="pagination-current px-3 py-2 rounded-md text-sm">{{ page_obj.number }}</span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}" class="pagination-link px-3 py-2 rounded-md text-sm">Next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}" class="pagination-link px-3 py-2 rounded-md text-sm">Last</a>
+                {% endif %}
+            </div>
+        </nav>
+    {% endif %}
 </div>
 
-<!-- Notification Area -->
 <div id="notification-area" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
-<!-- Photo Modal -->
 <div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden p-4">
-    <div class="relative bg-white rounded-lg shadow-xl max-w-full max-h-full overflow-auto w-full max-w-3xl">
-        <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
-            <h3 id="photoModalTitle" class="text-lg font-medium text-gray-900 truncate pr-4"></h3>
-            <button onclick="closePhotoModal()" class="text-gray-400 hover:text-gray-500 flex-shrink-0">
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+    <div class="relative rounded-lg shadow-xl max-w-full max-h-full overflow-auto w-full max-w-3xl" style="background: #fffaf3; border: 1px solid #ded2c4;">
+        <div class="sticky top-0 p-4 border-b flex justify-between items-center" style="background: #fbf7f1; border-color: #ded2c4;">
+            <h3 id="photoModalTitle" class="text-lg font-medium truncate pr-4" style="color: #171412;"></h3>
+            <button onclick="closePhotoModal()" class="flex-shrink-0" style="color: #6f675f;">
+                <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         <div class="p-4">
@@ -225,23 +295,15 @@
     </div>
 </div>
 
-<!-- JavaScript for Delete, Photo Modal, and Favorite Functionality -->
 <script>
-    // Function to add patient to favorites
     function addToFavorites(type, id, patientName) {
         let url = `{% url 'favorite_from_surgical' workspace.name 0 %}`.replace('0', id);
-        
-        const mobileBtn = document.getElementById(`favorite-btn-mobile-${id}`);
         const desktopBtn = document.getElementById(`favorite-btn-desktop-${id}`);
-        
-        // Show loading state
-        if (mobileBtn) {
-            mobileBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
-        }
+
         if (desktopBtn) {
-            desktopBtn.innerHTML = '<span class="inline-flex items-center px-2 py-1 bg-gray-400 text-white text-xs rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
+            desktopBtn.innerHTML = '<span class="btn-soft inline-flex items-center px-2 py-1 text-xs font-medium rounded-md"><i class="fas fa-spinner fa-spin mr-1"></i>Adding...</span>';
         }
-        
+
         fetch(url, {
             method: 'POST',
             headers: {
@@ -252,44 +314,24 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show success state
-                const successHtml = '<span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
-                
-                if (mobileBtn) {
-                    mobileBtn.innerHTML = successHtml;
-                }
+                const successHtml = '<span class="btn-soft inline-flex items-center px-2 py-1 text-xs font-medium rounded-md cursor-not-allowed"><i class="fas fa-star favorite-star mr-1"></i>Favorited</span>';
                 if (desktopBtn) {
                     desktopBtn.innerHTML = successHtml;
                 }
-                
-                // Show success notification
                 showNotification(data.message, 'success');
             } else {
-                // Restore original buttons on error
-                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
-                
-                if (mobileBtn) {
-                    mobileBtn.innerHTML = originalHtml;
-                }
+                const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="btn-favorite inline-flex items-center px-2 py-1 text-xs font-medium rounded-md"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
                 if (desktopBtn) {
                     desktopBtn.innerHTML = originalHtml;
                 }
-                
                 showNotification(data.message, 'error');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            // Restore original buttons on error
-            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="inline-flex items-center px-2 py-1 bg-pink-600 text-white text-xs rounded-full hover:bg-pink-700 transition-colors"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
-            
-            if (mobileBtn) {
-                mobileBtn.innerHTML = originalHtml;
-            }
+        .catch(() => {
+            const originalHtml = `<button onclick="addToFavorites('surgical', ${id}, '${patientName}')" class="btn-favorite inline-flex items-center px-2 py-1 text-xs font-medium rounded-md"><i class="fas fa-heart mr-1"></i>Favorite</button>`;
             if (desktopBtn) {
-                desktopBtn.innerHTML = originalHtml;  
+                desktopBtn.innerHTML = originalHtml;
             }
-            
             showNotification('An error occurred while adding to favorites.', 'error');
         });
     }
@@ -298,7 +340,7 @@
         const notificationArea = document.getElementById('notification-area');
         const notification = document.createElement('div');
         notification.className = `max-w-sm px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 ${
-            type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            type === 'success' ? 'bg-green-700 text-white' : 'bg-red-700 text-white'
         }`;
         notification.innerHTML = `
             <div class="flex items-center">
@@ -306,15 +348,13 @@
                 <span>${message}</span>
             </div>
         `;
-        
+
         notificationArea.appendChild(notification);
-        
-        // Animate in
+
         setTimeout(() => {
             notification.classList.add('opacity-100');
         }, 100);
-        
-        // Remove after 4 seconds
+
         setTimeout(() => {
             notification.classList.add('opacity-0');
             setTimeout(() => {
@@ -339,7 +379,7 @@
             body: JSON.stringify({ status: "deleted" })
         })
         .then(response => response.json())
-        .then data => {
+        .then(data => {
             if (data.success) {
                 alert("Case deleted successfully.");
                 location.reload();
@@ -347,39 +387,29 @@
                 alert("Error deleting case.");
             }
         })
-        .catch(error => {
+        .catch(() => {
             alert("Network error. Please try again.");
         });
     }
 
     function showPhotoModal(imageUrl, patientName) {
-        // Set the image source and title
         document.getElementById('photoModalImage').src = imageUrl;
         document.getElementById('photoModalTitle').textContent = `Photo Attachment - ${patientName}`;
-        
-        // Show the modal
         document.getElementById('photoModal').classList.remove('hidden');
-        
-        // Prevent background scrolling
         document.body.style.overflow = 'hidden';
     }
 
     function closePhotoModal() {
-        // Hide the modal
         document.getElementById('photoModal').classList.add('hidden');
-        
-        // Allow background scrolling again
         document.body.style.overflow = 'auto';
     }
 
-    // Close modal if clicked outside the content
     document.getElementById('photoModal').addEventListener('click', function(event) {
         if (event.target === this) {
             closePhotoModal();
         }
     });
 
-    // Close modal with Escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape' && !document.getElementById('photoModal').classList.contains('hidden')) {
             closePhotoModal();

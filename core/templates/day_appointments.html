@@ -11,8 +11,8 @@
     }
     
     .diagnosis-container {
-        background: #f8fafc;
-        border-left: 3px solid #3b82f6;
+        background: #fffaf3;
+        border-left: 3px solid #256f65;
         padding: 0.875rem;
         margin-top: 0.5rem;
         border-radius: 0.5rem;
@@ -29,33 +29,78 @@
     }
 
     .glass-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        background: #fffaf3;
+        border: 1px solid #ded2c4;
+        box-shadow: 0 18px 42px rgba(80, 62, 43, 0.10);
+        color: #171412;
     }
 
     .appointment-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: #fffefd;
+        border: 1px solid #ded2c4;
         transition: all 0.2s ease;
         position: relative;
     }
 
     .appointment-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-color: #d1d5db;
+        box-shadow: 0 14px 28px rgba(80, 62, 43, 0.12);
+        border-color: #c8b7a5;
     }
 
     .appointment-card.new-appointment {
-        background: #fffbeb;
-        border-color: #f59e0b;
+        background: #fff8e8;
+        border-color: #b76e2d;
         border-left-width: 4px;
     }
 
+    .appointments-list-shell tbody {
+        background: #fffaf3;
+    }
+
+    .appointments-list-shell tbody tr {
+        border-color: #ded2c4;
+    }
+
+    .appointments-list-shell tbody tr:hover {
+        background: #fbf7f1;
+    }
+
+    .appointments-list-shell h4,
+    .appointment-card h4 {
+        color: #171412 !important;
+    }
+
+    .appointments-list-shell td,
+    .appointment-card p,
+    .appointment-card .text-gray-600,
+    .appointment-card .text-gray-500 {
+        color: #6f675f !important;
+    }
+
+    .appointment-type-new {
+        background: #f7dfb9 !important;
+        color: #5f3b1f !important;
+    }
+
+    .appointment-type-follow-up {
+        background: #e8f1ed !important;
+        color: #164d46 !important;
+    }
+
+    .status-badge .bg-yellow-100,
+    .status-badge .bg-amber-100 {
+        background: #fff1c7 !important;
+    }
+
+    .status-badge .text-yellow-600,
+    .status-badge .text-amber-600 {
+        color: #b76e2d !important;
+    }
+
     .time-slot-header {
-        background: #f9fafb;
-        color: #374151;
-        border-bottom: 1px solid #e5e7eb;
+        background: #efe3d6;
+        color: #6f675f;
+        border-bottom: 1px solid #ded2c4;
     }
 
     .action-button {
@@ -68,12 +113,12 @@
     }
 
     .floating-action-button {
-        background: #3b82f6;
-        color: white;
+        background: #171412;
+        color: #fffaf3;
     }
 
     .floating-action-button:hover {
-        background: #2563eb;
+        background: #2b2521;
     }
 
     .status-badge {
@@ -86,27 +131,27 @@
     }
 
     .favorite-button {
-        background: #ec4899;
-        color: white;
+        background: #b76e2d;
+        color: #fffaf3;
         transition: all 0.15s ease;
     }
 
     .favorite-button:hover {
-        background: #db2777;
+        background: #8f5525;
     }
 
     .favorite-button.favorited {
-        background: #f3f4f6;
-        color: #6b7280;
+        background: #f0e5d8;
+        color: #6f675f;
     }
 
     .surgery-button {
-        background: #059669;
-        color: white;
+        background: #256f65;
+        color: #fffaf3;
     }
 
     .surgery-button:hover {
-        background: #047857;
+        background: #164d46;
     }
 
     .surgery-modal {
@@ -114,6 +159,7 @@
             linear-gradient(180deg, rgba(255, 252, 247, 0.92) 0%, rgba(245, 239, 231, 0.88) 100%),
             #f5efe7;
         color: #171412;
+        z-index: 70;
     }
 
     .surgery-modal.hidden {
@@ -130,6 +176,7 @@
         background: #fffaf3;
         border: 1px solid #ded2c4;
         box-shadow: 0 34px 80px rgba(80, 62, 43, 0.16);
+        color: #171412;
     }
 
     .surgery-section-title {
@@ -186,6 +233,33 @@
         transition: all 0.15s ease;
     }
 
+    .follow-up-calendar-grid {
+        border: 1px solid #ded2c4;
+        background: #ded2c4;
+        gap: 1px;
+    }
+
+    .follow-up-weekdays {
+        background: #efe3d6;
+        border: 1px solid #ded2c4;
+        border-bottom: 0;
+        color: #6f675f;
+    }
+
+    .follow-up-weekdays div {
+        padding: 0.55rem 0.25rem;
+        border-right: 1px solid #ded2c4;
+    }
+
+    .follow-up-weekdays div:last-child {
+        border-right: 0;
+    }
+
+    .follow-up-calendar-blank {
+        min-height: 4.25rem;
+        background: rgba(255, 252, 247, 0.36);
+    }
+
     .follow-up-calendar-day.open {
         background: #e8f1ed;
         border-color: #9fc4ba;
@@ -215,6 +289,7 @@
         background: #fffefd;
         color: #171412;
         transition: all 0.15s ease;
+        box-shadow: 0 1px 0 rgba(80, 62, 43, 0.04);
     }
 
     .follow-up-slot:hover {
@@ -251,6 +326,49 @@
         color: #991b1b;
     }
 
+    @media (max-width: 640px) {
+        .surgery-modal-header {
+            background: rgba(245, 239, 231, 0.96);
+        }
+
+        .surgery-modal-card {
+            border-left: 0;
+            border-right: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .follow-up-weekdays {
+            border-radius: 0.5rem 0.5rem 0 0;
+            overflow: hidden;
+        }
+
+        .follow-up-calendar-grid {
+            border-radius: 0 0 0.5rem 0.5rem;
+        }
+
+        .follow-up-calendar-day,
+        .follow-up-calendar-blank {
+            min-height: 3.9rem;
+        }
+
+        .follow-up-calendar-day {
+            border: 0;
+            border-radius: 0;
+            padding: 0.45rem 0.25rem;
+            text-align: center;
+        }
+
+        .follow-up-calendar-day span:first-child {
+            font-size: 0.95rem;
+        }
+
+        .follow-up-calendar-day span:last-child {
+            font-size: 0.78rem;
+            margin-top: 0.35rem;
+        }
+    }
+
     @keyframes slideDown {
         from {
             opacity: 0;
@@ -263,16 +381,17 @@
     }
 
     .lock-indicator {
-        background: #f59e0b;
-        color: white;
+        background: #f0e5d8;
+        border: 1px solid #d8c8b8;
+        color: #5f3b1f;
         border-radius: 0.5rem;
         padding: 1rem;
     }
 
     .legend-item {
-        background: #fffbeb;
-        border: 1px solid #f59e0b;
-        color: #92400e;
+        background: #fff8e8;
+        border: 1px solid #d7a465;
+        color: #5f3b1f;
     }
 
     /* iPhone-style toggle switches */
@@ -296,7 +415,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #ccc;
+        background-color: #d8c8b8;
         transition: .3s;
         border-radius: 24px;
     }
@@ -315,7 +434,7 @@
     }
 
     input:checked + .toggle-slider {
-        background-color: #ef4444;
+        background-color: #b76e2d;
     }
 
     input:checked + .toggle-slider:before {
@@ -327,9 +446,9 @@
         align-items: center;
         gap: 0.75rem;
         padding: 0.5rem;
-        background: #f8fafc;
+        background: rgba(255, 252, 247, 0.62);
         border-radius: 0.5rem;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #ded2c4;
     }
 
     .lock-controls-container {
@@ -342,7 +461,7 @@
     .session-label {
         font-size: 0.875rem;
         font-weight: 500;
-        color: #374151;
+        color: #171412;
         min-width: 70px;
     }
 
@@ -367,25 +486,25 @@
 
     /* Clean button styles */
     .btn-primary {
-        background: #3b82f6;
-        color: white;
-        border: 1px solid #3b82f6;
+        background: #171412;
+        color: #fffaf3;
+        border: 1px solid #171412;
     }
 
     .btn-primary:hover {
-        background: #2563eb;
-        border-color: #2563eb;
+        background: #2b2521;
+        border-color: #2b2521;
     }
 
     .btn-secondary {
-        background: white;
-        color: #374151;
-        border: 1px solid #d1d5db;
+        background: rgba(255, 252, 247, 0.58);
+        color: #171412;
+        border: 1px solid #ded2c4;
     }
 
     .btn-secondary:hover {
-        background: #f9fafb;
-        border-color: #9ca3af;
+        background: #fffaf3;
+        border-color: #c8b7a5;
     }
 
     .btn-success {
@@ -413,7 +532,7 @@
     .no-bookings-message {
         text-align: center;
         padding: 4rem 2rem;
-        color: #6b7280;
+        color: #6f675f;
     }
 
     .no-bookings-message i {
@@ -601,7 +720,7 @@
 
                                                 <!-- Type and Doctor -->
                                                 <div class="flex items-center space-x-3 text-xs">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if appointment.appointment_type == 'New' %}appointment-type-new{% else %}appointment-type-follow-up{% endif %}">
                                                         {{ appointment.appointment_type }}
                                                     </span>
                                                     {% if appointment.booked_by %}
@@ -652,7 +771,8 @@
 
                                                     {% if appointment.diagnosis %}
                                                         <button onclick="toggleDiagnosis('mobile-diagnosis-{{ appointment.id }}')"
-                                                               class="action-button inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-md hover:bg-blue-200 transition-all duration-200">
+                                                               class="action-button inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-all duration-200"
+                                                               style="background: #e8f1ed; color: #164d46;">
                                                            <i id="mobile-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1 text-xs"></i>
                                                            Diagnosis
                                                         </button>
@@ -660,14 +780,16 @@
                                                     
                                                     {% if appointment.referral_letter %}
                                                         <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
-                                                               class="action-button inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-md hover:bg-purple-200 transition-all duration-200">
+                                                               class="action-button inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-all duration-200"
+                                                               style="background: #f0e5d8; color: #5f3b1f;">
                                                            <i class="fas fa-file-medical mr-1 text-xs"></i>
                                                            Referral
                                                         </button>
                                                     {% endif %}
                                                     
                                                     <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                                       class="action-button inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-200 transition-all duration-200">
+                                                       class="action-button inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-all duration-200"
+                                                       style="background: #fbf7f1; color: #171412; border: 1px solid #ded2c4;">
                                                        <i class="fas fa-edit mr-1 text-xs"></i>
                                                        Edit
                                                     </a>
@@ -694,7 +816,7 @@
 
             <!-- DESKTOP VIEW -->
             <div class="hidden sm:block">
-                <table class="w-full">
+                <table class="appointments-list-shell w-full">
                     <thead>
                         <tr class="time-slot-header">
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Time</th>
@@ -718,7 +840,7 @@
                                                         <div class="flex items-center space-x-3 text-sm text-gray-600 mt-1">
                                                             <span>{{ appointment.civil_id }}</span>
                                                             <span>{{ appointment.phone_number }}</span>
-                                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if appointment.appointment_type == 'New' %}bg-amber-100 text-amber-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if appointment.appointment_type == 'New' %}appointment-type-new{% else %}appointment-type-follow-up{% endif %}">
                                                                 {{ appointment.appointment_type }}
                                                             </span>
                                                             {% if appointment.booked_by %}
@@ -787,7 +909,8 @@
 
                                                             {% if appointment.diagnosis %}
                                                                 <button onclick="toggleDiagnosis('desktop-diagnosis-{{ appointment.id }}')"
-                                                                       class="action-button inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100">
+                                                                       class="action-button inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+                                                                       style="background: #e8f1ed; color: #164d46;">
                                                                    <i id="desktop-diagnosis-icon-{{ appointment.id }}" class="fas fa-chevron-down mr-1"></i>
                                                                    Diagnosis
                                                                 </button>
@@ -795,14 +918,16 @@
                                                             
                                                             {% if appointment.referral_letter %}
                                                                 <button onclick="openReferral('{{ appointment.referral_letter.url }}')"
-                                                                       class="action-button inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100">
+                                                                       class="action-button inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+                                                                       style="background: #f0e5d8; color: #5f3b1f;">
                                                                    <i class="fas fa-file-medical mr-1"></i>
                                                                    Referral
                                                                 </button>
                                                             {% endif %}
                                                             
                                                             <a href="{% url 'edit_appointment' workspace.name appointment.id %}" 
-                                                               class="action-button inline-flex items-center px-2 py-1 bg-gray-50 text-gray-700 text-xs font-medium rounded hover:bg-gray-100">
+                                                               class="action-button inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+                                                               style="background: #fbf7f1; color: #171412; border: 1px solid #ded2c4;">
                                                                <i class="fas fa-edit mr-1"></i>
                                                                Edit
                                                             </a>
@@ -883,7 +1008,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase" style="color: #6f675f;">
+                    <div class="follow-up-weekdays grid grid-cols-7 text-center text-xs font-semibold uppercase rounded-t-lg">
                         <div>Sun</div>
                         <div>Mon</div>
                         <div>Tue</div>
@@ -892,7 +1017,7 @@
                         <div>Fri</div>
                         <div>Sat</div>
                     </div>
-                    <div id="followUpCalendarGrid" class="grid grid-cols-7 gap-2"></div>
+                    <div id="followUpCalendarGrid" class="follow-up-calendar-grid grid grid-cols-7 overflow-hidden rounded-b-lg"></div>
 
                     <div>
                         <h3 class="surgery-section-title text-sm font-semibold uppercase mb-3">Available Slots</h3>
@@ -1184,14 +1309,14 @@
 
                 for (let i = 0; i < data.first_weekday; i++) {
                     const blank = document.createElement('div');
-                    blank.className = 'min-h-16';
+                    blank.className = 'follow-up-calendar-blank';
                     grid.appendChild(blank);
                 }
 
                 data.days.forEach(day => {
                     const button = document.createElement('button');
                     button.type = 'button';
-                    button.className = 'follow-up-calendar-day rounded-md p-2 text-left';
+                    button.className = 'follow-up-calendar-day p-2 text-left';
                     if (day.all_slots_taken) {
                         button.classList.add('full');
                     }

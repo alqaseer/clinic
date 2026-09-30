@@ -2371,7 +2371,7 @@ def find_available_appointment(speciality, am_only=False):
     default_pm_slot = datetime.strptime("14:00", "%H:%M").time()
     
     # Check up to 120 days ahead starting from tomorrow
-    for day_offset in range(120):
+    for day_offset in range(360):
         check_date = tomorrow + timedelta(days=day_offset)
         day_name = check_date.strftime("%A")
         print(f"checking date : {check_date}")

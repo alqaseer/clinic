@@ -240,6 +240,16 @@
 {% verbatim %}
                             </select>
                             <div v-if="errors.speciality" class="mt-1 text-sm text-red-600">{{ errors.speciality }}</div>
+                            <div v-if="consultantSelectionEnabled" class="mt-4">
+                                <label for="consultant" class="block text-sm font-medium text-gray-700 mb-1">Refer to Consultant <span class="text-red-600">*</span></label>
+                                <select id="consultant" v-model="consultant" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">-- Select Consultant --</option>
+                                    <option v-for="person in consultants" :key="person.id" :value="String(person.id)">{{ person.name }}</option>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">You must choose the consultant who will receive this referral.</p>
+                                <p v-if="!consultants.length" class="mt-1 text-sm text-red-600">No consultants are configured for this speciality. Please contact the site administrator.</p>
+                                <div v-if="errors.consultant" class="mt-1 text-sm text-red-600">{{ errors.consultant }}</div>
+                            </div>
                         </div>
                     </div>
 
@@ -266,7 +276,7 @@
                     <!-- AM Only Checkbox -->
                     <div class="mb-6">
                         <div class="flex items-center">
-                            <input type="checkbox" id="am_only" v-model="amOnly" 
+                            <input type="checkbox" id="am_only" v-model="amOnly"
                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                             <label for="am_only" class="ml-2 block text-sm text-gray-700">
                                 Look only for AM slots (morning appointments)
@@ -277,6 +287,19 @@
                         </p>
                     </div>
                     
+                    <div class="mb-6 p-4 rounded-lg border border-red-200" :class="isUrgent ? 'bg-red-50' : 'bg-white'">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <p id="urgent-label" class="font-semibold text-red-700">Urgent case: Next clinic immediately</p>
+                                <p id="urgent-help" class="mt-1 text-sm text-red-700">Book the next clinic immediately, even if it is full or overbooked. Closed and locked sessions remain unavailable.</p>
+                            </div>
+                            <button type="button" role="switch" :aria-checked="isUrgent" aria-labelledby="urgent-label" aria-describedby="urgent-help" @click="isUrgent = !isUrgent" class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" :class="isUrgent ? 'bg-red-600' : 'bg-gray-300'">
+                                <span class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform" :class="isUrgent ? 'translate-x-6' : 'translate-x-1'"></span>
+                            </button>
+                        </div>
+                        <p v-if="isUrgent" class="mt-2 text-sm font-medium text-red-700">Urgent booking is on. Capacity limits will be bypassed; your morning-only preference is respected.</p>
+                    </div>
+
                     <!-- Submit Button -->
                     <button type="submit" 
                             :disabled="loading"
@@ -297,6 +320,7 @@
             <div v-if="showAppointmentDetails" class="bg-white rounded-xl shadow-md overflow-hidden">
                 <div class="bg-gradient-to-r from-green-600 to-teal-600 px-6 py-4">
                     <h2 class="text-lg font-semibold text-white">Appointment Confirmed</h2>
+                    <span v-if="appointmentDetails.isUrgent" class="inline-block mt-2 px-3 py-1 rounded-full bg-red-700 text-white text-sm font-semibold">Urgent referral</span>
                 </div>
                 
                 <div class="p-6">
@@ -411,7 +435,9 @@
         </footer>
     </div>
     
+    {{ referral_options|json_script:"referral-options" }}
     <script>
+        const referralOptions = JSON.parse(document.getElementById("referral-options").textContent)
         const { createApp, ref, computed } = Vue
 
         createApp({
@@ -421,6 +447,9 @@
                 const civilId = ref('')
                 const phoneNumber = ref('')
                 const speciality = ref('')
+                const consultant = ref('')
+                const consultantSelectionEnabled = computed(() => !!referralOptions[speciality.value]?.allow_consultant_selection)
+                const consultants = computed(() => referralOptions[speciality.value]?.consultants || [])
                 const diagnosis = ref('')
                 const isUrgent = ref(false)
                 const amOnly = ref(false) // New field for AM-only preference
@@ -493,6 +522,8 @@
                 
                 // Check for specialty message
                 const checkSpecialtyMessage = () => {
+                    consultant.value = ''
+                    delete errors.value.consultant
                     // Find the selected option element
                     const selectedOption = document.querySelector(`option[value="${speciality.value}"]`)
                     
@@ -534,6 +565,11 @@
                         isValid = false
                     }
                     
+                    if (consultantSelectionEnabled.value && !consultant.value) {
+                        errors.value.consultant = 'Please select a consultant'
+                        isValid = false
+                    }
+
                     if (!diagnosis.value.trim()) {
                         errors.value.diagnosis = 'Diagnosis is required'
                         isValid = false
@@ -562,6 +598,7 @@
                                 civil_id: civilId.value,
                                 phone_number: phoneNumber.value,
                                 speciality: speciality.value,
+                                consultant: consultantSelectionEnabled.value ? consultant.value : null,
                                 diagnosis: diagnosis.value,
                                 is_urgent: isUrgent.value,
                                 am_only: amOnly.value // Include AM-only preference
@@ -581,6 +618,7 @@
                                 civilId: civilId.value,
                                 phoneNumber: phoneNumber.value,
                                 specialityName: data.speciality_name,
+                                isUrgent: data.is_urgent,
                                 clinicName: data.clinic_name,
                                 date: data.appointment_date,
                                 time: data.appointment_time,
@@ -727,6 +765,7 @@
                     civilId.value = '';
                     phoneNumber.value = '';
                     speciality.value = '';
+                    consultant.value = '';
                     diagnosis.value = '';
                     isUrgent.value = false;
                     amOnly.value = false; // Reset AM-only preference
@@ -757,6 +796,9 @@
                     civilId,
                     phoneNumber,
                     speciality,
+                    consultant,
+                    consultants,
+                    consultantSelectionEnabled,
                     diagnosis,
                     isUrgent,
                     amOnly, // Expose AM-only preference
@@ -804,8 +846,4 @@
         
     </script>
 </body>
-<<<<<<< ours
 </html>
-=======
-</html>
->>>>>>> theirs

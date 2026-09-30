@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manage Site | Surgi.app</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f5efe7; color: #171412; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+        header { border-bottom: 1px solid #ded2c4; background: #fbf7f1; }
+        nav { max-width: 1120px; margin: auto; padding: 24px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        a { color: inherit; }
+        .brand { font-size: 22px; font-weight: 750; text-decoration: none; }
+        nav a:last-child { color: #256f65; }
+        main { max-width: 1120px; margin: auto; padding: 72px 24px; }
+        .eyebrow { color: #256f65; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+        h1 { font-size: clamp(32px, 5vw, 48px); margin: 12px 0; letter-spacing: -.04em; }
+        .intro { color: #6f675f; line-height: 1.6; margin-bottom: 36px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .card { display: flex; flex-direction: column; border: 1px solid #ded2c4; background: #fbf7f1; padding: 28px; border-radius: 20px; text-decoration: none; transition: border-color .15s, transform .15s; }
+        .card:hover { border-color: #256f65; transform: translateY(-3px); }
+        a:focus-visible { outline: 3px solid #256f65; outline-offset: 5px; }
+        .number { color: #256f65; font-weight: 700; font-size: 14px; }
+        h2 { font-size: 22px; margin: 26px 0 12px; }
+        .card p { color: #6f675f; line-height: 1.6; margin: 0 0 30px; }
+        .open { margin-top: auto; color: #256f65; font-weight: 650; }
+        .note { margin-top: 28px; color: #6f675f; font-size: 14px; }
+        @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } main { padding-top: 40px; } }
+    </style>
+</head>
+<body>
+<header><nav aria-label="Main navigation"><a class="brand" href="{% url 'home' %}">Surgi.app</a><a href="{% url 'home' %}">Back to home</a></nav></header>
+<main>
+    <div class="eyebrow">Site management</div>
+    <h1>Manage Site</h1>
+    <p class="intro">Manage specialities, review referrals, and explore referral activity.</p>
+    <div class="grid">
+        <a class="card" href="{% url 'manage_specialities' %}"><span class="number">01</span><h2>Manage Specialities</h2><p>Organize specialities and their linked workspaces.</p><span class="open">Manage specialities &rarr;</span></a>
+        <a class="card" href="{% url 'system_referrals_list' %}"><span class="number">02</span><h2>System Referrals</h2><p>Browse, search, and filter system referrals.</p><span class="open">View referrals &rarr;</span></a>
+        <a class="card" href="{% url 'system_referrals_stats' %}"><span class="number">03</span><h2>Referral Statistics</h2><p>Review referral activity and monthly statistics.</p><span class="open">View statistics &rarr;</span></a>
+    </div>
+    <p class="note">Some tools require a workspace login. Referral statistics require a workspace owner account.</p>
+</main>
+</body>
+</html>

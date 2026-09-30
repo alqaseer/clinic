@@ -37,6 +37,7 @@ urlpatterns = [
 
 
     # Referrals
+    path("manage-site/", views.manage_site, name="manage_site"),
     path('manage-specialities/', views.manage_specialities, name='manage_specialities'),
 
     # Doctor URLs

@@ -35,7 +35,7 @@ class WorkspaceAdminForm(forms.ModelForm):
 
 # Admin for Speciality
 class SpecialityAdmin(admin.ModelAdmin):
-    list_display = ('name', 'get_workspaces')
+    list_display = ('name', 'get_workspaces', 'allow_consultant_selection')
     search_fields = ('name', 'workspaces__name')
     filter_horizontal = ('workspaces',)
     

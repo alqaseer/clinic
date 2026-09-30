@@ -2132,7 +2132,18 @@ def manage_specialities(request):
     
     if request.method == 'POST':
         # Check if it's a form for adding/removing workspaces
-        if 'speciality_id' in request.POST and 'workspace_id' in request.POST:
+        if 'update_consultant_selection' in request.POST:
+            speciality = get_object_or_404(Speciality, id=request.POST.get('speciality_id'))
+            enabled = request.POST.get('allow_consultant_selection')
+            if enabled not in ('true', 'false'):
+                messages.error(request, "Invalid consultant selection setting")
+            else:
+                speciality.allow_consultant_selection = enabled == 'true'
+                speciality.save(update_fields=['allow_consultant_selection'])
+                state = "enabled" if speciality.allow_consultant_selection else "disabled"
+                messages.success(request, f"Consultant selection {state} for {speciality.name}")
+
+        elif 'speciality_id' in request.POST and 'workspace_id' in request.POST:
             speciality = get_object_or_404(Speciality, id=request.POST['speciality_id'])
             workspace = get_object_or_404(Workspace, id=request.POST['workspace_id'])
             
@@ -2327,19 +2338,71 @@ def doctor_required(view_func):
 # Doctor dashboard
 @doctor_required
 def doctor_dashboard(request):
-    doctor_id = request.session.get('doctor_id')
-    doctor = get_object_or_404(Doctor, id=doctor_id)
-    specialities = Speciality.objects.all()
-    
+    doctor = get_object_or_404(Doctor, id=request.session.get('doctor_id'))
+    specialities = Speciality.objects.prefetch_related('workspaces').all()
+    referral_options = {
+        str(speciality.id): {
+            'allow_consultant_selection': speciality.allow_consultant_selection,
+            'consultants': [
+                {'id': workspace.id, 'name': workspace.owner_name or workspace.name}
+                for workspace in speciality.workspaces.all()
+            ],
+        }
+        for speciality in specialities
+    }
     return render(request, 'doctor_dashboard.html', {
         'doctor': doctor,
-        'specialities': specialities
+        'specialities': specialities,
+        'referral_options': referral_options,
     })
 
+
+def find_urgent_appointment(speciality, selected_workspace=None, am_only=False):
+    """Find the next clinic respecting session preference, bypassing capacity limits."""
+    workspaces = speciality.workspaces.all().order_by('pk')
+    if selected_workspace is not None:
+        workspaces = workspaces.filter(pk=selected_workspace.pk)
+    workspaces = list(workspaces)
+    current = timezone.localtime()
+    slots = {
+        'AM': [time(8 + minutes // 60, minutes % 60) for minutes in range(0, 271, 15)],
+        'PM': [time(14 + minutes // 60, minutes % 60) for minutes in range(0, 211, 15)],
+    }
+    for offset in range(360):
+        date = current.date() + timedelta(days=offset)
+        day = date.strftime('%A')
+        candidates = []
+        for workspace in workspaces:
+            if not workspace.is_day_open(day):
+                continue
+            for session in workspace.get_available_sessions(day):
+                if session not in slots or (am_only and session != 'AM') or Lock.objects.filter(
+                    workspace=workspace, date=date, pm=(session == 'PM')
+                ).exists():
+                    continue
+                future_slots = [slot for slot in slots[session]
+                                if offset > 0 or slot > current.time()]
+                if not future_slots:
+                    continue
+                appointments = ClinicAppointment.objects.filter(
+                    workspace=workspace, date=date, session=session
+                )
+                occupied = set(appointments.values_list('time', flat=True))
+                slot = next((slot for slot in future_slots if slot not in occupied), future_slots[0])
+                candidates.append((future_slots[0], appointments.count(), workspace.pk, workspace, slot))
+        if candidates:
+            _, _, _, workspace, slot = min(candidates, key=lambda item: item[:3])
+            return workspace, date, slot
+    return None, None, None
+
+
 # Find next available appointment slot with AM/PM session support
-def find_available_appointment(speciality, am_only=False):
+def find_available_appointment(speciality, am_only=False, selected_workspace=None):
     # Get all workspaces with this speciality
     workspaces = speciality.workspaces.all()
+    if selected_workspace is not None:
+        workspaces = workspaces.filter(pk=selected_workspace.pk)
+
     
     if not workspaces.exists():
         return None, None, None
@@ -2516,7 +2579,8 @@ def book_appointment(request):
             phone_number = data.get('phone_number')
             speciality_id = data.get('speciality')
             diagnosis = data.get('diagnosis')
-            is_urgent = data.get('is_urgent', False)
+            is_urgent = data.get('is_urgent', False) is True
+            consultant_id = data.get('consultant')
             am_only = data.get('am_only', False)  # New field
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'message': 'Invalid JSON data'})
@@ -2528,6 +2592,7 @@ def book_appointment(request):
         speciality_id = request.POST.get('speciality')
         diagnosis = request.POST.get('diagnosis')
         is_urgent = request.POST.get('is_urgent') == 'on'
+        consultant_id = request.POST.get('consultant')
         am_only = request.POST.get('am_only') == 'on'  # New field
     
     # Validate input
@@ -2564,8 +2629,25 @@ def book_appointment(request):
             messages.error(request, "Invalid speciality")
             return redirect('doctor_dashboard')
     
-    # Find available slot with AM-only preference
-    workspace, appointment_date, appointment_time = find_available_appointment(speciality, am_only=am_only)
+    selected_workspace = None
+    if speciality.allow_consultant_selection:
+        try:
+            selected_workspace = speciality.workspaces.get(pk=int(consultant_id))
+        except (Workspace.DoesNotExist, ValueError, TypeError):
+            message = "Please select a consultant belonging to this speciality"
+            if request.content_type == 'application/json':
+                return JsonResponse({'success': False, 'message': message}, status=400)
+            messages.error(request, message)
+            return redirect('doctor_dashboard')
+
+    if is_urgent:
+        workspace, appointment_date, appointment_time = find_urgent_appointment(
+            speciality, selected_workspace, am_only=am_only
+        )
+    else:
+        workspace, appointment_date, appointment_time = find_available_appointment(
+            speciality, am_only=am_only, selected_workspace=selected_workspace
+        )
     
     if not workspace or not appointment_date or not appointment_time:
         session_msg = " (AM slots only)" if am_only else ""
@@ -2590,6 +2672,7 @@ def book_appointment(request):
         time=appointment_time,
         session=session,  # Set the session
         system_referral=True,
+        is_urgent=is_urgent,
         booked_by=doctor,
         diagnosis=diagnosis
     )
@@ -2601,6 +2684,7 @@ def book_appointment(request):
     if request.content_type == 'application/json':
         return JsonResponse({
             'success': True,
+            'is_urgent': appointment.is_urgent,
             'message': 'Appointment booked successfully',
             'appointment_id': appointment.id,
             'speciality_name': speciality.name,
@@ -3856,3 +3940,8 @@ def edit_favorite_patient(request, workspace_name, patient_id):
     }
     
     return render(request, 'favorite_patients/edit_patient.html', context)
+
+
+@require_GET
+def manage_site(request):
+    return render(request, "manage_site.html")

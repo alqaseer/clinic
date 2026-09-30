@@ -23,6 +23,10 @@ SESSION_CHOICES = [
 ]
 
 class Speciality(models.Model):
+    allow_consultant_selection = models.BooleanField(
+        default=False,
+        help_text="Allow referrers to choose the consultant who receives their referral.",
+    )
     name = models.CharField(max_length=255)
     workspaces = models.ManyToManyField('Workspace', related_name='specialities', blank=True)
     message = models.TextField(null=True, blank=True)
@@ -178,6 +182,7 @@ class SurgicalBooking(models.Model):
         return f"{self.name} ({self.civil_id})"
 
 class ClinicAppointment(models.Model):
+    is_urgent = models.BooleanField(default=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="appointments")
     patient_name = models.CharField(max_length=255)
     civil_id = models.CharField(max_length=12)
